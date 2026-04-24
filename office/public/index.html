@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CNC AI Office — 12 agents</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:#1a1a1a; overflow:hidden; font-family:'Segoe UI',system-ui,sans-serif; color:#ddd; }
+canvas { display:block; }
+
+/* ── Chat Panel ─────────────────────────────────────────────────── */
+#chat-panel {
+  position:fixed; top:10px; right:10px;
+  width:280px; height:calc(100vh - 70px);
+  background:#1c1c1c; border:1px solid #333; border-radius:10px;
+  display:flex; flex-direction:column;
+  transform:translateX(310px);
+  transition:transform .3s cubic-bezier(.4,0,.2,1);
+  box-shadow:0 8px 32px rgba(0,0,0,.5);
+  z-index:100;
+}
+#chat-panel.open { transform:translateX(0); }
+
+#chat-header {
+  padding:12px 14px; border-bottom:1px solid #2a2a2a;
+  display:flex; align-items:center; gap:9px; flex-shrink:0;
+}
+.agent-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+#chat-agent-name { font-weight:700; font-size:13px; line-height:1.2; }
+#chat-agent-role { font-size:10px; color:#666; margin-top:1px; }
+#chat-close {
+  margin-left:auto; cursor:pointer; color:#555; font-size:20px;
+  line-height:1; padding:0 2px;
+}
+#chat-close:hover { color:#ccc; }
+
+#chat-messages {
+  flex:1; overflow-y:auto; padding:12px; display:flex;
+  flex-direction:column; gap:8px; scrollbar-width:thin;
+  scrollbar-color:#333 transparent;
+}
+#chat-messages::-webkit-scrollbar { width:4px; }
+#chat-messages::-webkit-scrollbar-thumb { background:#333; border-radius:2px; }
+
+.msg {
+  max-width:88%; padding:8px 11px; border-radius:12px;
+  font-size:12.5px; line-height:1.45; word-break:break-word;
+}
+.msg.user  { background:#1e3a6a; align-self:flex-end; border-bottom-right-radius:3px; }
+.msg.agent { background:#262626; border:1px solid #333; align-self:flex-start; border-bottom-left-radius:3px; }
+.msg.thinking { background:#1e1e1e; color:#555; font-style:italic; align-self:flex-start; font-size:12px; }
+.msg-timestamp { font-size:9px; color:#444; margin-top:3px; }
+
+#chat-input-area {
+  padding:10px; border-top:1px solid #2a2a2a;
+  display:flex; gap:6px; flex-shrink:0;
+}
+#chat-input {
+  flex:1; background:#242424; border:1px solid #3a3a3a; color:#ddd;
+  padding:8px 10px; border-radius:7px; font-size:12.5px;
+  resize:none; height:36px; font-family:inherit;
+  transition:border-color .15s;
+}
+#chat-input:focus { outline:none; border-color:#555; }
+#chat-send {
+  background:#1e3a6a; border:none; color:#fff;
+  padding:0 13px; border-radius:7px; cursor:pointer;
+  font-size:14px; transition:background .15s;
+}
+#chat-send:hover { background:#2a4d8a; }
+#chat-send:disabled { opacity:.4; cursor:not-allowed; }
+
+/* ── Toolbar ─────────────────────────────────────────────────────── */
+#toolbar {
+  position:fixed; bottom:0; left:0; right:0; height:48px;
+  background:#111; border-top:1px solid #252525;
+  display:flex; align-items:center; padding:0 14px; gap:14px;
+  font-size:12px; z-index:100;
+}
+#toolbar-title { font-weight:700; color:#888; letter-spacing:.05em; white-space:nowrap; }
+#toolbar select {
+  background:#222; border:1px solid #3a3a3a; color:#ccc;
+  padding:4px 8px; border-radius:5px; font-size:11.5px;
+}
+#toolbar button {
+  background:#222; border:1px solid #3a3a3a; color:#aaa;
+  padding:4px 10px; border-radius:5px; font-size:11.5px; cursor:pointer;
+}
+#toolbar button:hover { background:#2e2e2e; color:#ddd; }
+.status-dot { width:7px; height:7px; border-radius:50%; background:#3caa3c; flex-shrink:0; }
+.status-dot.err { background:#aa3c3c; }
+#fps { margin-left:auto; color:#3a3a3a; font-family:monospace; font-size:11px; }
+
+/* ── Tooltip ─────────────────────────────────────────────────────── */
+#tip {
+  position:fixed; pointer-events:none; z-index:200;
+  background:rgba(0,0,0,.88); color:#ddd; padding:6px 11px;
+  border-radius:7px; font-size:12px; white-space:nowrap;
+  border:1px solid #3a3a3a; display:none;
+  box-shadow:0 4px 12px rgba(0,0,0,.4);
+}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<div id="chat-panel">
+  <div id="chat-header">
+    <div class="agent-dot" id="hdr-dot"></div>
+    <div>
+      <div id="hdr-name">Agent</div>
+      <div id="hdr-role"></div>
+    </div>
+    <div id="chat-close">×</div>
+  </div>
+  <div id="chat-messages"></div>
+  <div id="chat-input-area">
+    <textarea id="chat-input" placeholder="Napisz wiadomość… (Enter = wyślij)"></textarea>
+    <button id="chat-send">▶</button>
+  </div>
+</div>
+
+<div id="toolbar">
+  <span id="toolbar-title">🏭 CNC AI OFFICE</span>
+  <select id="model-sel">
+    <option value="">Agent domyślny</option>
+    <optgroup label="── Anthropic ──">
+      <option value="claude-opus-4-7">opus-4-7</option>
+      <option value="claude-sonnet-4-6">sonnet-4-6</option>
+      <option value="claude-haiku-4-5-20251001">haiku-4-5</option>
+    </optgroup>
+    <optgroup label="── Ollama ──" id="ollama-opts">
+      <option value="" disabled id="ollama-placeholder">ładowanie…</option>
+    </optgroup>
+  </select>
+  <span id="agent-count">12 agents</span>
+  <span style="display:flex;align-items:center;gap:5px;">
+    <span class="status-dot" id="api-dot"></span>
+    <span id="api-txt">Anthropic</span>
+  </span>
+  <span style="display:flex;align-items:center;gap:5px;">
+    <span class="status-dot" id="ollama-dot" style="background:#555"></span>
+    <span id="ollama-txt">Ollama</span>
+  </span>
+  <button onclick="clearMemory()">Wyczyść pamięć</button>
+  <span id="fps">-- fps</span>
+</div>
+
+<div id="tip"></div>
+
+<script>
+// ── Canvas setup ─────────────────────────────────────────────────────────────
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+function resize() {
+  canvas.width  = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener('resize', resize);
+
+// ── Isometric math ────────────────────────────────────────────────────────────
+const TW = 58, TH = 29;
+let OX, OY;
+function updateOrigin() {
+  OX = canvas.width * 0.42;
+  OY = 55;
+}
+updateOrigin();
+
+function toS(wx, wy) {
+  return {
+    x: OX + (wx - wy) * TW / 2,
+    y: OY + (wx + wy) * TH / 2
+  };
+}
+
+// ── Zones ────────────────────────────────────────────────────────────────────
+const ZONES = [
+  { id:'design', name:'DESIGN',
+    tile:'#1d2a3a', grid:'#232f40', border:'#378ADD',
+    minWx:0, maxWx:4.5, minWy:0, maxWy:4.5 },
+  { id:'prod', name:'PRODUCTION',
+    tile:'#291d1a', grid:'#342420', border:'#993C1D',
+    minWx:4.5, maxWx:10, minWy:0, maxWy:4.5 },
+  { id:'biz', name:'BUSINESS',
+    tile:'#292118', grid:'#342a1e', border:'#BA7517',
+    minWx:0, maxWx:4.5, minWy:4.5, maxWy:10 },
+  { id:'cross', name:'CROSS-FUNC',
+    tile:'#1f1d2d', grid:'#272438', border:'#7F77DD',
+    minWx:4.5, maxWx:10, minWy:4.5, maxWy:10 }
+];
+
+function zoneAt(wx, wy) {
+  return ZONES.find(z => wx >= z.minWx && wx < z.maxWx && wy >= z.minWy && wy < z.maxWy);
+}
+
+// ── Agents ────────────────────────────────────────────────────────────────────
+const AGENTS = [
+  { id:'ceo', name:'CEO', role:'Orchestrator',
+    dept:'cross', color:'#7F77DD', model:'claude-opus-4-7',
+    wx:7.5, wy:7.5,
+    prompt:'Jesteś CEO i Orchestratorem CNC Furniture Studio — firmy produkującej meble ze sklejki brzozowej 18mm na maszynach CNC (Biesse Rover, Homag, WoodLAB). Delegujesz zadania do trzech Head\'ów: Design (walidacja CAD/DXF), Production (CAM, G-code, nesting <12% waste) i Business (wycena, marża ≥35%, magazyn). Podejmujesz decyzje strategiczne i zatwierdzasz projekty. Odpowiadaj po polsku, krótko i konkretnie.' },
+
+  { id:'head-design', name:'Head Design', role:'Head of Design',
+    dept:'design', color:'#378ADD', model:'claude-sonnet-4-6',
+    wx:1.8, wy:1.8,
+    prompt:'Jesteś Head of Design w CNC Furniture Studio. Walidajesz modele 3D i flat patterns DXF, decydujesz o strategii łączeń (max 3 typy na projekt), zarządzasz CAD Designerem i Joinery Specialistą. Twój sign-off jest wymagany przed przekazaniem do produkcji. Tolerancje: IT6 na nośnych, IT8 na estetycznych. Odpowiadaj po polsku, krótko i konkretnie.' },
+
+  { id:'head-prod', name:'Head Prod.', role:'Head of Production',
+    dept:'prod', color:'#993C1D', model:'claude-sonnet-4-6',
+    wx:7.0, wy:1.8,
+    prompt:'Jesteś Head of Production w CNC Furniture Studio. Nadzorujsz proces CAM, wybierasz post-procesory (Biesse Rover / Homag WoodWOP / WoodLAB), kontrolujesz waste <12% i harmonogram maszyn. Delegujesz do CAM Engineera i Nesting Optimizera. Wymagasz HIRA od Safety Officera przed nowym procesem. Odpowiadaj po polsku, krótko i konkretnie.' },
+
+  { id:'head-biz', name:'Head Biznes', role:'Head of Business',
+    dept:'biz', color:'#BA7517', model:'claude-sonnet-4-6',
+    wx:1.8, wy:7.0,
+    prompt:'Jesteś Head of Business w CNC Furniture Studio. Zarządzasz relacjami z klientami, wyceną (marża brutto ≥35%, custom ≥45%), priorytetyzacją zleceń i stanami magazynowymi sklejki (bufor: 20 arkuszy). Zatwierdzasz wszystkie oferty wychodzące. Kontrakty >100k PLN eskalujesz do CEO. Odpowiadaj po polsku, krótko i konkretnie.' },
+
+  { id:'cad', name:'CAD Designer', role:'Fusion 360 / DXF',
+    dept:'design', color:'#1D9E75', model:'claude-sonnet-4-6',
+    wx:0.7, wy:0.7,
+    prompt:'Jesteś CAD Designerem w CNC Furniture Studio, specjalizującym się w Fusion 360 i parametrycznych modelach sklejki brzozowej 18mm. Generujesz flat patterns DXF z warstwami: CUT_THROUGH (czerwony), POCKET (niebieski, głębokość jako atrybut), DRILL (zielony), ENGRAVE (szary), GRAIN (żółty), TABS (pomarańczowy). Parametry jawne w User Parameters. Zero kolizji (Interference Check). Odpowiadaj po polsku, krótko i konkretnie.' },
+
+  { id:'joinery', name:'Joinery Spec.', role:'Złączenia / Dog-bones',
+    dept:'design', color:'#5DCAA5', model:'claude-sonnet-4-6',
+    wx:3.2, wy:3.2,
+    prompt:'Jesteś Joinery Specialistą w CNC Furniture Studio. Projektujesz łączenia stolarskie: finger joints (zawsze nieparzysta liczba palców, clearance 0.1mm, szerokość palca 1.5-2× grubość), dovetails (kąt 7-10° dla brzozy, pin:tail ≈ 1:3), dog-bone cutouts (R = R freza + 0.1mm na każdym narożniku wewnętrznym). Dokumentujesz w joinery-notes.md. Odpowiadaj po polsku, krótko i konkretnie.' },
+
+  { id:'cam', name:'CAM Engineer', role:'G-code / Toolpaths',
+    dept:'prod', color:'#D85A30', model:'claude-sonnet-4-6',
+    wx:5.9, wy:0.7,
+    prompt:'Jesteś CAM Engineerem w CNC Furniture Studio. Konwertujesz flat patterns DXF na G-code dla Biesse Rover, Homag (WoodWOP) i WoodLAB 3-axis. Feed: 4000mm/min (Ø6mm, 3 flutes, 18000RPM), 2500mm/min (Ø3mm). Zawsze ramp/helix entry dla głębokości >3mm. Climb milling na finish pass. Tabs: 5×0.8mm, 2-4 na element. Zero kolizji w symulacji. Odpowiadaj po polsku, krótko i konkretnie.' },
+
+  { id:'nesting', name:'Nesting Opt.', role:'Arkusz 2440×1220 / Waste',
+    dept:'prod', color:'#F0997B', model:'claude-haiku-4-5-20251001',
+    wx:8.3, wy:2.5,
+    prompt:'Jesteś Nesting Optimizerem w CNC Furniture Studio. Układasz elementy na arkuszach 2440×1220mm minimalizując waste do <12%. Rotacje tylko 0° i 90° (grain direction). Odstępy ≥6mm między elementami, margines 10mm od krawędzi. Algorytm: bottom-left-fill, sortowanie: największe-pierwsze. 3 iteracje przed eskalacją. Raportujesz: waste%, liczba arkuszy. Odpowiadaj po polsku, krótko i konkretnie.' },
+
+  { id:'sales', name:'Sales Rep', role:'Klient / Oferty',
+    dept:'biz', color:'#EF9F27', model:'claude-sonnet-4-6',
+    wx:0.7, wy:6.5,
+    prompt:'Jesteś Sales Repem w CNC Furniture Studio — jedynym punktem kontaktu z klientem. Zbierasz briefy (wymiary, ilość, styl, budżet, termin, referencje), przygotowujesz drafty ofert do sign-offu Head of Business. Odpowiadasz w <4h. Nie kontaktujesz się bezpośrednio z działem projektowym. Język: profesjonalny, bez żargonu technicznego. Odpowiadaj po polsku, krótko i konkretnie.' },
+
+  { id:'materials', name:'Materials Mgr', role:'Magazyn / Dostawcy',
+    dept:'biz', color:'#C97050', model:'claude-haiku-4-5-20251001',
+    wx:3.2, wy:8.0,
+    prompt:'Jesteś Materials Managerem w CNC Furniture Studio. Śledzisz stany magazynowe sklejki brzozowej (safety stock: 20 arkuszy) i ceny: Paged ~285 PLN/ark (lead 5-10 dni), Sklejka-Orzechowo ~310 PLN/ark (3-5 dni). Generujesz BOM, alerty reorder. Kontrolujesz dostawy: wilgotność 8-10% EMC. Zamówienia >5000 PLN wymagają akceptacji Head of Business. Odpowiadaj po polsku, krótko i konkretnie.' },
+
+  { id:'qa', name:'QA Inspector', role:'Audyt / Gatekeeping',
+    dept:'cross', color:'#D4537E', model:'claude-opus-4-7',
+    wx:6.5, wy:5.8,
+    prompt:'Jesteś niezależnym QA Inspectorem w CNC Furniture Studio — raportujesz do CEO. Audytujesz paczki projektowe: tolerancje IT6/IT8, dog-bones na 100% narożników, warstwy DXF, finger joints (nieparzyste palce), dovetails (kąt 7-10°). Prowadzisz FAI. Możesz blokować handoff znacznikiem [BLOCK]. Rejestrujesz niezgodności wg: NC-{nr}, severity: critical/major/minor. Odpowiadaj po polsku, krótko i konkretnie.' },
+
+  { id:'research', name:'Research Scout', role:'Trendy / Normy EN/ISO',
+    dept:'cross', color:'#8a8780', model:'claude-sonnet-4-6',
+    wx:8.5, wy:7.8,
+    prompt:'Jesteś Research Scoutem w CNC Furniture Studio. Monitorujesz trendy designu mebli (Dezeen, ArchDaily, Salone del Mobile), aktualizacje norm (EN 13986, EN ISO 12100, Dyrektywa 2006/42/WE), ceny sklejki i portfolio konkurencji. Każde ustalenie z datą i źródłem. TTL researchu: 6 miesięcy. Odróżniasz [fact] od [opinion]. Raporty max 1 strona A4. Odpowiadaj po polsku, krótko i konkretnie.' }
+];
+
+// ── Desks (isometric boxes in each zone) ─────────────────────────────────────
+const DESKS = [
+  { wx:0.8, wy:2.2 }, { wx:2.6, wy:0.8 }, { wx:1.8, wy:3.6 }, // Design
+  { wx:5.8, wy:2.0 }, { wx:7.5, wy:0.8 }, { wx:8.8, wy:3.0 }, // Production
+  { wx:0.8, wy:5.6 }, { wx:2.2, wy:7.0 }, { wx:3.5, wy:8.8 }, // Business
+  { wx:5.5, wy:6.0 }, { wx:7.2, wy:8.5 }                       // Cross
+];
+
+// ── Agent runtime state ───────────────────────────────────────────────────────
+AGENTS.forEach(a => {
+  a.targetWx  = a.wx;
+  a.targetWy  = a.wy;
+  a.waitTimer = 1 + Math.random() * 6;
+  a.walkPhase = Math.random() * Math.PI * 2;
+  a.bobTime   = Math.random() * Math.PI * 2;
+  a.isWalking = false;
+  a.sx = 0; a.sy = 0;
+});
+
+// ── Conversation memory ───────────────────────────────────────────────────────
+let HIST = {};
+AGENTS.forEach(a => HIST[a.id] = []);
+
+function saveMemory() {
+  localStorage.setItem('cnc_conv', JSON.stringify(HIST));
+}
+function loadMemory() {
+  try {
+    const d = JSON.parse(localStorage.getItem('cnc_conv') || '{}');
+    AGENTS.forEach(a => { if (d[a.id]) HIST[a.id] = d[a.id]; });
+  } catch {}
+}
+function clearMemory() {
+  AGENTS.forEach(a => HIST[a.id] = []);
+  localStorage.removeItem('cnc_conv');
+  renderHistory();
+}
+loadMemory();
+
+// ── Chat UI ───────────────────────────────────────────────────────────────────
+let selectedAgent = null;
+let sending = false;
+
+function openChat(agent) {
+  selectedAgent = agent;
+  document.getElementById('hdr-dot').style.background  = agent.color;
+  document.getElementById('hdr-name').textContent       = agent.name;
+  document.getElementById('hdr-role').textContent       = agent.role + ' · ' + agent.model;
+  document.getElementById('chat-panel').classList.add('open');
+  renderHistory();
+}
+document.getElementById('chat-close').onclick = () => {
+  document.getElementById('chat-panel').classList.remove('open');
+  selectedAgent = null;
+};
+
+function renderHistory() {
+  if (!selectedAgent) return;
+  const box = document.getElementById('chat-messages');
+  box.innerHTML = '';
+  (HIST[selectedAgent.id] || []).forEach(m => {
+    const d = document.createElement('div');
+    d.className = 'msg ' + (m.role === 'user' ? 'user' : 'agent');
+    d.textContent = m.content;
+    box.appendChild(d);
+  });
+  box.scrollTop = box.scrollHeight;
+}
+
+async function sendMessage() {
+  if (sending || !selectedAgent) return;
+  const inp  = document.getElementById('chat-input');
+  const text = inp.value.trim();
+  if (!text) return;
+  inp.value = '';
+  sending = true;
+  document.getElementById('chat-send').disabled = true;
+
+  const agent = selectedAgent;
+  HIST[agent.id].push({ role:'user', content:text });
+  renderHistory();
+
+  // Thinking indicator
+  const box   = document.getElementById('chat-messages');
+  const think = document.createElement('div');
+  think.className = 'msg thinking';
+  think.id = 'think-msg';
+  think.textContent = agent.name + ' myśli…';
+  box.appendChild(think);
+  box.scrollTop = box.scrollHeight;
+
+  const override  = document.getElementById('model-sel').value;
+  const modelUsed = override || agent.model;
+  const useOllama = modelUsed.startsWith('ollama:');
+
+  try {
+    let reply;
+
+    if (useOllama) {
+      // ── Ollama path ─────────────────────────────────────────────
+      const ollamaModel = modelUsed.slice(7); // strip "ollama:"
+      const r = await fetch('/api/ollama/chat', {
+        method: 'POST',
+        headers: { 'Content-Type':'application/json' },
+        body: JSON.stringify({
+          model:    ollamaModel,
+          messages: [
+            { role:'system',    content: agent.prompt + '\n\nOdpowiadaj po polsku, krótko (2-3 zdania).' },
+            ...HIST[agent.id]
+          ]
+          // stream:false dodaje server-side
+        })
+      });
+      const data = await r.json();
+      if (data.message?.content) {
+        reply = data.message.content;
+        setStatus('ollama', true, '🦙 ' + ollamaModel.split(':')[0]);
+      } else {
+        reply = '[Ollama error: ' + (data.error || JSON.stringify(data)) + ']';
+        setStatus('ollama', false, '🦙 error');
+      }
+    } else {
+      // ── Anthropic path ──────────────────────────────────────────
+      const r = await fetch('/api/messages', {
+        method: 'POST',
+        headers: { 'Content-Type':'application/json' },
+        body: JSON.stringify({
+          model:      modelUsed,
+          max_tokens: 500,
+          system:     agent.prompt + '\n\nOdpowiadaj po polsku, krótko (2-3 zdania).',
+          messages:   HIST[agent.id]
+        })
+      });
+      const data = await r.json();
+      if (data.content?.[0]?.text) {
+        reply = data.content[0].text;
+        setStatus('anthropic', true, 'Anthropic OK');
+      } else {
+        reply = '[API error: ' + (data.error?.message || 'unknown') + ']';
+        setStatus('anthropic', false, 'API error');
+      }
+    }
+
+    HIST[agent.id].push({ role:'assistant', content:reply });
+    saveMemory();
+  } catch(e) {
+    HIST[agent.id].push({ role:'assistant', content:'[Brak połączenia: ' + e.message + ']' });
+    setStatus(useOllama ? 'ollama' : 'anthropic', false, 'offline');
+  }
+
+  sending = false;
+  document.getElementById('chat-send').disabled = false;
+  renderHistory();
+}
+
+document.getElementById('chat-send').onclick = sendMessage;
+document.getElementById('chat-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+});
+
+// ── Status helpers ────────────────────────────────────────────────────────────
+function setStatus(provider, ok, label) {
+  if (provider === 'ollama') {
+    document.getElementById('ollama-dot').className = 'status-dot' + (ok ? '' : ' err');
+    document.getElementById('ollama-txt').textContent = label;
+  } else {
+    document.getElementById('api-dot').className = 'status-dot' + (ok ? '' : ' err');
+    document.getElementById('api-txt').textContent = label;
+  }
+}
+
+// ── Ollama model discovery ────────────────────────────────────────────────────
+async function loadOllamaModels() {
+  const grp  = document.getElementById('ollama-opts');
+  const ph   = document.getElementById('ollama-placeholder');
+  try {
+    const r    = await fetch('/api/ollama/models');
+    const data = await r.json();
+    const models = (data.models || []).sort((a, b) => a.name.localeCompare(b.name));
+
+    grp.innerHTML = '';
+    if (models.length === 0) {
+      const o = document.createElement('option');
+      o.value = ''; o.disabled = true;
+      o.textContent = '(brak modeli — ollama pull <model>)';
+      grp.appendChild(o);
+      setStatus('ollama', false, 'Ollama brak modeli');
+      return;
+    }
+
+    models.forEach(m => {
+      const opt = document.createElement('option');
+      opt.value       = 'ollama:' + m.name;
+      // show name + size if available
+      const gb = m.size ? ' · ' + (m.size / 1e9).toFixed(1) + ' GB' : '';
+      opt.textContent = m.name + gb;
+      grp.appendChild(opt);
+    });
+
+    setStatus('ollama', true, '🦙 Ollama (' + models.length + ')');
+  } catch {
+    grp.innerHTML = '';
+    const o = document.createElement('option');
+    o.value = ''; o.disabled = true;
+    o.textContent = '(Ollama offline)';
+    grp.appendChild(o);
+    setStatus('ollama', false, 'Ollama offline');
+  }
+}
+
+// ── Utility ───────────────────────────────────────────────────────────────────
+function hexDarken(hex, f) {
+  const r = parseInt(hex.slice(1,3),16);
+  const g = parseInt(hex.slice(3,5),16);
+  const b = parseInt(hex.slice(5,7),16);
+  return `rgb(${Math.round(r*f)},${Math.round(g*f)},${Math.round(b*f)})`;
+}
+
+function roundRect(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x+r, y);
+  ctx.lineTo(x+w-r, y);  ctx.quadraticCurveTo(x+w, y, x+w, y+r);
+  ctx.lineTo(x+w, y+h-r); ctx.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
+  ctx.lineTo(x+r, y+h);   ctx.quadraticCurveTo(x, y+h, x, y+h-r);
+  ctx.lineTo(x, y+r);     ctx.quadraticCurveTo(x, y, x+r, y);
+  ctx.closePath();
+}
+
+// ── Draw: floor tile ──────────────────────────────────────────────────────────
+function drawFloorTile(tx, ty) {
+  const z = zoneAt(tx + 0.5, ty + 0.5);
+  const A = toS(tx,   ty);
+  const B = toS(tx+1, ty);
+  const C = toS(tx+1, ty+1);
+  const D = toS(tx,   ty+1);
+  ctx.beginPath();
+  ctx.moveTo(A.x, A.y); ctx.lineTo(B.x, B.y);
+  ctx.lineTo(C.x, C.y); ctx.lineTo(D.x, D.y);
+  ctx.closePath();
+  ctx.fillStyle   = z ? z.tile : '#1b1b24';
+  ctx.fill();
+  ctx.strokeStyle = z ? z.grid : '#222228';
+  ctx.lineWidth   = 0.6;
+  ctx.stroke();
+}
+
+// ── Draw: zone borders + labels ───────────────────────────────────────────────
+function drawZoneBorders() {
+  ZONES.forEach(z => {
+    const A = toS(z.minWx, z.minWy);
+    const B = toS(z.maxWx, z.minWy);
+    const C = toS(z.maxWx, z.maxWy);
+    const D = toS(z.minWx, z.maxWy);
+    ctx.beginPath();
+    ctx.moveTo(A.x, A.y); ctx.lineTo(B.x, B.y);
+    ctx.lineTo(C.x, C.y); ctx.lineTo(D.x, D.y);
+    ctx.closePath();
+    ctx.strokeStyle = z.border;
+    ctx.lineWidth   = 1.8;
+    ctx.globalAlpha = 0.5;
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+
+    const mid = toS((z.minWx + z.maxWx) / 2, (z.minWy + z.maxWy) / 2);
+    ctx.font = 'bold 10px monospace';
+    ctx.textAlign    = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle    = z.border;
+    ctx.globalAlpha  = 0.45;
+    ctx.fillText(z.name, mid.x, mid.y + 2);
+    ctx.globalAlpha  = 1;
+  });
+}
+
+// ── Draw: desk (isometric box) ────────────────────────────────────────────────
+function drawDesk(wx, wy) {
+  const W = 0.75, D = 0.48, PH = 14;
+  const A = toS(wx,     wy);
+  const B = toS(wx + W, wy);
+  const C = toS(wx + W, wy + D);
+  const Dp = toS(wx,    wy + D);
+
+  // top face
+  ctx.beginPath();
+  ctx.moveTo(A.x, A.y - PH); ctx.lineTo(B.x, B.y - PH);
+  ctx.lineTo(C.x, C.y - PH); ctx.lineTo(Dp.x, Dp.y - PH);
+  ctx.closePath();
+  ctx.fillStyle = '#52392a'; ctx.fill();
+  ctx.strokeStyle = '#6a4d38'; ctx.lineWidth = 0.5; ctx.stroke();
+
+  // right face
+  ctx.beginPath();
+  ctx.moveTo(B.x, B.y - PH); ctx.lineTo(C.x, C.y - PH);
+  ctx.lineTo(C.x, C.y);       ctx.lineTo(B.x, B.y);
+  ctx.closePath(); ctx.fillStyle = '#2d1f14'; ctx.fill();
+
+  // left face
+  ctx.beginPath();
+  ctx.moveTo(Dp.x, Dp.y - PH); ctx.lineTo(C.x, C.y - PH);
+  ctx.lineTo(C.x, C.y);         ctx.lineTo(Dp.x, Dp.y);
+  ctx.closePath(); ctx.fillStyle = '#3e2b1c'; ctx.fill();
+
+  // monitor
+  const mp = toS(wx + 0.25, wy + 0.08);
+  ctx.fillStyle = '#181818';
+  ctx.fillRect(mp.x - 9, mp.y - PH - 18, 18, 13);
+  ctx.fillStyle = '#0d2244';
+  ctx.fillRect(mp.x - 8, mp.y - PH - 17, 16, 11);
+}
+
+// ── Draw: Roblox-style character ──────────────────────────────────────────────
+function drawCharacter(agent) {
+  const { sx, sy, color, name, isWalking, walkPhase, bobTime, id, dept } = agent;
+  const isSel = selectedAgent && selectedAgent.id === id;
+  const bob   = Math.sin(bobTime) * 2.2;
+  const yB    = sy + bob;
+  const ls    = isWalking ? Math.sin(walkPhase) * 5 : 0;
+  const as    = isWalking ? Math.sin(walkPhase) * 3.5 : 0;
+  const dColor = ZONES.find(z => z.id === dept)?.border || color;
+
+  // Shadow
+  ctx.save();
+  ctx.globalAlpha = 0.25;
+  ctx.beginPath();
+  ctx.ellipse(sx, sy + 3, 11, 5, 0, 0, Math.PI * 2);
+  ctx.fillStyle = '#000'; ctx.fill();
+  ctx.restore();
+
+  // Selection glow ring
+  if (isSel) {
+    ctx.save();
+    ctx.globalAlpha = 0.7;
+    ctx.beginPath();
+    ctx.arc(sx, yB - 20, 17, 0, Math.PI * 2);
+    ctx.strokeStyle = '#FFD700'; ctx.lineWidth = 2.5; ctx.stroke();
+    ctx.restore();
+  }
+
+  // Legs (left, right)
+  ctx.fillStyle = hexDarken(color, 0.55);
+  ctx.fillRect(sx - 5, yB - 10, 4, 8 + ls);   // left leg
+  ctx.fillRect(sx + 1, yB - 10, 4, 8 - ls);   // right leg
+
+  // Body
+  ctx.fillStyle = color;
+  ctx.fillRect(sx - 6, yB - 22, 12, 12);
+
+  // Arms
+  ctx.fillStyle = hexDarken(color, 0.75);
+  ctx.fillRect(sx - 10, yB - 22 + as,  4, 9); // left arm
+  ctx.fillRect(sx +  6, yB - 22 - as,  4, 9); // right arm
+
+  // Neck
+  ctx.fillStyle = '#DDAA70';
+  ctx.fillRect(sx - 2, yB - 26, 4, 4);
+
+  // Head
+  ctx.fillStyle = '#EEC890';
+  ctx.fillRect(sx - 6, yB - 36, 12, 10);
+
+  // Eyes
+  ctx.fillStyle = '#1a1a1a';
+  ctx.fillRect(sx - 4, yB - 33, 3, 3);
+  ctx.fillRect(sx + 1, yB - 33, 3, 3);
+  // Shine
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(sx - 3, yB - 33, 1, 1);
+  ctx.fillRect(sx + 2, yB - 33, 1, 1);
+
+  // Hat brim
+  ctx.fillStyle = dColor;
+  ctx.fillRect(sx - 7, yB - 38, 14, 2.5);
+  // Hat top
+  ctx.fillStyle = hexDarken(dColor, 0.75);
+  ctx.fillRect(sx - 5, yB - 44, 10, 6);
+
+  // Name label (pill)
+  ctx.font = 'bold 9px Segoe UI';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  const tw = ctx.measureText(name).width;
+  const lw = tw + 10, lh = 14;
+  const lx = sx, ly = yB - 52;
+  roundRect(lx - lw/2, ly - lh/2, lw, lh, 5);
+  ctx.fillStyle = 'rgba(0,0,0,0.82)'; ctx.fill();
+  ctx.fillStyle = '#eee';
+  ctx.fillText(name, lx, ly);
+
+  // store approx screen center for click detection
+  agent._cy = yB - 20;
+}
+
+// ── Zone agent movement bounds ────────────────────────────────────────────────
+function randomTargetInZone(agent) {
+  const z = ZONES.find(z => z.id === agent.dept) || ZONES[3];
+  const pad = 0.6;
+  return {
+    wx: z.minWx + pad + Math.random() * (z.maxWx - z.minWx - 2 * pad),
+    wy: z.minWy + pad + Math.random() * (z.maxWy - z.minWy - 2 * pad)
+  };
+}
+
+// ── Update ────────────────────────────────────────────────────────────────────
+const SPEED = 0.85;
+
+function update(dt) {
+  AGENTS.forEach(a => {
+    a.bobTime += dt * 3.2;
+
+    if (a.waitTimer > 0) {
+      a.waitTimer -= dt;
+      a.isWalking = false;
+      if (a.waitTimer <= 0) {
+        const t = randomTargetInZone(a);
+        a.targetWx = t.wx; a.targetWy = t.wy;
+      }
+    } else {
+      const dx = a.targetWx - a.wx;
+      const dy = a.targetWy - a.wy;
+      const d  = Math.sqrt(dx*dx + dy*dy);
+      if (d < 0.05) {
+        a.wx = a.targetWx; a.wy = a.targetWy;
+        a.isWalking = false;
+        a.waitTimer = 3 + Math.random() * 5;
+      } else {
+        const step = Math.min(SPEED * dt, d);
+        a.wx += (dx / d) * step;
+        a.wy += (dy / d) * step;
+        a.isWalking = true;
+        a.walkPhase += dt * 9;
+      }
+    }
+
+    const s = toS(a.wx, a.wy);
+    a.sx = s.x; a.sy = s.y;
+  });
+}
+
+// ── Draw ──────────────────────────────────────────────────────────────────────
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Background gradient
+  const bg = ctx.createLinearGradient(0, 0, 0, canvas.height);
+  bg.addColorStop(0, '#17172a');
+  bg.addColorStop(1, '#1a1a1a');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Floor (depth-sorted: back-to-front)
+  for (let s = 0; s <= 18; s++) {
+    for (let x = Math.max(0, s - 9); x <= Math.min(9, s); x++) {
+      const y = s - x;
+      if (y < 0 || y > 9) continue;
+      drawFloorTile(x, y);
+    }
+  }
+
+  // Zone borders
+  drawZoneBorders();
+
+  // Company label (above top tile)
+  const topPos = toS(5, 0);
+  ctx.font = '11px monospace';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#445';
+  ctx.fillText('CNC FURNITURE STUDIO', topPos.x, topPos.y - 18);
+
+  // Desks (depth sorted)
+  [...DESKS].sort((a, b) => (a.wx + a.wy) - (b.wx + b.wy))
+    .forEach(d => drawDesk(d.wx, d.wy));
+
+  // Agents (depth sorted)
+  [...AGENTS].sort((a, b) => (a.wx + a.wy) - (b.wx + b.wy))
+    .forEach(drawCharacter);
+}
+
+// ── Main loop ─────────────────────────────────────────────────────────────────
+let lastT = 0, fpsT = 0, fpsN = 0;
+
+function loop(now) {
+  const dt = Math.min((now - lastT) / 1000, 0.1);
+  lastT = now;
+
+  fpsN++; fpsT += dt;
+  if (fpsT >= 0.5) {
+    document.getElementById('fps').textContent = Math.round(fpsN / fpsT) + ' fps';
+    fpsN = 0; fpsT = 0;
+  }
+
+  updateOrigin();
+  update(dt);
+  draw();
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(t => { lastT = t; requestAnimationFrame(loop); });
+
+// ── Click detection ───────────────────────────────────────────────────────────
+canvas.addEventListener('click', e => {
+  const r  = canvas.getBoundingClientRect();
+  const mx = e.clientX - r.left;
+  const my = e.clientY - r.top;
+  let best = 30, hit = null;
+  AGENTS.forEach(a => {
+    const d = Math.hypot(a.sx - mx, (a._cy || a.sy) - my);
+    if (d < best) { best = d; hit = a; }
+  });
+  if (hit) openChat(hit);
+});
+
+// ── Hover tooltip ─────────────────────────────────────────────────────────────
+const tip = document.getElementById('tip');
+canvas.addEventListener('mousemove', e => {
+  const r  = canvas.getBoundingClientRect();
+  const mx = e.clientX - r.left;
+  const my = e.clientY - r.top;
+  let found = null;
+  AGENTS.forEach(a => {
+    if (Math.hypot(a.sx - mx, (a._cy || a.sy) - my) < 26) found = a;
+  });
+  if (found) {
+    tip.style.display = 'block';
+    tip.style.left    = (e.clientX + 14) + 'px';
+    tip.style.top     = (e.clientY - 12) + 'px';
+    const shortModel  = found.model.replace('claude-','').replace('-20251001','');
+    tip.textContent   = found.name + '  ·  ' + found.role + '  [' + shortModel + ']';
+  } else {
+    tip.style.display = 'none';
+  }
+});
+canvas.addEventListener('mouseleave', () => { tip.style.display = 'none'; });
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+document.title = 'CNC AI Office — ' + AGENTS.length + ' agents';
+document.getElementById('agent-count').textContent = AGENTS.length + ' agents';
+
+// Discover Ollama models on start, refresh every 30 s
+loadOllamaModels();
+setInterval(loadOllamaModels, 30_000);
+</script>
+</body>
+</html>

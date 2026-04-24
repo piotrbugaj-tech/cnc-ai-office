@@ -1,0 +1,4 @@
+.DS_Store
+office/node_modules/
+office/.env
+*.log
