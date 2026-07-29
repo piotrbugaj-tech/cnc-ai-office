@@ -2,3 +2,5 @@
 office/node_modules/
 office/.env
 *.log
+__pycache__/
+*.pyc
