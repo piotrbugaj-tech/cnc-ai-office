@@ -216,6 +216,45 @@ def view_right():
     return (svg_open("-260 -140 900 2450", "Widok z prawej") + "".join(g) + "</svg>")
 
 
+# ---------------------------------------------------------------- rozmieszczenie srub
+
+def view_bolts():
+    """Elewacja frontowa - dokladne (X, Z) kazdego zlacza srubowego.
+
+    Y (glebokosc) nie da sie pokazac w elewacji froncie - stad liczba przy
+    kazdym znaczniku (ile srub przechodzi przez ten pion na tej wysokosci)
+    i odeslanie do widoku z prawej / rzutu z gory po dokladne pozycje Y.
+    """
+    H, W = P["H"], P["W"]
+
+    def fy(z):
+        return H - z
+
+    _K[0] = 2.0
+    clusters = {}
+    for x, y, z, direction in m.bolt_positions():
+        key = (round(x, 1), round(z, 1))
+        clusters[key] = clusters.get(key, 0) + 1
+
+    g = [rect(0, fy(H), W, fy(0), CAV)]
+    for part in m.build_parts():
+        if part.kind not in ("vertical", "shelf"):
+            continue
+        x0, _, z0, x1, _, z1 = part.bbox()
+        g.append(rect(x0, fy(z1), x1, fy(z0), PLY))
+
+    for (x, z), n in clusters.items():
+        cy = fy(z)
+        g.append('<circle cx="%.2f" cy="%.2f" r="30" fill="var(--surface)" '
+                  'stroke="%s" stroke-width="3" vector-effect="non-scaling-stroke"/>'
+                  % (x, cy, ACC))
+        g.append(text(x, cy + 19, str(n), 36, ACC, weight="700"))
+
+    g.append(dim_v(fy(H), fy(0), -60, "2000"))
+    g.append(dim_h(0, W, fy(0) + 190, "1800"))
+    return (svg_open("-260 -140 2340 2450", "Rozmieszczenie srub") + "".join(g) + "</svg>")
+
+
 # ================================================================ strona
 
 CSS = """
@@ -304,12 +343,14 @@ button[aria-pressed="true"]{color:#0e1216;background:#c9d4db;border-color:#c9d4d
 .draw{display:grid;grid-template-columns:1fr;gap:1px;background:var(--edge);
       border:1px solid var(--edge)}
 @media(min-width:820px){.draw{grid-template-columns:1.35fr 1fr}
-  .plan{grid-column:1/-1}}
+  .plan,.wide{grid-column:1/-1}}
 .sheet{background:var(--surface);padding:20px}
 .sheet h3{font-family:var(--mono);font-size:10px;letter-spacing:.16em;
           text-transform:uppercase;color:var(--ink-2);margin:0 0 14px;font-weight:500}
 .sheet svg{width:100%;height:auto;max-height:520px;display:block}
+.figcap{font-size:12px;color:var(--ink-2);margin:-6px 0 14px;max-width:70ch}
 .plan .sheet svg{max-height:300px}
+.wide .sheet svg{max-height:640px;width:auto;max-width:100%;margin:0 auto;display:block}
 
 /* --- tabele --- */
 .tw{overflow-x:auto;border:1px solid var(--edge)}
@@ -686,6 +727,11 @@ def build_html(n_tests):
     <div class="plan"><div class="sheet"><h3>Rzut z gory &middot; poziom polki</h3>%s</div></div>
     <div class="sheet"><h3>Widok z przodu</h3>%s</div>
     <div class="sheet"><h3>Widok z prawej &middot; wrab oporowy i sruby</h3>%s</div>
+    <div class="wide"><div class="sheet"><h3>Rozmieszczenie srub M6 (60 szt., 30 zlacz)</h3>
+    <p class="figcap">Kazdy znacznik = jeden pion na tej wysokosci; liczba = ile srub
+    przez niego przechodzi (2 z jednej strony, 4 gdy dwie polki spotykaja sie na tym
+    samym pionie z obu stron). Dokladne pozycje w glab (Y) sa w widoku z prawej
+    i w rzucie z gory.</p>%s</div></div>
   </div>
 </section>
 
@@ -711,7 +757,7 @@ na %d elementach) &middot; skrypt do Blendera: build_shelf_blender.py</p>
 
 </div>
 <script>%s</script>
-""" % (CSS, stat_html, layer_btns, view_plan(), view_front(), view_right(),
+""" % (CSS, stat_html, layer_btns, view_plan(), view_front(), view_right(), view_bolts(),
        table, notes_html, n_tests, n_tests, len(parts), js)
 
 
