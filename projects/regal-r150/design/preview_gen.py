@@ -281,11 +281,16 @@ def view_bolts():
 # ---------------------------------------------------------------- cokol
 
 def view_plinth():
-    """Rzut z gory na cokol - cofniecie od scian pod listwe przypodlogowa.
+    """Rzut z gory na cokol - cofniecie 22 mm od krawedzi korpusu na
+    wszystkich czterech bokach (runda 5, na zyczenie klienta - zastapilo
+    dawna asymetrie z rundy 4: 0 mm z przodu/lewej, 20 mm z tylu/prawej).
 
-    Przerywany obrys = footprint korpusu tuz nad cokolem, dla porownania jak
-    daleko cokol jest cofniety. Ciagly czerwony obrys = sylwetka listwy
-    przypodlogowej wzdluz obu scian (tyl + prawy bok), dla kontekstu.
+    Przerywany obrys = footprint korpusu tuz nad cokolem (dno - teraz jedna
+    plyta pelnej szerokosci, runda 5 - stad wciecia przy pionach
+    posrednich), dla porownania jak daleko cokol jest cofniety. Ciagly
+    czerwony obrys = sylwetka listwy przypodlogowej wzdluz obu scian
+    (tyl + prawy bok), dla kontekstu - PLINTH_INSET (22 mm) > SKIRTING_DEPTH
+    (20 mm), wiec cokol nadal ja omija.
     """
     Dp, W, R = P["D"], P["W"], P["R"]
 
@@ -327,11 +332,13 @@ def view_plinth():
     g.append('<g transform="translate(%.2f,%.2f) rotate(-90)">%s</g>'
              % (fx(W - sd) - 14, fy(Dp / 2.0), text(0, 0, "listwa - prawa sciana", 30, ACC)))
 
+    inset = P["PLINTH_INSET"]
     g.append(dim_h(0, W, fy(0) + 96, "1800"))
     g.append(dim_v(fy(Dp), fy(0), -52, "400"))
     g.append(dim_h(W - sd, W, fy(0) + 46, "20"))
     g.append(dim_v(fy(Dp), fy(Dp - sd), -110, "20"))
-    g.append(dim_h(0, P["PLINTH_FRAME_W"], fy(0) + 146, "70"))
+    g.append(dim_h(0, inset, fy(0) + 146, "22"))
+    g.append(dim_h(inset, inset + P["PLINTH_FRAME_W"], fy(0) + 196, "70"))
 
     return (svg_open("-190 -120 2140 700", "Rzut cokolu") + "".join(g) + "</svg>")
 
@@ -707,6 +714,7 @@ def build_html(n_tests):
         "vertical-mid": "Piony posrednie (mid-1, mid-2)",
         "vertical-R-side": "Prawy bok",
         "vertical-L-gable": "Lewy bok &middot; grzbiet + zeby (wrab)",
+        "shelf-full": "Dno / wieniec &middot; jedna plyta pelnej szerokosci",
         "shelf-B0": "Polki + nos &middot; przeslo 1 (scalone)",
         "shelf-B1": "Polki &middot; przeslo 2",
         "shelf-B2": "Polki &middot; przeslo 3 (przy prawym boku)",
@@ -752,19 +760,35 @@ def build_html(n_tests):
         ("q", "Zlacze plyta-wrab (nos) nie ma na razie zadnego mocowania.",
          "Plyta siedzi w wrebie na wcisk, bez srub. Do rozstrzygniecia w rundzie "
          "dokumentacji: sruby retencyjne przez grzbiet, czy wystarczy tarcie."),
-        ("q", "Rama cokolu 70 mm — moj dobor, wymaga przegladu.",
+        ("q", "Rama cokolu 70 mm, cofnieta 22 mm — oba wymiary to moj dobor.",
          "Cokol to rama (nie plyta pelna): lewa/tylna/prawa/przednia szyna 70 mm "
-         "szerokosci + zaokraglony naroznik pod noskiem, ten sam luk R150 co korpus "
+         "szerokosci, cofnieta 22 mm od krawedzi korpusu na wszystkich czterech bokach "
+         "(Twoja decyzja co do samego cofniecia — 22 mm > 20 mm listwy, wiec nadal ja "
+         "omija), plus zaokraglony naroznik pod noskiem, ten sam luk R150 co korpus "
          "powyzej — inaczej prostokatna rama wystawalaby poza zaokraglony nawis. "
          "Szerokosc szyn (70 mm) to moj dobor konstrukcyjny, nie Twoja specyfikacja — "
          "do potwierdzenia przez joinery-specialist przed cieciem."),
         ("q", "Prawy bok nie ma wlasnego oparcia w cokole w tym miejscu.",
-         "Cokol jest cofniety 20 mm od tylnej i prawej sciany (pod listwe), ale prawy "
-         "bok pionu stoi dokladnie na tym cofnieciu — korpus tam odrobine nawisa nad "
-         "pusta przestrzenia zamiast siedziec wprost na ramie. Normalne przy cokole "
-         "chowajacym sie pod listwe, ale warto to swiadomie zaakceptowac."),
-        ("w", "Masa netto %.0f kg (101 kg w rundzie 2, 107 kg w rundzie 1)." % s["mass_kg"],
-         "Wzrost obejmuje teraz tez cokol (5 nowych brol). Montaz w dwie osoby "
+         "Cokol jest cofniety 22 mm od tylnej i prawej sciany, ale prawy bok pionu stoi "
+         "18 mm dalej niz to cofniecie (4 mm szczeliny + cala grubosc pionu) — korpus "
+         "tam odrobine nawisa nad pusta przestrzenia zamiast siedziec wprost na ramie. "
+         "Normalne przy cokole chowajacym sie pod listwe, ale warto to swiadomie "
+         "zaakceptowac."),
+        ("q", "Dno i wieniec — jedna plyta pelnej szerokosci (Twoja decyzja, runda 5).",
+         "Usztywnienie: dno i wieniec przechodza teraz przez mid-1 i mid-2 tym samym "
+         "wrebem przelotowym stop-notch co lewy bok (otwarte na 310 mm od frontu, "
+         "grzbiet 86 mm z tylu) — sprawdzona juz technika, zastosowana teraz dodatkowo "
+         "na tych dwoch pionach. Skutek uboczny: na tych dwoch poziomach mid-1/mid-2 "
+         "nie maja juz srub (zlacze wrebowe, nie skrecane) — to czesciowo lagodzi blokada "
+         "z ponizej (16 z 48 srub bez dostepu dla lba znikneto razem z rabetem)."),
+        ("w", "[BLOKER] 32 z 44 srub nadal bez miejsca na leb — nierozwiazane.",
+         "Na czterech srodkowych poziomach mid-1/mid-2 nadal maja wrab oporowy z obu "
+         "stron na tej samej wysokosci, wiec leb sruby M6 nie ma na czym usiasc "
+         "(patrz design/joinery-notes.md &sect;1). Zbliżenie na mocowanie czeka na "
+         "decyzje joinery-specialist co do jednego z czterech wariantow naprawy."),
+        ("w", "Masa netto %.0f kg (104,6 kg w rundzie 4, 101 kg w rundzie 2)." % s["mass_kg"],
+         "Lekki spadek mimo cokolu wynika z otwartych (bez materialu) wrebow "
+         "przelotowych w dnie/wiencu zamiast pelnych progow. Montaz w dwie osoby "
          "przy 1800 &times; %.0f mm." % (P["H"] + P["PLINTH_H"])),
         ("i", "Korpus skurczyl sie do %.0f mm, zeby calosc zmiescila sie w 2000 mm." % P["H"],
          "Wybrales „zmiescic sie w 2000 mm total”, wiec swiatlo miedzypolkowe zmienilo "
@@ -782,14 +806,17 @@ def build_html(n_tests):
 <div class="wrap">
 
 <header>
-  <p class="eyebrow">CNC Furniture Studio &middot; runda 4 &middot; bryla do oceny</p>
+  <p class="eyebrow">CNC Furniture Studio &middot; runda 5 &middot; bryla do oceny</p>
   <h1>Regal R150</h1>
   <p class="lede">Sklejka brzozowa 18 mm, ciecie CNC na gotowo, montaz rozbieralny na
   sruby M6 w mimosrod (gwint zenski, nie wkret) — bez czopow, tylko wiercone otwory
-  i plytki wrab oporowy pod kazda polka. Stoi na cokole 100 mm, cofnietym od sciany
-  pod listwe przypodlogowa (tyl i prawy bok regalu przylegaja do sciany). Przedni
-  lewy narozik zaobolony promieniem 150 mm, bez poszycia gietego. Ponizej geometria
-  do obejrzenia &mdash; dokumentacja produkcyjna powstaje po Twojej akceptacji.</p>
+  i plytki wrab oporowy pod kazda polka. Dno i wieniec sa teraz jedna plyta pelnej
+  szerokosci (usztywnienie), przechodzaca przez piony posrednie wrebem przelotowym
+  jak lewy bok. Stoi na cokole 100 mm, cofnietym 22 mm od krawedzi korpusu na
+  wszystkich czterech bokach (tyl i prawy bok regalu przylegaja do sciany, pod
+  listwe przypodlogowa). Przedni lewy narozik zaobolony promieniem 150 mm, bez
+  poszycia gietego. Ponizej geometria do obejrzenia &mdash; dokumentacja
+  produkcyjna powstaje po Twojej akceptacji.</p>
 </header>
 
 <section>
@@ -828,11 +855,12 @@ def build_html(n_tests):
     <p class="figcap">Cienki czerwony prostokat przy podlodze = sylwetka listwy
     przypodlogowej. Cokol jest tu cofniety, wiec korpus odrobine nawisa nad pusta
     przestrzenia w tym rogu — patrz „Rzut cokolu" nizej.</p>%s</div>
-    <div class="wide"><div class="sheet"><h3>Rozmieszczenie srub M6 (60 szt., 30 zlacz)</h3>
+    <div class="wide"><div class="sheet"><h3>Rozmieszczenie srub M6 (%d szt.)</h3>
     <p class="figcap">Kazdy znacznik = jeden pion na tej wysokosci; liczba = ile srub
     przez niego przechodzi (2 z jednej strony, 4 gdy dwie polki spotykaja sie na tym
-    samym pionie z obu stron). Dokladne pozycje w glab (Y) sa w widoku z prawej
-    i w rzucie z gory.</p>%s</div></div>
+    samym pionie z obu stron). Dno i wieniec bez znacznikow na pionach posrednich -
+    to teraz jedna plyta pelnej szerokosci, zlacze wrebowe jak lewy bok (runda 5).
+    Dokladne pozycje w glab (Y) sa w widoku z prawej i w rzucie z gory.</p>%s</div></div>
     <div class="plan"><div class="sheet"><h3>Rzut cokolu &middot; cofniecie od scian</h3>
     <p class="figcap">Przerywany szary obrys = footprint korpusu tuz nad cokolem.
     Przerywany czerwony obrys = sylwetka listwy przypodlogowej wzdluz obu scian
@@ -852,8 +880,9 @@ def build_html(n_tests):
 
 <section>
   <div class="hdr"><h2><span class="num">04</span>Do rozstrzygniecia</h2>
-  <p class="sub">Piec decyzji wymagajacych przegladu przed cieciem, jedno ryzyko
-  do potwierdzenia i jedna zmiana, o ktorej warto wiedziec.</p></div>
+  <p class="sub">Szesc decyzji wymagajacych przegladu przed cieciem, dwa ryzyka
+  do potwierdzenia (jeden to blokujacy problem z lbami srub) i jedna zmiana,
+  o ktorej warto wiedziec.</p></div>
   <div class="notes">%s</div>
 </section>
 
@@ -863,8 +892,8 @@ na %d elementach) &middot; skrypt do Blendera: build_shelf_blender.py</p>
 
 </div>
 <script>%s</script>
-""" % (CSS, stat_html, layer_btns, view_plan(), view_front(), view_right(), view_bolts(),
-       view_plinth(), table, notes_html, n_tests, n_tests, len(parts), js)
+""" % (CSS, stat_html, layer_btns, view_plan(), view_front(), view_right(), s["n_bolts"],
+       view_bolts(), view_plinth(), table, notes_html, n_tests, n_tests, len(parts), js)
 
 
 def main():

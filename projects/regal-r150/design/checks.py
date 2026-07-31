@@ -190,11 +190,18 @@ def run():
             else "%d kolizji, np. %s" % (len(collisions), collisions[:3]))
 
     # --- 5. polka siada plasko na progu wrebu oporowego, bez szczeliny ----
+    # (dno i wieniec - runda 5 - sa jedna plyta na cala szerokosc, wiec nie
+    # maja named shelf-L*-B* czesci na srodkowych pionach - pomijamy je tu,
+    # sprawdzane osobno nizej razem z wrebem przelotowym mid-1/mid-2)
     xs = d["vertical_x"]
     rd = p["RABBET_DEPTH"]
     by_name = {q.name: q for q in parts}
+    top_level = p["N_LEVELS"] - 1
+    full_width_levels = {0, top_level}
     gaps = []
     for li in range(p["N_LEVELS"]):
+        if li in full_width_levels:
+            continue
         for b in range(p["N_BAYS"]):
             shelf = by_name["shelf-L%d-B%d" % (li, b)]
             xl, xr = shelf.bbox()[0], shelf.bbox()[3]
@@ -205,12 +212,48 @@ def run():
     r.check("polki siadaja na progu wrebu bez szczeliny", not gaps,
             "wszystkie krawedzie na spodziewanym X" if not gaps else str(gaps[:3]))
 
+    # --- 5b. dno/wieniec (plyta pelnej szerokosci) omijaja grzbiety pionow
+    # posrednich dokladnie tam, gdzie te piony maja wrab przelotowy (runda 5)
+    nd = p["NOTCH_DEPTH"]
+    full_gaps = []
+    for li in full_width_levels:
+        shelf = by_name["shelf-L%d-full" % li]
+        xr = shelf.bbox()[3]
+        # lewa krawedz to luk R150 (siega az do x=0) - sprawdzone juz przez
+        # testy stycznosci luku wyzej; tu tylko prawa krawedz (wrab R-side)
+        if abs(xr - (xs[3] + rd)) > TOL:
+            full_gaps.append(("shelf-L%d-full" % li, "prawa krawedz", xr))
+        prof = shelf.geom["profile"]
+        for gx0 in (xs[0], xs[1], xs[2]):
+            gx1 = gx0 + p["T"]
+            notch_pts = [q for q in prof if gx0 - TOL <= q[0] <= gx1 + TOL
+                         and abs(q[1] - nd) < TOL]
+            if len(notch_pts) < 2:
+                full_gaps.append(("shelf-L%d-full" % li, "brak wciecia przy x=%.0f" % gx0, None))
+    r.check("dno/wieniec omijaja grzbiety wszystkich trzech pionow posrednich",
+            not full_gaps,
+            "obie plyty pelnej szerokosci maja poprawne wciecia" if not full_gaps
+            else str(full_gaps[:3]))
+
     # --- 6. sruby w granicach glebokosci polki --------------------------
     bad_y = [y for y in list(p["BOLT_Y_LEFT"]) + list(p["BOLT_Y_RIGHT"])
              if not (0 < y < d["frame_depth"])]
     r.check("sruby M6 w granicach glebokosci polki", not bad_y,
             "4 sruby na zlacze, y = %s" % (list(p["BOLT_Y_LEFT"]) + list(p["BOLT_Y_RIGHT"]))
             if not bad_y else str(bad_y))
+
+    # --- 6b. dno/wieniec (runda 5) bez srub na mid-1/mid-2 - to teraz
+    # zlacze wrebowe jak lewy bok, nie skrecane; prawy bok bez zmian ---
+    bolts = m.bolt_positions(p, d)
+    xs_mid = {round(xs[1] + p["T"] / 2.0, 3), round(xs[2] + p["T"] / 2.0, 3)}
+    full_z = {round(d["level_z"][li] + p["T"] / 2.0 + p["PLINTH_H"], 3)
+              for li in full_width_levels}
+    stray = [b for b in bolts if round(b[0], 3) in xs_mid and round(b[2], 3) in full_z]
+    expected_n = 60 - 2 * 2 * 4   # 4 sruby x 2 piony x 2 poziomy usuniete
+    r.check("brak srub na mid-1/mid-2 przy dnie/wiencu, %d srub lacznie" % expected_n,
+            not stray and len(bolts) == expected_n,
+            "%d srub, 0 na mid-1/mid-2 przy dnie/wiencu" % len(bolts) if not stray
+            else "%d bledne pozycje / %d srub lacznie" % (len(stray), len(bolts)))
 
     # --- 7. wymogi CLAUDE.md -------------------------------------------
     ok_grain = [q for q in parts if q.grain not in ("longitudinal", "crosswise", "free")]
@@ -264,6 +307,13 @@ def run():
             not over_r,
             "wszystkie punkty naroznika <= R%.0f" % p["R"]
             if not over_r else "wystaje %d punktow, np. %s" % (len(over_r), over_r[:2]))
+
+    # --- 11b. cofniecie cokolu (runda 5) omija listwe przypodlogowa -------
+    margin = p["PLINTH_INSET"] - p["SKIRTING_DEPTH"]
+    r.check("cofniecie cokolu (%.0f mm) >= glebokosc listwy (%.0f mm)"
+            % (p["PLINTH_INSET"], p["SKIRTING_DEPTH"]),
+            margin >= 0,
+            "%.0f mm zapasu" % margin if margin >= 0 else "%.0f mm za malo" % -margin)
 
     # --- 12. korpus siada dokladnie na gorze cokolu, bez szczeliny -------
     plinth_top = p["PLINTH_H"]

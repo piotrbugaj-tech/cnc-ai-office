@@ -1,22 +1,25 @@
 # Regał R150 — decyzje stolarskie
 
 Zgodnie z CLAUDE.md § 9 — dokumentacja decyzji technicznych.
-Runda 4: cokół pod ścianę z listwą przypodłogową. Wymiary otworów wchodzą do
-DXF w kolejnej rundzie.
+Runda 5: cokół cofnięty jednolicie na wszystkich bokach + dno/wieniec jako
+jedna płyta pełnej szerokości. Wymiary otworów wchodzą do DXF w kolejnej
+rundzie.
 
 ## Status
 
 Bryła czeka na akceptację. Stolarka poniżej jest zamodelowana i przetestowana
-geometrycznie (16/16 testów w `checks.py`, w tym zero kolizji na 66
+geometrycznie (19/19 testów w `checks.py`, w tym zero kolizji na 62
 elementach, bez żadnych wyjątków w teście kolizji), ale **nie została jeszcze
 zwalidowana przez `qa-inspector` ani `safety-officer`**.
 
-**Sekcje 1, 2 i 3 wymagają przeglądu przed cięciem** — konkretne wymiary
+**Sekcje 1, 2, 3 i 4 wymagają przeglądu przed cięciem** — konkretne wymiary
 (głębokość wrębu oporowego 5 mm; otwarcie 310 mm / grzbiet 86 mm w lewym
-boku; szerokość ramy cokołu 70 mm) to moje techniczne rozwinięcie decyzji
-klienta, nie jego dosłowna specyfikacja w milimetrach. **Sekcja 3 ma
-dodatkowo nierozwiązany problem konstrukcyjny — rama cokołu jest dziś bryłą
-pełną, nie realnymi płytami 18 mm — patrz niżej.**
+boku i teraz też w mid-1/mid-2 na dwóch poziomach; szerokość ramy cokołu
+70 mm) to moje techniczne rozwinięcie decyzji klienta, nie jego dosłowna
+specyfikacja w milimetrach. **Sekcja 3 ma dodatkowo nierozwiązany problem
+konstrukcyjny — rama cokołu jest dziś bryłą pełną, nie realnymi płytami
+18 mm — patrz niżej. Sekcja 1 ma nierozwiązany BLOKER — łeb śruby M6 nie ma
+gdzie usiąść na 32 z 44 śrub.**
 
 ## 1. Złącze półka ↔ pion (piony pośrednie i prawy bok) — runda 3: bez czopów
 
@@ -91,11 +94,15 @@ albo wewnątrz wpustu półki lewej, albo wewnątrz prawej. Różne Y (140/200 d
 `+x`, 320/380 dla `-x`) rozwiązują kolizję śruba–śruba, ale nie dają dostępu
 dla łba.
 
-**Skala:** 48 z 60 śrub (piony `mid-1` i `mid-2`, po 8 na poziom × 6 poziomów).
-Pozostałe 12 (prawy bok, po 2 na poziom) są **czyste** — wrąb jest tam tylko
-na licu wewnętrznym, rdzeń ma 13 mm, a lico zewnętrzne zostaje płaskie na
-całej wysokości, więc łeb siada na nim normalnie. Uwaga eksploatacyjna: to
-lico stoi przy ścianie, więc demontaż wymaga wcześniejszego odsunięcia regału.
+**Skala (po rundzie 5):** 32 z 44 śrub (piony `mid-1` i `mid-2`, po 8 na
+poziom × 4 **środkowe** poziomy). Dno i wieniec (poziom 0 i 5) nie mają już
+w ogóle śrub na `mid-1`/`mid-2` — runda 5 zmieniła tam złącze na wrąb
+przelotowy stop-notch (jak lewy bok), więc problem zniknął razem z rabetem
+na tych dwóch poziomach (16 śrub mniej). Pozostałe 12 (prawy bok, po 2 na
+poziom, wszystkie 6 poziomów) są **czyste** — wrąb jest tam tylko na licu
+wewnętrznym, rdzeń ma 13 mm, a lico zewnętrzne zostaje płaskie na całej
+wysokości, więc łeb siada na nim normalnie. Uwaga eksploatacyjna: to lico
+stoi przy ścianie, więc demontaż wymaga wcześniejszego odsunięcia regału.
 
 Model geometryczny jest **poprawny** — `bolt_positions()` zwraca same osie
 (linie środkowe), nie bryły łbów, więc `checks.py` nie miało czego wykryć.
@@ -118,6 +125,14 @@ jeszcze wybrany — to nie jest decyzja do podjęcia przy rysowaniu):
 
 Każdy z tych wariantów zmienia albo okucie, albo geometrię wrębu, albo
 kolejność montażu — czyli wykracza poza „dorysowanie detalu".
+
+**Runda 5 pokazuje, że wariant 4 (wrąb przelotowy zamiast oporowego) jest
+wykonalny w praktyce** — to dokładnie ta sama zmiana, zastosowana na dnie
+i wieńcu z innego powodu (usztywnienie, patrz sekcja 4). Nie rozstrzyga to
+jednak czterech środkowych poziomów: tam wrąb oporowy nadal jest potrzebny,
+bo półki tam pozostają osobnymi płytami na przęsło (klient nie prosił o ich
+scalenie), a wrąb przelotowy działa tylko wtedy, gdy przez pion przechodzi
+jedna ciągła płyta.
 
 ### Wymiary okucia, których nadal nie ma w modelu
 
@@ -224,31 +239,36 @@ listwa przypodłogowa 85 mm wysokości, 20 mm grubości (o tyle odstaje od
 
 ### Geometria ramy
 
-Cokół to **rama, nie pełna płyta** — obrys w rzucie z góry:
+**Runda 5 — klient poprosił o jednolite cofnięcie 22 mm na wszystkich
+czterech bokach** (zamiast asymetrii z rundy 4: 0 mm z przodu/lewej, tylko
+20 mm z tyłu/prawej). 22 mm > `SKIRTING_DEPTH` (20 mm), więc rama nadal
+omija listwę przypodłogową — 2 mm zapasu (sprawdzane automatycznie,
+`checks.py`).
+
+Cokół to **rama, nie pełna płyta** — obrys w rzucie z góry (`PLINTH_INSET`
+= 22 mm cofnięcia, `PLINTH_FRAME_W` = 70 mm szerokości szyn):
 
 | Element | Zasięg (X, Y) mm | Funkcja |
 |---|---|---|
-| `plinth-left` | 0–70, 150–310 | szyna pod lewym bokiem/nosem |
-| `plinth-back` | 0–1780, 310–380 | szyna pod tylną ścianą — cofnięta 20 mm od ściany |
-| `plinth-right` | 1710–1780, 0–310 | szyna pod prawym bokiem — cofnięta 20 mm od ściany |
-| `plinth-front` | 150–1710, 0–70 | szyna pod frontem |
-| `plinth-corner` | łuk R150 → R80 | narożnik, ten sam promień co korpus powyżej |
+| `plinth-left` | 22–92, 150–378 | szyna pod lewym bokiem/nosem |
+| `plinth-back` | 22–1778, 308–378 | szyna pod tylną ścianą |
+| `plinth-right` | 1708–1778, 22–308 | szyna pod prawym bokiem |
+| `plinth-front` | 150–1708, 22–92 | szyna pod frontem |
+| `plinth-corner` | łuk R128 → R58 | narożnik, wspólśrodkowy z korpusem, pomniejszony o 22 mm |
 
-Przy ścianach (tył, prawy bok) rama jest cofnięta o `SKIRTING_DEPTH` = 20 mm,
-żeby ominąć listwę.
-
-**Narożnik musi podążać za łukiem R150, nie może być prostokątny** —
-sprawdzone wprost: róg prostokątnej ramy (punkt (0,0)) leżałby 212 mm od
-środka łuku (150, 150), czyli 62 mm poza promieniem R150 korpusu powyżej.
-Prostokątny narożnik wystawałby więc poza zaokrąglony nawis korpusu.
-Rozwiązanie: `plinth-corner` to wycinek pierścienia między R150 (ten sam łuk
-co korpus) a R150 − 70 = R80, więc cokół nigdzie nie wychodzi poza obrys
-korpusu. Sprawdzane automatycznie (`checks.py`: „cokół mieści się pod łukiem
-R150").
+**Narożnik musi podążać za łukiem R150 (pomniejszonym o cofnięcie), nie może
+być prostokątny** — sprawdzone wprost: róg prostokątnej ramy (punkt (0,0))
+leżałby 212 mm od środka łuku (150, 150), czyli poza promieniem R150 korpusu
+powyżej. Prostokątny narożnik wystawałby więc poza zaokrąglony nawis
+korpusu. Rozwiązanie: `plinth-corner` to wycinek pierścienia między
+R150 − 22 = R128 (ten sam środek co łuk korpusu, pomniejszony o cofnięcie) a
+R128 − 70 = R58, więc cokół nigdzie nie wychodzi poza obrys korpusu.
+Sprawdzane automatycznie (`checks.py`: „cokół mieści się pod łukiem R150").
 
 **Szerokość ramy (70 mm, `PLINTH_FRAME_W`) to mój dobór inżynierski** — nie
 została podana wprost przez klienta. Typowy zakres dla cokołu meblowego to
 50–100 mm; 70 mm wybrane jako środek tego zakresu. Wymaga potwierdzenia.
+Samo cofnięcie (22 mm, `PLINTH_INSET`) to natomiast wprost decyzja klienta.
 
 ### Nierozwiązane — wymaga przeglądu joinery-specialist przed cięciem
 
@@ -267,36 +287,80 @@ została podana wprost przez klienta. Typowy zakres dla cokołu meblowego to
    liczona tą samą heurystyką „grubość = najmniejszy z trzech wymiarów", co
    przy bryle pełnej nie odpowiada żadnej z tych realnych konstrukcji.
 2. **Prawy bok wisi nad cokołem bez oparcia.** Prawy pion (`R-side`, lico
-   zewnętrzne x = 1782–1800) stoi 2 mm na zewnątrz od krawędzi `plinth-right`
-   (kończy się na x = 1780) — cały jego przekrój (18 mm) nie ma nic
-   bezpośrednio pod spodem na całej głębokości 396 mm, bo rama jest tu cofnięta
-   pod listwę. Obciążenie musi się przenieść bokiem, przez płytę dna, do
-   miejsca, gdzie rama faktycznie podpiera. Przy tym niewielkim wysięgu
-   (18–20 mm) to prawdopodobnie bez znaczenia, ale wymaga potwierdzenia przez
-   joinery-specialist/qa-inspector, nie założenia.
+   zewnętrzne x = 1782–1800) stoi 4 mm na zewnątrz od krawędzi `plinth-right`
+   (kończy się na x = 1778 po rundzie 5) — cały jego przekrój (18 mm) nie ma
+   nic bezpośrednio pod spodem na całej głębokości 396 mm, bo rama jest tu
+   cofnięta pod listwę. Obciążenie musi się przenieść bokiem, przez płytę
+   dna (od rundy 5 — dna, patrz sekcja 4), do miejsca, gdzie rama faktycznie
+   podpiera. Przy tym niewielkim wysięgu (18–22 mm) to prawdopodobnie bez
+   znaczenia, ale wymaga potwierdzenia przez joinery-specialist/qa-inspector,
+   nie założenia.
 3. **Korpus nie jest niczym przypięty do cokołu** — dziś tylko siada na górnej
    krawędzi ramy (sprawdzone automatycznie: brak szczeliny). Analogicznie do
    złącza wrąb ↔ płyta z sekcji 2: sam ciężar czy dodać śruby/kołki
    pozycjonujące między dnem korpusu a ramą?
 
-## 4. Słoje
+## 4. Dno i wieniec — runda 5: jedna płyta pełnej szerokości
+
+Klient: **górna i dolna półka mają być po całej szerokości jednym kawałkiem
+płyty**, żeby usztywnić konstrukcję (dziś rozwiązane tak samo jak w środku
+regału — osobne półki na przęsło).
+
+### Mechanizm — ponowne użycie wrębu przelotowego z sekcji 2
+
+Żeby jedna płyta 1800 mm mogła przejść przez **oba** piony pośrednie
+(`mid-1`, `mid-2`), każdy z nich dostaje na poziomie 0 (dno) i poziomie 5
+(wieniec) **dokładnie ten sam wrąb przelotowy stop-notch**, co lewy bok
+(sekcja 2): otwarty na `NOTCH_DEPTH` = 310 mm od frontu (płyta przechodzi
+swobodnie), zamknięty grzbietem 86 mm z tyłu (pion zostaje ciągły na tym
+poziomie). Na pozostałych czterech poziomach `mid-1`/`mid-2` **bez zmian** —
+nadal wrąb oporowy z obu stron (sekcja 1), bo tam półki zostają osobnymi
+płytami na przęsło (klient nie prosił o ich scalenie).
+
+Płyta dna/wieńca ma więc teraz **trzy** wcięcia zamiast jednego (lewy bok +
+mid-1 + mid-2), i kończy się normalnie w jednostronnym wrębie oporowym
+prawego boku — bez zmian względem pozostałych czterech poziomów.
+
+| Element | Wartość |
+|---|---|
+| Wcięcia w płycie dna/wieńca | 3 (lewy bok, mid-1, mid-2), ten sam wzór co w sekcji 2 |
+| Zakończenie po prawej | wrąb oporowy prawego boku, jak reszta poziomów |
+| Materiał w `mid-1`/`mid-2` na tych 2 poziomach | grzbiet 86 mm gł. (bez zmian w rdzeniu poza tym) |
+
+### Skutek uboczny — 16 śrub mniej, blokada z sekcji 1 częściowo złagodzona
+
+Skoro `mid-1`/`mid-2` mają teraz na tych dwóch poziomach złącze wrębowe (nie
+skręcane, jak lewy bok), znikają tam śruby: **60 → 44 śruby M6** (4 na
+złącze × 2 piony × 2 poziomy = 16 mniej). To automatycznie usuwa 16 z 48
+przypadków bloku „łeb nie ma gdzie usiąść" opisanego w sekcji 1 — pozostałe
+32 (cztery środkowe poziomy) są nadal nierozstrzygnięte.
+
+**To wykonuje wprost decyzję klienta** (jedna płyta pełnej szerokości) —
+sam mechanizm (stop-notch) to ponowne użycie już zaakceptowanej/wymagającej
+przeglądu techniki z sekcji 2, nie nowy wybór inżynierski. Nowy jest zakres
+zastosowania (teraz też `mid-1`/`mid-2`, nie tylko lewy bok) — wymaga tego
+samego przeglądu co reszta wrębu przelotowego.
+
+## 5. Słoje
 
 | Grupa | Kierunek | Uzasadnienie |
 |---|---|---|
 | Piony (mid-1, mid-2, R-side) | wzdłużne (Z) | nośność na wyboczenie |
 | Lewy bok (grzbiet + zęby) | wzdłużne (Z) | jak pozostałe piony |
-| Półki (przęsło 1, 2) | wzdłużne (X) | sztywność na rozpiętości 526 mm |
+| Półki (przęsło 1, 2 — cztery środkowe poziomy) | wzdłużne (X) | sztywność na rozpiętości 526 mm |
 | Nos + półka (przęsło 0, scalone) | dowolne | złożony obrys |
+| Dno / wieniec (pełna szerokość, runda 5) | dowolne | złożony obrys (3 wcięcia + łuk) |
 | Plecy | wzdłużne (Z) | usztywnienie na skręcanie |
 | Cokół (szyny proste) | wzdłużne | jak pozostałe piony/ramy |
 | Cokół (narożnik) | dowolne | złożony obrys (łuk) |
 
 Każdy element ma zadeklarowany `grain_direction` w modelu — sprawdzane automatycznie.
 
-## 5. Do rozstrzygnięcia
+## 6. Do rozstrzygnięcia
 
 **PIERWSZEŃSTWO — bloker rysunku detalu:** łeb śruby M6 nie ma dostępnego lica
-na pionach pośrednich (48 z 60 śrub) oraz brak pięciu wymiarów okucia
+na pionach pośrednich, **32 z 44 śrub** (cztery środkowe poziomy — dno/wieniec
+już rozwiązane rundą 5, patrz sekcja 4) oraz brak pięciu wymiarów okucia
 (odsunięcie mimośrodu, otwór przelotowy, długość mimośrodu, rodzaj łba,
 długość śruby). Patrz sekcja 1. Blokuje wykonanie zbliżenia na mocowanie
 śrubowe, a tym samym wiercenia w DXF.
@@ -304,22 +368,27 @@ długość śruby). Patrz sekcja 1. Blokuje wykonanie zbliżenia na mocowanie
 1. **Głębokość wrębu oporowego (5 mm)** — mój dobór inżynierski, nie decyzja
    klienta podana wprost (sekcja 1). Wymaga przeglądu joinery-specialist przed
    cięciem — zwłaszcza rdzeń pionów pośrednich (8 mm) na wysokości wrębu.
-2. **Wrąb w lewym boku** — moje rozwinięcie decyzji „wręby przelotowe" (sekcja 2).
-   Wymaga przeglądu joinery-specialist/qa-inspector przed cięciem.
-3. **Mocowanie złącza wrąb ↔ płyta (nos)** — obecnie czysty wcisk, bez śrub.
-   Dodać retencję czy polegać na tarciu?
-4. **60 śrub M6** — 2 na złącze, 30 złączy (piony pośrednie i prawy bok).
-   Skoro wrąb oporowy przenosi teraz ciężar, można rozważyć zejście do 1 śruby
-   na złącze (docisk/wyrywanie nie wymaga dwóch), ale to zmniejsza odporność
-   na skręcanie — do potwierdzenia razem z przeglądem wrębu.
-5. **Konstrukcja ramy cokołu (runda 4)** — dziś bryła pełna, nie płyty 18 mm.
+2. **Wrąb w lewym boku, teraz też w mid-1/mid-2 na 2 poziomach** — moje
+   rozwinięcie decyzji „wręby przelotowe" (sekcja 2), zastosowane ponownie
+   w rundzie 5 (sekcja 4). Wymaga przeglądu joinery-specialist/qa-inspector
+   przed cięciem.
+3. **Mocowanie złącza wrąb ↔ płyta (nos, mid-1, mid-2)** — obecnie czysty
+   wcisk, bez śrub, na wszystkich wrębach przelotowych. Dodać retencję czy
+   polegać na tarciu?
+4. **44 śruby M6** — 2 na złącze, na czterech środkowych poziomach
+   (piony pośrednie i prawy bok; dno/wieniec bez śrub na piony pośrednie —
+   runda 5). Skoro wrąb oporowy przenosi teraz ciężar, można rozważyć
+   zejście do 1 śruby na złącze (docisk/wyrywanie nie wymaga dwóch), ale to
+   zmniejsza odporność na skręcanie — do potwierdzenia razem z przeglądem
+   wrębu.
+5. **Konstrukcja ramy cokołu** — dziś bryła pełna, nie płyty 18 mm.
    Wymaga rozstrzygnięcia przed cięciem/nestingiem — patrz sekcja 3.
-6. **Prawy bok bez oparcia na cokole (runda 4)** — wysięg 18–20 mm bez
+6. **Prawy bok bez oparcia na cokole** — wysięg 18–22 mm bez
    podparcia bezpośredniego, patrz sekcja 3.
-7. **Mocowanie korpus ↔ cokół (runda 4)** — dziś sam docisk ciężarem, bez
+7. **Mocowanie korpus ↔ cokół** — dziś sam docisk ciężarem, bez
    żadnych śrub/kołków pozycjonujących. Patrz sekcja 3.
-8. **Szerokość ramy cokołu (70 mm, runda 4)** — mój dobór inżynierski, nie
+8. **Szerokość ramy cokołu (70 mm)** — mój dobór inżynierski, nie
    decyzja klienta. Patrz sekcja 3.
-9. **Masa 104,6 kg** (same płyty, bez okuć — i bez uwzględnienia docelowej
-   konstrukcji cokołu, patrz punkt 5; 107 → 101 → 102 → 104,6 kg w kolejnych
-   rundach) — montaż w dwie osoby, do zapisania w instrukcji.
+9. **Masa 104,3 kg** (same płyty, bez okuć — i bez uwzględnienia docelowej
+   konstrukcji cokołu, patrz punkt 5; 107 → 101 → 102 → 104,6 → 104,3 kg
+   w kolejnych rundach) — montaż w dwie osoby, do zapisania w instrukcji.

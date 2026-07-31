@@ -52,6 +52,11 @@ PARAMS = {
     "PLINTH_FRAME_W": 70.0, # szerokosc szyn ramy cokolowej
     "SKIRTING_H": 85.0,     # wysokosc listwy przypodlogowej (dane wejsciowe)
     "SKIRTING_DEPTH": 20.0, # o tyle listwa odstaje od sciany
+    "PLINTH_INSET": 22.0,   # runda 5: cokol cofniety o tyle od krawedzi
+                            # korpusu na WSZYSTKICH czterech bokach (klient) -
+                            # > SKIRTING_DEPTH, wiec nadal omija listwe (2 mm
+                            # zapasu), zastepuje dawna asymetrie (0 mm z
+                            # przodu/lewej, 20 mm z tylu/prawej)
     # rendering / material
     "ARC_SEGMENTS": 40,
     "PLY_DENSITY": 700.0,   # kg/m3
@@ -286,27 +291,72 @@ def nose_bay_profile(p=PARAMS, d=DERIVED):
     return pts
 
 
-def plinth_corner_profile(p=PARAMS, d=DERIVED):
-    """Obrys zaokraglonego naroznika ramy cokolowej - piescien miedzy R150
-    (ten sam luk co korpus powyzej) a R150-PLINTH_FRAME_W. Prostokatna rama
-    wystawalaby poza zaokraglony nawis korpusu w tym rogu; ten sam luk R150
-    gwarantuje, ze cokol nigdzie nie wychodzi poza obrys korpusu.
+def full_width_shelf_profile(p=PARAMS, d=DERIVED):
+    """Obrys dna i wienca (runda 5) - jedna plyta na cala szerokosc 1800 mm,
+    zamiast trzech oddzielnych desek jak na czterech srodkowych poziomach.
+    Klient chce usztywnic konstrukcje: gorna i dolna polka maja przenosic
+    obciazenie jako jeden ciagly element, a nie trzy niezalezne kawalki.
+
+    Jak nose_bay_profile (ten sam luk R150 + ominiecie grzbietu lewego boku),
+    ale plyta NIE konczy sie w wrebie mid-1 - biegnie dalej przez mid-1 i
+    mid-2 tym samym schematem stop-notch co lewy bok (otwarta na NOTCH_DEPTH
+    od frontu, omija grzbiet kazdego z trzech pionow posrednich z tylu), i
+    dopiero konczy sie normalnie w jednostronnym wrebie oporowym prawego boku
+    (bez zmian wzgledem pozostalych czterech poziomow).
     """
     cx, cy = d["arc_center"]
-    r_in = p["R"] - p["PLINTH_FRAME_W"]
-    outer = arc_points(cx, cy, p["R"], 270.0, 180.0, p["ARC_SEGMENTS"])   # (150,0) -> (0,150)
+    fd = d["frame_depth"]
+    nd = p["NOTCH_DEPTH"]
+    xs = d["vertical_x"]
+    T = p["T"]
+    rd = p["RABBET_DEPTH"]
+
+    pts = arc_points(cx, cy, p["R"], 270.0, 180.0, p["ARC_SEGMENTS"])   # (150,0) -> (0,150)
+    pts.append((0.0, fd))
+    for gx0 in (xs[0], xs[1], xs[2]):    # lewy bok, mid-1, mid-2 - kazdy ma grzbiet tu
+        gx1 = gx0 + T
+        pts.append((gx0, fd))
+        pts.append((gx0, nd))            # wcina sie do wewnatrz - omija grzbiet
+        pts.append((gx1, nd))
+        pts.append((gx1, fd))            # wraca na krawedz tylna za grzbietem
+    xr = xs[3] + rd                       # wchodzi w wrab oporowy prawego boku
+    pts.append((xr, fd))
+    pts.append((xr, 0.0))
+    return pts
+
+
+def plinth_corner_profile(p=PARAMS, d=DERIVED):
+    """Obrys zaokraglonego naroznika ramy cokolowej - piescien wspolsrodkowy
+    z lukiem R150 korpusu, ale pomniejszony o PLINTH_INSET (runda 5 - cokol
+    cofniety rownomiernie na wszystkich czterech bokach, nie tylko przy
+    scianach). Promien zewnetrzny = R - PLINTH_INSET, wewnetrzny = to minus
+    PLINTH_FRAME_W. Ten sam srodek co luk korpusu gwarantuje rownomierne
+    cofniecie az do samego naroznika (bez tego prostokatny czy niewspolsrodkowy
+    naroznik wystawalby poza zaokraglony nawis korpusu w tym rogu).
+    """
+    cx, cy = d["arc_center"]
+    r_out = p["R"] - p["PLINTH_INSET"]
+    r_in = r_out - p["PLINTH_FRAME_W"]
+    outer = arc_points(cx, cy, r_out, 270.0, 180.0, p["ARC_SEGMENTS"])   # (150,0) -> (0,150)
     inner = arc_points(cx, cy, r_in, 180.0, 270.0, p["ARC_SEGMENTS"])     # (70,150) -> (150,70)
     return outer + inner
 
 
 # ---------------------------------------------------------------- budowa
 
-def _rabbeted_vertical(name, x0, faces, p=PARAMS, d=DERIVED, qty_group=None):
+def _rabbeted_vertical(name, x0, faces, p=PARAMS, d=DERIVED, qty_group=None,
+                        notch_levels=()):
     """Pion z plytkim wrebem oporowym na wysokosci kazdej polki (runda 3 -
     zamiast czopa: patrz joinery-notes.md sekcja 1). Miedzy polkami pion ma
     pelna grubosc T; na wysokosci kazdej polki grubosc jest zmniejszona o
     RABBET_DEPTH od strony/stron podanych w 'faces' ("L" i/lub "R") - tam
     siada krawedz polki, ktora przenosi na tym progu obciazenie pionowe.
+
+    Poziomy w 'notch_levels' (runda 5 - dno i wieniec, patrz
+    full_width_shelf_profile) dostaja zamiast wrebu oporowego wrab przelotowy
+    stop-notch, jak grzebien lewego boku: brak materialu na NOTCH_DEPTH od
+    frontu (plyta przechodzi na wskros), grzbiet pelnej grubosci
+    NOTCH_DEPTH..frame_depth z tylu (ciaglosc pionu na tym poziomie).
 
     Zwraca liste Part - kilka brol na jeden fizyczny pion (jak grzebien
     lewego boku), pod wspolnym qty_group.
@@ -314,6 +364,7 @@ def _rabbeted_vertical(name, x0, faces, p=PARAMS, d=DERIVED, qty_group=None):
     T = p["T"]
     fd = d["frame_depth"]
     rd = p["RABBET_DEPTH"]
+    nd = p["NOTCH_DEPTH"]
     levels = d["level_z"]
     qg = qty_group or name
     xa = x0 + rd if "L" in faces else x0
@@ -324,11 +375,17 @@ def _rabbeted_vertical(name, x0, faces, p=PARAMS, d=DERIVED, qty_group=None):
         {"type": "box", "bounds": (x0, 0.0, levels[i] + T, x0 + T, fd, levels[i + 1])},
         T, "sklejka brzozowa 18", "longitudinal", qg)
         for i in range(len(levels) - 1)]
-    parts += [Part(
-        "%s-rabbet-%d" % (name, i), "vertical",
-        {"type": "box", "bounds": (xa, 0.0, z, xb, fd, z + T)},
-        T, "sklejka brzozowa 18", "longitudinal", qg)
-        for i, z in enumerate(levels)]
+    for i, z in enumerate(levels):
+        if i in notch_levels:
+            parts.append(Part(
+                "%s-spine-%d" % (name, i), "vertical",
+                {"type": "box", "bounds": (x0, nd, z, x0 + T, fd, z + T)},
+                T, "sklejka brzozowa 18", "longitudinal", qg))
+        else:
+            parts.append(Part(
+                "%s-rabbet-%d" % (name, i), "vertical",
+                {"type": "box", "bounds": (xa, 0.0, z, xb, fd, z + T)},
+                T, "sklejka brzozowa 18", "longitudinal", qg))
     return parts
 
 
@@ -351,32 +408,36 @@ def _translate_z(parts, dz):
 
 
 def _build_plinth(p=PARAMS, d=DERIVED):
-    """Cokol - rama (nie plyta pelna), z=0..PLINTH_H. Przy scianach (tyl,
-    prawy bok) cofnieta o SKIRTING_DEPTH, zeby ominac listwe przypodlogowa;
-    przedni-lewy naroznik podaza za lukiem R150 korpusu (patrz
+    """Cokol - rama (nie plyta pelna), z=0..PLINTH_H, cofnieta o PLINTH_INSET
+    od zewnetrznego obrysu korpusu na WSZYSTKICH czterech bokach (runda 5 -
+    jednolite 22 mm, zastepuje dawna asymetrie z rundy 4: 0 mm z przodu/lewej,
+    tylko SKIRTING_DEPTH=20 mm z tylu/prawej). PLINTH_INSET > SKIRTING_DEPTH,
+    wiec przy scianach nadal omija listwe przypodlogowa (2 mm zapasu - patrz
+    checks.py). Przedni-lewy naroznik podaza za tym samym lukiem co korpus,
+    tylko wspolsrodkowo pomniejszonym o PLINTH_INSET (patrz
     plinth_corner_profile). Piec brol, jedna fizyczna rama - patrz
     joinery-notes.md."""
     T = p["T"]
     ph = p["PLINTH_H"]
     fw = p["PLINTH_FRAME_W"]
-    sd = p["SKIRTING_DEPTH"]
+    inset = p["PLINTH_INSET"]
     W, Dp, R = p["W"], p["D"], p["R"]
-    y_back = Dp - sd            # 380 - cofniete od tylnej sciany
-    x_right = W - sd            # 1780 - cofniete od prawej sciany
+    x0, y0 = inset, inset
+    x1, y1 = W - inset, Dp - inset
 
     mat, grain = "sklejka brzozowa 18", "longitudinal"
     return [
         Part("plinth-left", "plinth",
-             {"type": "box", "bounds": (0.0, R, 0.0, fw, y_back - fw, ph)},
+             {"type": "box", "bounds": (x0, R, 0.0, x0 + fw, y1 - fw, ph)},
              T, mat, grain, "plinth"),
         Part("plinth-back", "plinth",
-             {"type": "box", "bounds": (0.0, y_back - fw, 0.0, x_right, y_back, ph)},
+             {"type": "box", "bounds": (x0, y1 - fw, 0.0, x1, y1, ph)},
              T, mat, grain, "plinth"),
         Part("plinth-right", "plinth",
-             {"type": "box", "bounds": (x_right - fw, 0.0, 0.0, x_right, y_back - fw, ph)},
+             {"type": "box", "bounds": (x1 - fw, y0, 0.0, x1, y1 - fw, ph)},
              T, mat, grain, "plinth"),
         Part("plinth-front", "plinth",
-             {"type": "box", "bounds": (R, 0.0, 0.0, x_right - fw, fw, ph)},
+             {"type": "box", "bounds": (R, y0, 0.0, x1 - fw, y0 + fw, ph)},
              T, mat, grain, "plinth"),
         Part("plinth-corner", "plinth",
              {"type": "prism_z", "profile": plinth_corner_profile(p, d), "z0": 0.0, "z1": ph},
@@ -415,17 +476,32 @@ def _build_corpus(p=PARAMS, d=DERIVED):
 
     # --- pozostale piony, z wrebem oporowym na kazda strone, ktora nosi polke.
     # mid-1 i mid-2 sa wymiarowo identyczne (wrab z obu stron) - wspolny
-    # qty_group; R-side ma wrab tylko z lewej, wiec inny przekroj progu ---
-    parts += _rabbeted_vertical("vertical-mid-1", xs[1], "LR", p, d, "vertical-mid")
-    parts += _rabbeted_vertical("vertical-mid-2", xs[2], "LR", p, d, "vertical-mid")
+    # qty_group; R-side ma wrab tylko z lewej, wiec inny przekroj progu.
+    # dno i wieniec (poziom 0 i ostatni) dostaja u mid-1/mid-2 wrab przelotowy
+    # zamiast wrebu oporowego - patrz notch_levels w _rabbeted_vertical i
+    # full_width_shelf_profile (runda 5, usztywnienie konstrukcji) ---
+    top_level = p["N_LEVELS"] - 1
+    notch_lv = {0, top_level}
+    parts += _rabbeted_vertical("vertical-mid-1", xs[1], "LR", p, d, "vertical-mid",
+                                 notch_levels=notch_lv)
+    parts += _rabbeted_vertical("vertical-mid-2", xs[2], "LR", p, d, "vertical-mid",
+                                 notch_levels=notch_lv)
     parts += _rabbeted_vertical("vertical-R-side", xs[3], "L", p, d)
 
-    # --- polki (3 na poziom), oparte na wrebach, bez czopow ---
-    # przeslo 0 (przy nosie): jedna scalona plyta nos+polka, zlacze z bokiem
-    # to wrab przelotowy (patrz sekcja pionow wyzej), prawa strona wchodzi
-    # w wrab oporowy mid-1 jak kazda inna polka
+    # --- polki: dno i wieniec jedna plyta na cala szerokosc (runda 5),
+    # pozostale cztery poziomy jak dotychczas: 3 na poziom, oparte na
+    # wrebach, bez czopow. przeslo 0 (przy nosie): jedna scalona plyta
+    # nos+polka, zlacze z bokiem to wrab przelotowy (patrz sekcja pionow
+    # wyzej), prawa strona wchodzi w wrab oporowy mid-1 jak kazda inna polka
     prof0 = nose_bay_profile(p, d)
+    prof_full = full_width_shelf_profile(p, d)
     for li, z in enumerate(d["level_z"]):
+        if li in notch_lv:
+            parts.append(Part(
+                "shelf-L%d-full" % li, "shelf",
+                {"type": "prism_z", "profile": prof_full, "z0": z, "z1": z + T},
+                T, "sklejka brzozowa 18", "free", "shelf-full"))
+            continue
         for b in range(p["N_BAYS"]):
             if b == 0:
                 parts.append(Part(
@@ -466,6 +542,12 @@ def bolt_positions(p=PARAMS, d=DERIVED):
     (patrz _rabbeted_vertical); sruby przenosza docisk i wyrywanie, nie
     ciezar - ten bierze prog wrebu.
 
+    Dno i wieniec (runda 5) sa jedna plyta na cala szerokosc, przechodzaca
+    przez mid-1/mid-2 wrebem przelotowym (jak lewy bok) - na tych dwoch
+    poziomach mid-1/mid-2 nie maja srub w ogole (analogicznie do lewego boku:
+    zlacze wrebowe, nie skrecane). Prawy bok zachowuje zlacze na sruby na
+    wszystkich szesciu poziomach bez zmian.
+
     Zwraca (x, y, z, kierunek) w globalnym Z (korpus stoi na cokole -
     patrz build_parts). Nie renderowane w 3D - dane pod wiercenia DXF.
     """
@@ -473,14 +555,21 @@ def bolt_positions(p=PARAMS, d=DERIVED):
     xs = d["vertical_x"]
     T = p["T"]
     z_off = p["PLINTH_H"]
+    top_level = p["N_LEVELS"] - 1
     for li, z in enumerate(d["level_z"]):
         zc = z + T / 2.0 + z_off
-        for b in range(p["N_BAYS"]):
-            if b > 0:                   # b==0 lewa strona: wrab, nie sruba
-                for y in p["BOLT_Y_LEFT"]:
-                    out.append((xs[b] + T / 2.0, y, zc, "+x"))
+        full_width = li in (0, top_level)
+        if not full_width:
             for y in p["BOLT_Y_RIGHT"]:
-                out.append((xs[b + 1] + T / 2.0, y, zc, "-x"))
+                out.append((xs[1] + T / 2.0, y, zc, "-x"))     # mid-1, strona przeslo 0
+            for y in p["BOLT_Y_LEFT"]:
+                out.append((xs[1] + T / 2.0, y, zc, "+x"))     # mid-1, strona przeslo 1
+            for y in p["BOLT_Y_RIGHT"]:
+                out.append((xs[2] + T / 2.0, y, zc, "-x"))     # mid-2, strona przeslo 1
+            for y in p["BOLT_Y_LEFT"]:
+                out.append((xs[2] + T / 2.0, y, zc, "+x"))     # mid-2, strona przeslo 2
+        for y in p["BOLT_Y_RIGHT"]:
+            out.append((xs[3] + T / 2.0, y, zc, "-x"))         # R-side, wszystkie poziomy
     return out
 
 
