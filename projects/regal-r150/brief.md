@@ -1,9 +1,9 @@
 # Regał R150 — brief
 
 **Klient:** wewnętrzny / własny
-**Runda:** 3 — złącza półka↔pion bez czopów
-**Data:** 2026-07-29
-**Status:** czeka na akceptację bryły i przegląd wrębów (joinery-specialist / qa-inspector)
+**Runda:** 4 — rysunek rozmieszczenia śrub + cokół pod ścianę
+**Data:** 2026-07-31
+**Status:** czeka na akceptację bryły i przegląd wrębów oraz konstrukcji cokołu (joinery-specialist / qa-inspector)
 
 ## 1. Zakres
 
@@ -13,10 +13,11 @@ przez klienta.
 | Parametr | Wartość |
 |---|---|
 | Szerokość | 1800 mm |
-| Wysokość | 2000 mm |
+| Wysokość | 2000 mm (korpus 1900 + cokół 100) |
 | Głębokość | 400 mm |
 | Materiał nośny | sklejka brzozowa 18 mm |
-| Zaoblenie | przedni lewy narożnik, R150, cała wysokość |
+| Zaoblenie | przedni lewy narożnik, R150, cała wysokość (korpus i cokół) |
+| Cokół | 100 mm, cofnięty 20 mm od tylnej/prawej ściany pod listwę przypodłogową |
 | Montaż | rozbieralny na śruby (bez kleju) |
 
 ## 2. Decyzje klienta
@@ -48,32 +49,43 @@ samodzielny podgląd HTML generowany bez Blendera (`design/preview.html`).
 
 ## 4. Rozwiązanie
 
-- **Cztery piony** pełnej wysokości: lewy bok konstrukcyjny stoi dokładnie w punkcie
-  styczności łuku (x = 150), dalej dwa piony pośrednie i prawy bok.
+- **Cztery piony** pełnej wysokości: lewy bok to grzebień (grzbiet + 5 zębów,
+  wrąb przelotowy — patrz runda 2), dalej dwa piony pośrednie i prawy bok
+  (oba na wrębie oporowym pod półkami — patrz runda 3).
 - **Trzy przęsła po 526 mm** światła — bezpieczna rozpiętość dla półki 18 mm o
   głębokości 400 mm.
-- **Sześć poziomów** (dno, 4 półki, wieniec), światło międzypółkowe 378,4 mm.
-- **Nos zaoblony** — 11 żeber profilowych w rozstawie ~198 mm, owiniętych pasem
-  sklejki giętej 4 mm. Strefa zamknięta, czyta się jako lite zaokrąglone zakończenie.
+- **Sześć poziomów** (dno, 4 półki, wieniec), światło międzypółkowe 358,4 mm
+  (korpus 1900 mm — patrz runda 4).
+- **Nos zaoblony** — scalony z półką przęsła 0 na każdym poziomie, pełny
+  promień R150, bez żeber i bez poszycia giętego (usunięte w rundzie 2).
 - **Plecy** ze sklejki 4 mm, cztery płyty (nos + trzy przęsła).
+- **Cokół** 100 mm, cofnięty pod listwę przypodłogową przy tylnej i prawej
+  ścianie — patrz runda 4.
 
 Szczegóły stolarki: `design/joinery-notes.md`.
 
 ## 5. Otwarte kwestie
 
-Wymagają decyzji przed uruchomieniem dokumentacji:
+Zaktualizowane po rundzie 4 — poprzednie punkty tej sekcji dotyczyły żeber
+nosa i poszycia giętego usuniętych w rundzie 2 (nieaktualne) albo zostały
+rozstrzygnięte w kolejnych rundach (liczba śrub: 60 szt., 2 na złącze;
+cokół: dodany w rundzie 4). Aktualne otwarte punkty:
 
-1. **Montaż nosa** — 11 żeber i poszycie skręcane przez klienta (~40 wkrętów, żmudne)
-   czy moduł zmontowany fabrycznie (lepszy montaż, paczka przestaje być płaska)?
-2. **Liczba śrub** — 72 szt. (4 na złącze) czy 36 szt. (2 na złącze)?
-3. **Cokół** — brak (dno na podłodze) czy cofnięty ~80 mm?
-4. **Sklejka gięta** — poszycie na R146 wymaga flexi-ply; do potwierdzenia
-   dostępności i ceny z materials-managerem.
+1. **Konstrukcja ramy cokołu** — dziś bryła pełna w modelu, nie realne płyty
+   18 mm. Patrz `design/joinery-notes.md` §3, pkt 1.
+2. **Oparcie prawego boku na cokole** — wysięg 18–20 mm bez podparcia
+   bezpośredniego. Patrz `design/joinery-notes.md` §3, pkt 2.
+3. **Mocowanie korpus ↔ cokół** — dziś sam docisk ciężarem, bez śrub/kołków.
+   Patrz `design/joinery-notes.md` §3, pkt 3.
+4. **Mocowanie złącza wrąb ↔ płyta (nos)** — czysty wcisk, bez śrub
+   retencyjnych. Patrz `design/joinery-notes.md` §2.
 
-## 6. Poza zakresem rundy 1–3
+## 6. Poza zakresem rundy 1–4
 
 DXF z warstwami wg CLAUDE.md, cut-list CSV, BOM, nesting z kontrolą waste < 12 %,
-G-code, instrukcja montażu, karta produktu.
+G-code, instrukcja montażu, karta produktu. Dotyczy też docelowej konstrukcji
+ramy cokołu (patrz `design/joinery-notes.md` §3, pkt 1) — obecna bryła jest
+placeholderem obrysu, nie gotowym do wycięcia kształtem.
 
 ## 7. Runda 2 — uproszczenie nosa
 
@@ -155,3 +167,51 @@ pionów na bryły kontrolne), 60 śrub M6 (bez zmian), masa netto 102 kg
 przechodzi, w tym zero kolizji **bez żadnych wyjątków** (dawniej czop/gniazdo
 były jawnie pomijane w teście jako "z założenia wspólne" — teraz nic nie jest
 pomijane, to prawdziwa weryfikacja dopasowania wrębu).
+
+## 9. Runda 4 — rysunek rozmieszczenia śrub i cokół pod ścianę
+
+Klient poprosił o dwie rzeczy: (A) rysunek techniczny pokazujący, gdzie
+faktycznie są śruby — żaden z dotychczasowych widoków nie pokazywał ich
+pozycji X/Z na całym korpusie; (B) cokół — regał stoi tyłem i prawym bokiem
+do ściany, gdzie biegnie listwa przypodłogowa 85 mm wys. × 20 mm gł.
+(odstaje od ściany o tyle); cokół ma podnieść cały regał, żeby dało się go
+dosunąć do ściany mimo listwy.
+
+### A. Rysunek rozmieszczenia śrub
+
+Nowy widok „Rozmieszczenie śrub" — rzut z przodu, każdy odrębny klaster
+(X, Z) oznaczony kółkiem z liczbą śrub w tym miejscu. Piony pośrednie: **4**
+śruby na złącze (wrąb dwustronny, patrz `design/joinery-notes.md` §1); prawy
+bok: **2** śruby na złącze (wrąb jednostronny). Lewy bok/nos nie ma śrub w
+ogóle — to złącze wrębowe (grzebień), nie skręcane.
+
+### B. Cokół
+
+**Decyzje klienta (`AskUserQuestion`):**
+
+1. Budżet wysokości — korpus kurczy się, żeby korpus + cokół = dokładnie
+   2000 mm (nie: cokół dokładany na 2000 mm korpusu → 2100 mm całości).
+   Korpus: 2000 → **1900 mm**.
+2. Wysokość cokołu — 85 mm listwy + 15 mm luzu = **100 mm**.
+
+Cokół to rama (nie pełna płyta), cofnięta 20 mm od tylnej i prawej ściany pod
+listwę przypodłogową. Przedni-lewy narożnik podąża za tym samym łukiem R150
+co korpus powyżej — sprawdzone wprost, że prostokątny narożnik wystawałby
+62 mm poza promień R150 (róg (0,0) leży 212 mm od środka łuku, przy R = 150).
+
+**To wymaga przeglądu przed cięciem** — trzy rzeczy w szczególności:
+szerokość ramy (70 mm) to mój dobór inżynierski, nie decyzja klienta; rama
+jest dziś zamodelowana jako bryła pełna, nie jako realne płyty 18 mm (żaden
+z trzech wymiarów szyny nie odpowiada grubości sklejki — do rozstrzygnięcia,
+jaka to ma być konstrukcja); prawy bok korpusu wisi nad cokołem bez
+bezpośredniego oparcia na całej głębokości (cofnięcie pod listwę zostawia
+18–20 mm wysięgu). Szczegóły: `design/joinery-notes.md` §3.
+
+**Środowisko:** bez zmian — nadal skrypt `build_shelf_blender.py` do
+wklejenia, Blender MCP nadal nieosiągalny z tej sesji.
+
+**Wynik:** 66 elementów, 60 śrub M6 (bez zmian), masa netto 104,6 kg. Korpus
+1900 mm (było 2000), światło międzypółkowe 358,4 mm (było 378,4 mm). 16/16
+testów geometrii przechodzi, w tym dwa nowe testy specyficzne dla cokołu
+(narożnik mieści się pod łukiem R150; korpus siada dokładnie na górze cokołu
+bez szczeliny).

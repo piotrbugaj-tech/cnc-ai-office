@@ -20,12 +20,14 @@ COLLECTIONS = {
     "vertical": "01_Piony",
     "shelf": "02_Polki",
     "back": "03_Plecy",
+    "plinth": "04_Cokol",
 }
 
 COLORS = {
     "vertical": (0.86, 0.72, 0.50, 1.0),
     "shelf": (0.90, 0.78, 0.57, 1.0),
     "back": (0.62, 0.50, 0.35, 1.0),
+    "plinth": (0.40, 0.33, 0.24, 1.0),
 }
 
 
@@ -117,8 +119,10 @@ def main():
     s = summary()
     n = build_scene()
     p, d = PARAMS, DERIVED
+    total_h = p["H"] + p["PLINTH_H"]
     print("=" * 58)
-    print("Regal R150  %.0f x %.0f x %.0f mm" % (p["W"], p["H"], p["D"]))
+    print("Regal R150  %.0f x %.0f x %.0f mm (korpus %.0f + cokol %.0f)"
+          % (p["W"], total_h, p["D"], p["H"], p["PLINTH_H"]))
     print("=" * 58)
     print("  zaoblenie      R%.0f, przedni lewy narozik, cala wysokosc, bez poszycia" % p["R"])
     print("  przesla        %d x %.0f mm swiatla" % (p["N_BAYS"], d["bay_clear"]))
@@ -128,6 +132,8 @@ def main():
     print("  lewy bok       grzbiet + 5 zebow, wrab przelotowy w kazdym zlaczu")
     print("  pozostale piony wrab oporowy %.0f mm pod kazda polka, bez czopow"
           % p["RABBET_DEPTH"])
+    print("  cokol          rama %.0f mm wys., cofnieta %.0f mm od tylu/prawego"
+          " boku (listwa przypodlogowa)" % (p["PLINTH_H"], p["SKIRTING_DEPTH"]))
     print("  obiektow       %d" % n)
     print("  srub M6        %d" % s["n_bolts"])
     print("  masa netto     %.1f kg" % s["mass_kg"])

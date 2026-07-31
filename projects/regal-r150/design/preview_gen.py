@@ -120,7 +120,9 @@ def view_plan():
         return H - y          # front na dole rysunku
 
     _K[0] = 1.0
-    z_probe = D["level_z"][2] + P["T"] / 2.0
+    # level_z jest lokalny wzgledem spodu korpusu - korpus stoi na cokole,
+    # wiec sonda musi to uwzglednic (patrz shelf_model.build_parts)
+    z_probe = D["level_z"][2] + P["T"] / 2.0 + P["PLINTH_H"]
     g = []
 
     for part in m.build_parts():
@@ -160,60 +162,77 @@ def view_plan():
 # ---------------------------------------------------------------- widok z przodu
 
 def view_front():
-    """Elewacja frontowa - podzial na przesla i poziomy."""
-    H = P["H"]
+    """Elewacja frontowa - cala bryla (cokol + korpus), przeslo i poziomy."""
+    ph = P["PLINTH_H"]
+    total_h = P["H"] + ph
 
     def fy(z):
-        return H - z
+        return total_h - z
 
     # rysowane z prawdziwych czesci (nie z recznie odtwarzanych wspolrzednych) -
     # lewy bok to teraz grzebien (grzbiet + zeby), nie jeden pelnowysokosciowy
     # prostokat, a przeslo 0 to zaokraglona plyta 0-694, nie prostokat 168-694
     _K[0] = 2.0
-    g = [rect(0, fy(H), P["W"], fy(0), CAV)]
+    g = [rect(0, fy(total_h), P["W"], fy(0), CAV)]
     for part in m.build_parts():
-        if part.kind not in ("vertical", "shelf"):
+        if part.kind not in ("vertical", "shelf", "plinth"):
             continue
         x0, _, z0, x1, _, z1 = part.bbox()
-        g.append(rect(x0, fy(z1), x1, fy(z0), PLY))
+        g.append(rect(x0, fy(z1), x1, fy(z0), PLY_D if part.kind == "plinth" else PLY))
 
-    g.append(dim_v(fy(H), fy(0), -60, "2000"))
-    z0 = D["level_z"][0] + P["T"]
+    g.append(line(0, fy(ph), P["W"], fy(ph), RULE, 1.2, dash="16 12"))
+    g.append(text(P["W"] / 2.0, fy(ph / 2.0) + 12, "cokol %.0f mm" % ph, 30, DIM))
+
+    g.append(dim_v(fy(total_h), fy(0), -60, "2000"))
+    z0 = D["level_z"][0] + P["T"] + ph
     g.append(dim_v(fy(z0 + D["shelf_clear"]), fy(z0), P["W"] + 60, "378.4"))
     g.append(dim_h(0, P["W"], fy(0) + 190, "1800"))
     g.append(dim_h(0, P["R"], fy(0) + 80, "150"))
-    return (svg_open("-260 -140 2340 2450", "Widok z przodu") + "".join(g) + "</svg>")
+    return (svg_open("-260 -140 2340 2560", "Widok z przodu") + "".join(g) + "</svg>")
 
 
 # ---------------------------------------------------------------- widok z prawej
 
 def view_right():
-    """Elewacja prawa - wrab oporowy pod kazda polka i rozstaw srub."""
-    H, Dp = P["H"], P["D"]
+    """Elewacja prawa - wrab oporowy, rozstaw srub i cofniecie cokolu od listwy.
+
+    Prawy bok (pion) siedzi na X, ktory wrab cokolu juz nie obejmuje - patrz
+    joinery-notes.md sekcja cokolu: to normalne, korpus tu odrobine nawisa
+    nad cofnieciem. Sylwetka listwy pokazuje dlaczego cofniecie tam jest.
+    """
+    ph = P["PLINTH_H"]
+    total_h = P["H"] + ph
+    Dp = P["D"]
 
     def fx(y):
-        return Dp - y          # front po lewej stronie rysunku
+        return Dp - y
 
     def fy(z):
-        return H - z
+        return total_h - z
 
     _K[0] = 2.0
-    g = [rect(fx(Dp), fy(H), fx(0), fy(0), PLY)]
-    g.append(line(fx(D["frame_depth"]), fy(H), fx(D["frame_depth"]), fy(0),
+    g = [rect(fx(Dp), fy(total_h), fx(0), fy(ph), PLY)]
+    g.append(line(fx(D["frame_depth"]), fy(total_h), fx(D["frame_depth"]), fy(ph),
                   RULE, 1.0, dash="16 12"))
 
     for z in D["level_z"]:
         # wrab oporowy - plytki rowek na cala glebokosc, nie lokalny czop
-        g.append(rect(fx(D["frame_depth"]), fy(z + P["T"]), fx(0), fy(z),
+        g.append(rect(fx(D["frame_depth"]), fy(z + P["T"] + ph), fx(0), fy(z + ph),
                       PLY_D, ACC, 1.6))
         for y in P["BOLT_Y_RIGHT"]:                       # sruby M6
             g.append('<circle cx="%.2f" cy="%.2f" r="9" fill="none" stroke="%s" '
                      'stroke-width="1.6" vector-effect="non-scaling-stroke"/>'
-                     % (fx(y), fy(z + P["T"] / 2.0), ACC))
+                     % (fx(y), fy(z + P["T"] / 2.0 + ph), ACC))
+
+    sd, sh = P["SKIRTING_DEPTH"], P["SKIRTING_H"]
+    g.append(rect(fx(Dp - sd), fy(sh), fx(Dp), fy(0), "none", ACC, 1.4))
+    # opis obok, nie nad wypelnieniem - 100 mm cokolu to za malo miejsca na etykiete w rysunku
+    g.append('<g transform="translate(%.2f,%.2f) rotate(-90)">%s</g>'
+             % (fx(Dp) - 14, fy(sh / 2.0), text(0, 0, "listwa", 22, ACC)))
 
     g.append(dim_h(fx(Dp), fx(0), fy(0) + 110, "400"))
-    g.append(dim_v(fy(H), fy(0), fx(Dp) - 60, "2000"))
-    return (svg_open("-260 -140 900 2450", "Widok z prawej") + "".join(g) + "</svg>")
+    g.append(dim_v(fy(total_h), fy(0), fx(Dp) - 60, "2000"))
+    return (svg_open("-260 -160 900 2560", "Widok z prawej") + "".join(g) + "</svg>")
 
 
 # ---------------------------------------------------------------- rozmieszczenie srub
@@ -225,23 +244,23 @@ def view_bolts():
     kazdym znaczniku (ile srub przechodzi przez ten pion na tej wysokosci)
     i odeslanie do widoku z prawej / rzutu z gory po dokladne pozycje Y.
     """
-    H, W = P["H"], P["W"]
+    total_h, W = P["H"] + P["PLINTH_H"], P["W"]
 
     def fy(z):
-        return H - z
+        return total_h - z
 
     _K[0] = 2.0
     clusters = {}
-    for x, y, z, direction in m.bolt_positions():
+    for x, y, z, direction in m.bolt_positions():   # bolt_positions() -> Z globalny
         key = (round(x, 1), round(z, 1))
         clusters[key] = clusters.get(key, 0) + 1
 
-    g = [rect(0, fy(H), W, fy(0), CAV)]
+    g = [rect(0, fy(total_h), W, fy(0), CAV)]
     for part in m.build_parts():
-        if part.kind not in ("vertical", "shelf"):
+        if part.kind not in ("vertical", "shelf", "plinth"):
             continue
         x0, _, z0, x1, _, z1 = part.bbox()
-        g.append(rect(x0, fy(z1), x1, fy(z0), PLY))
+        g.append(rect(x0, fy(z1), x1, fy(z0), PLY_D if part.kind == "plinth" else PLY))
 
     for (x, z), n in clusters.items():
         cy = fy(z)
@@ -250,9 +269,67 @@ def view_bolts():
                   % (x, cy, ACC))
         g.append(text(x, cy + 19, str(n), 36, ACC, weight="700"))
 
-    g.append(dim_v(fy(H), fy(0), -60, "2000"))
+    g.append(dim_v(fy(total_h), fy(0), -60, "2000"))
     g.append(dim_h(0, W, fy(0) + 190, "1800"))
-    return (svg_open("-260 -140 2340 2450", "Rozmieszczenie srub") + "".join(g) + "</svg>")
+    return (svg_open("-260 -140 2340 2560", "Rozmieszczenie srub") + "".join(g) + "</svg>")
+
+
+# ---------------------------------------------------------------- cokol
+
+def view_plinth():
+    """Rzut z gory na cokol - cofniecie od scian pod listwe przypodlogowa.
+
+    Przerywany obrys = footprint korpusu tuz nad cokolem, dla porownania jak
+    daleko cokol jest cofniety. Ciagly czerwony obrys = sylwetka listwy
+    przypodlogowej wzdluz obu scian (tyl + prawy bok), dla kontekstu.
+    """
+    Dp, W, R = P["D"], P["W"], P["R"]
+
+    def fx(x):
+        return x
+
+    def fy(y):
+        return Dp - y
+
+    _K[0] = 1.0
+    g = []
+
+    z_probe = P["PLINTH_H"] + P["T"] / 2.0     # dno korpusu, tuz nad cokolem
+    for part in m.build_parts():
+        if part.kind not in ("vertical", "shelf"):
+            continue
+        z0, z1 = part.z_range()
+        if not (z0 - 1e-6 <= z_probe <= z1 + 1e-6):
+            continue
+        pts = [(fx(x), fy(y)) for x, y in part.footprint()]
+        g.append(poly(pts, "none", RULE, 1.2, 'stroke-dasharray="10 8"'))
+
+    for part in m.build_parts():
+        if part.kind != "plinth":
+            continue
+        pts = [(fx(x), fy(y)) for x, y in part.footprint()]
+        g.append(poly(pts, PLY_D))
+
+    sd = P["SKIRTING_DEPTH"]
+    g.append(poly([(fx(0), fy(Dp)), (fx(W), fy(Dp)),
+                   (fx(W), fy(Dp - sd)), (fx(0), fy(Dp - sd))],
+                  "none", ACC, 1.4, 'stroke-dasharray="12 9"'))
+    g.append(poly([(fx(W - sd), fy(Dp)), (fx(W), fy(Dp)),
+                   (fx(W), fy(0)), (fx(W - sd), fy(0))],
+                  "none", ACC, 1.4, 'stroke-dasharray="12 9"'))
+    # etykieta nad obrysem, nie na nim - pasmo listwy ma tylko 20 mm
+    # wysokosci, za malo dla czcionki 30 (i zejsc typu "y")
+    g.append(text(fx(W / 2.0), -24, "listwa - tylna sciana", 30, ACC))
+    g.append('<g transform="translate(%.2f,%.2f) rotate(-90)">%s</g>'
+             % (fx(W - sd) - 14, fy(Dp / 2.0), text(0, 0, "listwa - prawa sciana", 30, ACC)))
+
+    g.append(dim_h(0, W, fy(0) + 96, "1800"))
+    g.append(dim_v(fy(Dp), fy(0), -52, "400"))
+    g.append(dim_h(W - sd, W, fy(0) + 46, "20"))
+    g.append(dim_v(fy(Dp), fy(Dp - sd), -110, "20"))
+    g.append(dim_h(0, P["PLINTH_FRAME_W"], fy(0) + 146, "70"))
+
+    return (svg_open("-190 -120 2140 700", "Rzut cokolu") + "".join(g) + "</svg>")
 
 
 # ================================================================ strona
@@ -566,6 +643,7 @@ KIND_META = {
     "vertical": ("Piony", (216, 186, 138)),
     "shelf": ("Polki", (226, 199, 152)),
     "back": ("Plecy", (150, 121, 80)),
+    "plinth": ("Cokol", (102, 84, 61)),
 }
 
 
@@ -584,10 +662,12 @@ def build_html(n_tests):
             .replace("__KINDS__", json.dumps(kinds, separators=(",", ":")))
             .replace("__BBOX__", json.dumps(bbox)))
 
+    total_h = P["H"] + P["PLINTH_H"]
     stats = [
-        ("Gabaryt", "1800&times;2000", "&times;400 mm"),
+        ("Gabaryt", "1800&times;%.0f" % total_h, "&times;400 mm"),
         ("Zaoblenie", "R150", "przedni lewy"),
-        ("Swiatlo polki", "378.4", "mm"),
+        ("Cokol", "%.0f" % P["PLINTH_H"], "mm (korpus %.0f)" % P["H"]),
+        ("Swiatlo polki", "%.1f" % D["shelf_clear"], "mm"),
         ("Rozpietosc", "526", "mm / przeslo"),
         ("Elementow", str(len(parts)), "szt."),
         ("Srub M6", str(s["n_bolts"]), "szt."),
@@ -628,6 +708,7 @@ def build_html(n_tests):
         "shelf-B2": "Polki &middot; przeslo 3 (przy prawym boku)",
         "back-nose": "Plecy &middot; nos",
         "back-bay": "Plecy &middot; przeslo",
+        "plinth": "Cokol &middot; rama (lewy/tyl/prawy/przod/naroznik)",
     }
     order = list(GROUP_PL)
 
@@ -667,12 +748,24 @@ def build_html(n_tests):
         ("q", "Zlacze plyta-wrab (nos) nie ma na razie zadnego mocowania.",
          "Plyta siedzi w wrebie na wcisk, bez srub. Do rozstrzygniecia w rundzie "
          "dokumentacji: sruby retencyjne przez grzbiet, czy wystarczy tarcie."),
+        ("q", "Rama cokolu 70 mm — moj dobor, wymaga przegladu.",
+         "Cokol to rama (nie plyta pelna): lewa/tylna/prawa/przednia szyna 70 mm "
+         "szerokosci + zaokraglony naroznik pod noskiem, ten sam luk R150 co korpus "
+         "powyzej — inaczej prostokatna rama wystawalaby poza zaokraglony nawis. "
+         "Szerokosc szyn (70 mm) to moj dobor konstrukcyjny, nie Twoja specyfikacja — "
+         "do potwierdzenia przez joinery-specialist przed cieciem."),
+        ("q", "Prawy bok nie ma wlasnego oparcia w cokole w tym miejscu.",
+         "Cokol jest cofniety 20 mm od tylnej i prawej sciany (pod listwe), ale prawy "
+         "bok pionu stoi dokladnie na tym cofnieciu — korpus tam odrobine nawisa nad "
+         "pusta przestrzenia zamiast siedziec wprost na ramie. Normalne przy cokole "
+         "chowajacym sie pod listwe, ale warto to swiadomie zaakceptowac."),
         ("w", "Masa netto %.0f kg (101 kg w rundzie 2, 107 kg w rundzie 1)." % s["mass_kg"],
-         "Lekki wzrost wzgledem rundy 2 — polki siegaja teraz o 5 mm dalej w kazdy wrab "
-         "oporowy. Montaz nadal w dwie osoby przy 1800 &times; 2000 mm."),
-        ("i", "Cokol pominiety.",
-         "Dno lezy na podlodze. Cofniety cokol okolo 80 mm jest latwy do dodania, "
-         "ale zmienia proporcje — dlatego czeka na Twoja ocene bryly."),
+         "Wzrost obejmuje teraz tez cokol (5 nowych brol). Montaz w dwie osoby "
+         "przy 1800 &times; %.0f mm." % (P["H"] + P["PLINTH_H"])),
+        ("i", "Korpus skurczyl sie do %.0f mm, zeby calosc zmiescila sie w 2000 mm." % P["H"],
+         "Wybrales „zmiescic sie w 2000 mm total”, wiec swiatlo miedzypolkowe zmienilo "
+         "sie z 378,4 mm (rundy 1&ndash;3) na %.1f mm. Rozstaw przesel (526 mm) i cala "
+         "reszta w poziomie sa bez zmian." % D["shelf_clear"]),
     ]
     notes_html = "".join(
         '<div class="note"><span class="tag %s">%s</span>'
@@ -685,13 +778,14 @@ def build_html(n_tests):
 <div class="wrap">
 
 <header>
-  <p class="eyebrow">CNC Furniture Studio &middot; runda 3 &middot; bryla do oceny</p>
+  <p class="eyebrow">CNC Furniture Studio &middot; runda 4 &middot; bryla do oceny</p>
   <h1>Regal R150</h1>
   <p class="lede">Sklejka brzozowa 18 mm, ciecie CNC na gotowo, montaz rozbieralny na
   sruby M6 w mimosrod (gwint zenski, nie wkret) — bez czopow, tylko wiercone otwory
-  i plytki wrab oporowy pod kazda polka. Przedni lewy narozik zaobolony promieniem
-  150 mm na calej wysokosci, bez poszycia gietego. Ponizej geometria do obejrzenia
-  &mdash; dokumentacja produkcyjna powstaje po Twojej akceptacji.</p>
+  i plytki wrab oporowy pod kazda polka. Stoi na cokole 100 mm, cofnietym od sciany
+  pod listwe przypodlogowa (tyl i prawy bok regalu przylegaja do sciany). Przedni
+  lewy narozik zaobolony promieniem 150 mm, bez poszycia gietego. Ponizej geometria
+  do obejrzenia &mdash; dokumentacja produkcyjna powstaje po Twojej akceptacji.</p>
 </header>
 
 <section>
@@ -726,12 +820,20 @@ def build_html(n_tests):
   <div class="draw">
     <div class="plan"><div class="sheet"><h3>Rzut z gory &middot; poziom polki</h3>%s</div></div>
     <div class="sheet"><h3>Widok z przodu</h3>%s</div>
-    <div class="sheet"><h3>Widok z prawej &middot; wrab oporowy i sruby</h3>%s</div>
+    <div class="sheet"><h3>Widok z prawej &middot; wrab oporowy i sruby</h3>
+    <p class="figcap">Cienki czerwony prostokat przy podlodze = sylwetka listwy
+    przypodlogowej. Cokol jest tu cofniety, wiec korpus odrobine nawisa nad pusta
+    przestrzenia w tym rogu — patrz „Rzut cokolu" nizej.</p>%s</div>
     <div class="wide"><div class="sheet"><h3>Rozmieszczenie srub M6 (60 szt., 30 zlacz)</h3>
     <p class="figcap">Kazdy znacznik = jeden pion na tej wysokosci; liczba = ile srub
     przez niego przechodzi (2 z jednej strony, 4 gdy dwie polki spotykaja sie na tym
     samym pionie z obu stron). Dokladne pozycje w glab (Y) sa w widoku z prawej
     i w rzucie z gory.</p>%s</div></div>
+    <div class="plan"><div class="sheet"><h3>Rzut cokolu &middot; cofniecie od scian</h3>
+    <p class="figcap">Przerywany szary obrys = footprint korpusu tuz nad cokolem.
+    Przerywany czerwony obrys = sylwetka listwy przypodlogowej wzdluz obu scian
+    (tyl + prawy bok, gdzie regal przylega). Naroznik pod noskiem podaza za tym
+    samym lukiem R150 co korpus powyzej.</p>%s</div></div>
   </div>
 </section>
 
@@ -746,8 +848,8 @@ def build_html(n_tests):
 
 <section>
   <div class="hdr"><h2><span class="num">04</span>Do rozstrzygniecia</h2>
-  <p class="sub">Trzy decyzje wymagajace przegladu przed cieciem, jedno ryzyko
-  do potwierdzenia i jeden detal, ktory warto zaakceptowac swiadomie.</p></div>
+  <p class="sub">Piec decyzji wymagajacych przegladu przed cieciem, jedno ryzyko
+  do potwierdzenia i jedna zmiana, o ktorej warto wiedziec.</p></div>
   <div class="notes">%s</div>
 </section>
 
@@ -758,7 +860,7 @@ na %d elementach) &middot; skrypt do Blendera: build_shelf_blender.py</p>
 </div>
 <script>%s</script>
 """ % (CSS, stat_html, layer_btns, view_plan(), view_front(), view_right(), view_bolts(),
-       table, notes_html, n_tests, n_tests, len(parts), js)
+       view_plinth(), table, notes_html, n_tests, n_tests, len(parts), js)
 
 
 def main():

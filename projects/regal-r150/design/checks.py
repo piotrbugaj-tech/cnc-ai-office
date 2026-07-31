@@ -117,13 +117,19 @@ def run():
     r = Results()
 
     # --- 1. gabaryty ---------------------------------------------------
+    # calkowita wysokosc = korpus (p["H"]) + cokol (p["PLINTH_H"]) = 2000
+    total_h = p["H"] + p["PLINTH_H"]
     bxs = [q.bbox() for q in parts]
     bb = (min(b[0] for b in bxs), min(b[1] for b in bxs), min(b[2] for b in bxs),
           max(b[3] for b in bxs), max(b[4] for b in bxs), max(b[5] for b in bxs))
-    r.check("bbox bryly = 1800 x 400 x 2000",
+    r.check("bbox bryly = 1800 x 400 x 2000 (korpus+cokol)",
             abs(bb[3] - bb[0] - p["W"]) < TOL and abs(bb[4] - bb[1] - p["D"]) < TOL
-            and abs(bb[5] - bb[2] - p["H"]) < TOL,
+            and abs(bb[5] - bb[2] - total_h) < TOL,
             "%.1f x %.1f x %.1f mm" % (bb[3] - bb[0], bb[4] - bb[1], bb[5] - bb[2]))
+
+    r.check("korpus + cokol = 2000 mm dokladnie",
+            abs(total_h - 2000.0) < TOL,
+            "korpus %.0f + cokol %.0f = %.1f" % (p["H"], p["PLINTH_H"], total_h))
 
     # --- 2. stycznosc luku ---------------------------------------------
     # nose_bay_profile obejmuje tez prawa krawedz przesla (xr, 0) - stad
@@ -156,10 +162,10 @@ def run():
             % (len(d["vertical_x"]), p["N_BAYS"], d["bay_clear"], horiz))
 
     vert = (p["N_LEVELS"] - 1) * d["shelf_clear"] + p["N_LEVELS"] * p["T"]
-    r.check("lancuch pionowy domyka sie do 2000",
+    r.check("lancuch pionowy korpusu domyka sie do 1900",
             abs(vert - p["H"]) < TOL,
-            "%d x %.1f swiatlo + %d x 18 poziomow = %.1f"
-            % (p["N_LEVELS"] - 1, d["shelf_clear"], p["N_LEVELS"], vert))
+            "%d x %.1f swiatlo + %d x 18 poziomow = %.1f (+ cokol %.0f = 2000)"
+            % (p["N_LEVELS"] - 1, d["shelf_clear"], p["N_LEVELS"], vert, p["PLINTH_H"]))
 
     # --- 4. przenikanie ------------------------------------------------
     # zaden legalny para elementow nie powinna sie juz przenikac - polka
@@ -244,6 +250,28 @@ def run():
     r.check("rozpietosc polki <= 800 mm (sklejka 18, gl. 400)",
             d["bay_clear"] <= 800.0,
             "swiatlo przesla %.0f mm" % d["bay_clear"])
+
+    # --- 11. cokol nigdzie nie wychodzi poza zaokraglony nawis korpusu --
+    cx, cy = d["arc_center"]
+    corner = next((q for q in parts if q.name == "plinth-corner"), None)
+    over_r = []
+    if corner:
+        for x, y in corner.geom["profile"]:
+            dist = math.hypot(x - cx, y - cy)
+            if dist > p["R"] + TOL:
+                over_r.append((x, y, dist))
+    r.check("cokol miesci sie pod lukiem R150 (zaden punkt > R od srodka)",
+            not over_r,
+            "wszystkie punkty naroznika <= R%.0f" % p["R"]
+            if not over_r else "wystaje %d punktow, np. %s" % (len(over_r), over_r[:2]))
+
+    # --- 12. korpus siada dokladnie na gorze cokolu, bez szczeliny -------
+    plinth_top = p["PLINTH_H"]
+    corpus_bottom = min(q.z_range()[0] for q in parts if q.kind != "plinth")
+    r.check("korpus siada dokladnie na gorze cokolu (bez szczeliny)",
+            abs(corpus_bottom - plinth_top) < TOL,
+            "spod korpusu przy z=%.1f mm, gora cokolu z=%.1f mm"
+            % (corpus_bottom, plinth_top))
 
     return r
 

@@ -24,9 +24,9 @@ import math
 # ---------------------------------------------------------------- parametry
 
 PARAMS = {
-    # gabaryty
+    # gabaryty calosci (korpus + cokol = 2000 mm - runda 4, na zyczenie klienta)
     "W": 1800.0,            # szerokosc calkowita
-    "H": 2000.0,            # wysokosc calkowita
+    "H": 1900.0,            # wysokosc samego korpusu (2000 - PLINTH_H)
     "D": 400.0,             # glebokosc calkowita
     # material
     "T": 18.0,              # sklejka brzozowa konstrukcyjna
@@ -43,6 +43,12 @@ PARAMS = {
     "BOLT_Y_RIGHT": (320.0, 380.0),
     "BOLT_D": 6.0,          # M6
     "DOWEL_D": 10.0,        # mimosrod beczkowy (gwint zenski, nie wkret)
+    # cokol - runda 4: tyl i prawy bok przylegaja do sciany, listwa
+    # przypodlogowa 85 mm wys. x 20 mm gl. (odstaje od sciany)
+    "PLINTH_H": 100.0,      # 85 mm listwa + 15 mm przeswitu na nierownosci
+    "PLINTH_FRAME_W": 70.0, # szerokosc szyn ramy cokolowej
+    "SKIRTING_H": 85.0,     # wysokosc listwy przypodlogowej (dane wejsciowe)
+    "SKIRTING_DEPTH": 20.0, # o tyle listwa odstaje od sciany
     # rendering / material
     "ARC_SEGMENTS": 40,
     "PLY_DENSITY": 700.0,   # kg/m3
@@ -100,7 +106,7 @@ class Part:
     def __init__(self, name, kind, geom, thickness, material, grain,
                  qty_group=None, area_override=None):
         self.name = name
-        self.kind = kind                # vertical | shelf | back
+        self.kind = kind                # vertical | shelf | back | plinth
         self.geom = geom
         self.thickness = thickness
         self.material = material
@@ -277,6 +283,19 @@ def nose_bay_profile(p=PARAMS, d=DERIVED):
     return pts
 
 
+def plinth_corner_profile(p=PARAMS, d=DERIVED):
+    """Obrys zaokraglonego naroznika ramy cokolowej - piescien miedzy R150
+    (ten sam luk co korpus powyzej) a R150-PLINTH_FRAME_W. Prostokatna rama
+    wystawalaby poza zaokraglony nawis korpusu w tym rogu; ten sam luk R150
+    gwarantuje, ze cokol nigdzie nie wychodzi poza obrys korpusu.
+    """
+    cx, cy = d["arc_center"]
+    r_in = p["R"] - p["PLINTH_FRAME_W"]
+    outer = arc_points(cx, cy, p["R"], 270.0, 180.0, p["ARC_SEGMENTS"])   # (150,0) -> (0,150)
+    inner = arc_points(cx, cy, r_in, 180.0, 270.0, p["ARC_SEGMENTS"])     # (70,150) -> (150,70)
+    return outer + inner
+
+
 # ---------------------------------------------------------------- budowa
 
 def _rabbeted_vertical(name, x0, faces, p=PARAMS, d=DERIVED, qty_group=None):
@@ -310,7 +329,65 @@ def _rabbeted_vertical(name, x0, faces, p=PARAMS, d=DERIVED, qty_group=None):
     return parts
 
 
+def _translate_z(parts, dz):
+    """Kopiuje liste Part z geometria przesunieta o dz w Z - uzywane zeby
+    zbudowac korpus w lokalnych wspolrzednych (z=0 na jego wlasnym dole),
+    a potem postawic go na cokole bez przepisywania kazdej linii budowy."""
+    out = []
+    for pt in parts:
+        g = pt.geom
+        if g["type"] == "box":
+            x0, y0, z0, x1, y1, z1 = g["bounds"]
+            newg = {"type": "box", "bounds": (x0, y0, z0 + dz, x1, y1, z1 + dz)}
+        else:
+            newg = {"type": "prism_z", "profile": g["profile"],
+                    "z0": g["z0"] + dz, "z1": g["z1"] + dz}
+        out.append(Part(pt.name, pt.kind, newg, pt.thickness, pt.material,
+                        pt.grain, pt.qty_group, pt.area_override))
+    return out
+
+
+def _build_plinth(p=PARAMS, d=DERIVED):
+    """Cokol - rama (nie plyta pelna), z=0..PLINTH_H. Przy scianach (tyl,
+    prawy bok) cofnieta o SKIRTING_DEPTH, zeby ominac listwe przypodlogowa;
+    przedni-lewy naroznik podaza za lukiem R150 korpusu (patrz
+    plinth_corner_profile). Piec brol, jedna fizyczna rama - patrz
+    joinery-notes.md."""
+    T = p["T"]
+    ph = p["PLINTH_H"]
+    fw = p["PLINTH_FRAME_W"]
+    sd = p["SKIRTING_DEPTH"]
+    W, Dp, R = p["W"], p["D"], p["R"]
+    y_back = Dp - sd            # 380 - cofniete od tylnej sciany
+    x_right = W - sd            # 1780 - cofniete od prawej sciany
+
+    mat, grain = "sklejka brzozowa 18", "longitudinal"
+    return [
+        Part("plinth-left", "plinth",
+             {"type": "box", "bounds": (0.0, R, 0.0, fw, y_back - fw, ph)},
+             T, mat, grain, "plinth"),
+        Part("plinth-back", "plinth",
+             {"type": "box", "bounds": (0.0, y_back - fw, 0.0, x_right, y_back, ph)},
+             T, mat, grain, "plinth"),
+        Part("plinth-right", "plinth",
+             {"type": "box", "bounds": (x_right - fw, 0.0, 0.0, x_right, y_back - fw, ph)},
+             T, mat, grain, "plinth"),
+        Part("plinth-front", "plinth",
+             {"type": "box", "bounds": (R, 0.0, 0.0, x_right - fw, fw, ph)},
+             T, mat, grain, "plinth"),
+        Part("plinth-corner", "plinth",
+             {"type": "prism_z", "profile": plinth_corner_profile(p, d), "z0": 0.0, "z1": ph},
+             T, mat, "free", "plinth"),
+    ]
+
+
 def build_parts(p=PARAMS, d=DERIVED):
+    """Korpus (zbudowany lokalnie, z=0 na jego dole) przesuniety na cokol
+    (z=0..PLINTH_H) - patrz docstring modulu i _build_plinth."""
+    return _translate_z(_build_corpus(p, d), p["PLINTH_H"]) + _build_plinth(p, d)
+
+
+def _build_corpus(p=PARAMS, d=DERIVED):
     parts = []
     xs = d["vertical_x"]
     fd = d["frame_depth"]
@@ -386,13 +463,15 @@ def bolt_positions(p=PARAMS, d=DERIVED):
     (patrz _rabbeted_vertical); sruby przenosza docisk i wyrywanie, nie
     ciezar - ten bierze prog wrebu.
 
-    Zwraca (x, y, z, kierunek). Nie renderowane w 3D - dane pod wiercenia DXF.
+    Zwraca (x, y, z, kierunek) w globalnym Z (korpus stoi na cokole -
+    patrz build_parts). Nie renderowane w 3D - dane pod wiercenia DXF.
     """
     out = []
     xs = d["vertical_x"]
     T = p["T"]
+    z_off = p["PLINTH_H"]
     for li, z in enumerate(d["level_z"]):
-        zc = z + T / 2.0
+        zc = z + T / 2.0 + z_off
         for b in range(p["N_BAYS"]):
             if b > 0:                   # b==0 lewa strona: wrab, nie sruba
                 for y in p["BOLT_Y_LEFT"]:
@@ -433,12 +512,14 @@ COLLECTIONS = {
     "vertical": "01_Piony",
     "shelf": "02_Polki",
     "back": "03_Plecy",
+    "plinth": "04_Cokol",
 }
 
 COLORS = {
     "vertical": (0.86, 0.72, 0.50, 1.0),
     "shelf": (0.90, 0.78, 0.57, 1.0),
     "back": (0.62, 0.50, 0.35, 1.0),
+    "plinth": (0.40, 0.33, 0.24, 1.0),
 }
 
 
@@ -530,8 +611,10 @@ def main():
     s = summary()
     n = build_scene()
     p, d = PARAMS, DERIVED
+    total_h = p["H"] + p["PLINTH_H"]
     print("=" * 58)
-    print("Regal R150  %.0f x %.0f x %.0f mm" % (p["W"], p["H"], p["D"]))
+    print("Regal R150  %.0f x %.0f x %.0f mm (korpus %.0f + cokol %.0f)"
+          % (p["W"], total_h, p["D"], p["H"], p["PLINTH_H"]))
     print("=" * 58)
     print("  zaoblenie      R%.0f, przedni lewy narozik, cala wysokosc, bez poszycia" % p["R"])
     print("  przesla        %d x %.0f mm swiatla" % (p["N_BAYS"], d["bay_clear"]))
@@ -541,6 +624,8 @@ def main():
     print("  lewy bok       grzbiet + 5 zebow, wrab przelotowy w kazdym zlaczu")
     print("  pozostale piony wrab oporowy %.0f mm pod kazda polka, bez czopow"
           % p["RABBET_DEPTH"])
+    print("  cokol          rama %.0f mm wys., cofnieta %.0f mm od tylu/prawego"
+          " boku (listwa przypodlogowa)" % (p["PLINTH_H"], p["SKIRTING_DEPTH"]))
     print("  obiektow       %d" % n)
     print("  srub M6        %d" % s["n_bolts"])
     print("  masa netto     %.1f kg" % s["mass_kg"])
