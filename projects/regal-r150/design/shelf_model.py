@@ -47,6 +47,7 @@ PARAMS = {
     "DOWEL_D": 10.0,        # mimosrod beczkowy (gwint zenski, nie wkret)
     "PIN_D": 5.0,           # kolek polkowy
     "PIN_Y": (60.0, 340.0), # osie kolkow polkowych, w glab
+    "NOSE_CORNER_BOLT_Y": (60.0, 300.0),  # runda 8 - sruby poleczek naroznika
     "BACK_GROOVE_W": 4.0,   # wpust pod plecki w tylnych krawedziach
     "BACK_GROOVE_D": 8.0,
     # --- wyposazenie komor: opcje wlaczane parametrem (runda 7) ---
@@ -292,6 +293,25 @@ def full_plate_profile(p=PARAMS, d=DERIVED):
     return pts
 
 
+def nose_corner_profile(p=PARAMS, d=DERIVED):
+    """Obrys malej zaokraglonej poleczki w rogu nosa (runda 8).
+
+    Runda 7 usunela wrab przelotowy, wiec plyty srodkowych poziomow koncza
+    sie teraz na licu lewego boku (x=150) - strefa zaokraglonego naroznika
+    (0-150 mm) zrobila sie pusta na 4 srodkowych wysokosciach (dolna i gorna
+    plyta ja nadal obejmuja, bo uzywaja full_plate_profile). Klient chce te
+    poleczki z powrotem - wracaja jako osobne, male czesci wspornikowo
+    skrecone do lica lewego boku (ktore jest teraz odslonietym plaskim
+    licem, bo nie ma juz grzebienia/wrebu - wystarcza 2 sruby M6).
+    """
+    cx, cy = d["arc_center"]
+    fd = d["frame_depth"]
+    pts = arc_points(cx, cy, p["R"], 270.0, 180.0, p["ARC_SEGMENTS"])  # (150,0)->(0,150)
+    pts.append((0.0, fd))
+    pts.append((p["R"], fd))
+    return pts
+
+
 def plinth_corner_profile(p=PARAMS, d=DERIVED):
     """Obrys zaokraglonego naroznika ramy cokolowej - piescien wspolsrodkowy
     z lukiem R150 korpusu, ale pomniejszony o PLINTH_INSET (runda 5 - cokol
@@ -441,6 +461,18 @@ def _build_corpus(p=PARAMS, d=DERIVED):
                 {"type": "box", "bounds": (xs[b] + T, 0.0, z, xs[b + 1], fd, z + T)},
                 T, mat, "longitudinal", "shelf-bay"))
 
+    # --- male zaokraglone poleczki w rogu nosa (runda 8) - runda 7
+    # zostawila te strefe pusta, klient poprosil o przywrocenie. Wraca jako
+    # osobna czesc na kazdym z 4 srodkowych poziomow, wspornikowo skrecona
+    # do lica lewego boku (patrz joinery-notes.md) ---
+    prof_corner = nose_corner_profile(p, d)
+    for li in range(1, p["N_LEVELS"] - 1):
+        z = d["level_z"][li]
+        parts.append(Part(
+            "nose-corner-L%d" % li, "shelf",
+            {"type": "prism_z", "profile": prof_corner, "z0": z, "z1": z + T},
+            T, mat, "free", "nose-corner"))
+
     # --- plecy: nos + po jednej plycie na przeslo, wsuwane we wpust
     # 4 x 8 mm w tylnych krawedziach (patrz joinery-notes.md) ---
     y0b, y1b = fd, p["D"]
@@ -542,6 +574,21 @@ def bolt_positions(p=PARAMS, d=DERIVED):
     return out
 
 
+def nose_corner_bolt_positions(p=PARAMS, d=DERIVED):
+    """Osie srub M6 mocujacych male poleczki naroznika do lica lewego boku
+    (runda 8) - poziomo, przez lico pionu (x=R) w mimosrod w krawedzi
+    poleczki. 2 sruby na poleczke, na 4 srodkowych poziomach.
+    """
+    out = []
+    T = p["T"]
+    z_off = p["PLINTH_H"]
+    for li in range(1, p["N_LEVELS"] - 1):
+        zc = d["level_z"][li] + T / 2.0 + z_off
+        for y in p["NOSE_CORNER_BOLT_Y"]:
+            out.append((p["R"], y, zc, "-x"))
+    return out
+
+
 def shelf_pin_positions(p=PARAMS, d=DERIVED):
     """Otwory Ø5 pod kolki polkowe - w licach pionow, po obu stronach kazdego
     przesla, na kazdej z 4 srodkowych wysokosci (runda 7). Polki srodkowe
@@ -595,7 +642,7 @@ def summary(p=PARAMS, d=DERIVED):
         "parts": parts,
         "by_kind": by_kind,
         "mass_kg": mass,
-        "n_bolts": len(bolt_positions(p, d)),
+        "n_bolts": len(bolt_positions(p, d)) + len(nose_corner_bolt_positions(p, d)),
         "bay_clear": d["bay_clear"],
         "shelf_clear": d["shelf_clear"],
         "level_z": d["level_z"],

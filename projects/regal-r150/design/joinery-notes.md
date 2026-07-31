@@ -1,16 +1,17 @@
 # Regał R150 — decyzje stolarskie
 
 Zgodnie z CLAUDE.md § 9 — dokumentacja decyzji technicznych.
-**Runda 7: zero wrębów w całym meblu.** Piony stoją między płytami, półki
-środkowe na kołkach, szuflady i drzwiczki jako opcja parametryczna.
+**Runda 8:** małe zaokrąglone półeczki w rogu nosa wracają jako osobne,
+wspornikowo skręcane elementy (zniknęły w rundzie 7 razem z wrębami).
 
 ## Status
 
-**23/23 testów** w `checks.py`, zero kolizji na 47 elementach. Nie było
+**24/24 testów** w `checks.py`, zero kolizji na 51 elementach. Nie było
 jeszcze walidacji przez `qa-inspector` ani `safety-officer`.
 
-Wszystkie punkty z rund 1–6 są zamknięte. Otwarte pozostają dwa pytania
-**do Ciebie** (nie do stolarza) — patrz § 7.
+Konstrukcja bez wrębów (runda 7) i przywrócone półeczki narożnika (runda 8)
+są zamknięte technicznie. Otwarte pozostaje jedno pytanie **do Ciebie**
+(nie do stolarza) — patrz § 7.
 
 ---
 
@@ -146,12 +147,28 @@ z `DOOR_CELLS`, i że żadna komora nie dostała jednocześnie szuflady i drzwi.
 w y = 150 — przechodzi w płaszczyzny bez załamania. Sprawdzane automatycznie.
 Bez żeber i bez poszycia giętego (usunięte w rundzie 2).
 
-**Konsekwencja rundy 7:** skoro nie ma wrębów, płyta poziomu nie może przejść
-przez lewy bok — więc strefa 150 mm na lewo od niego jest teraz **otwartą
-wnęką na całą wysokość** (1864 mm), zamkniętą tylko dolną i górną płytą,
-które obejmują zaokrąglony narożnik. Patrz § 7.
+### Małe półeczki narożnika — runda 8: przywrócone
 
----
+Runda 7 usunęła wręby, więc strefa zaokrąglonego narożnika (0–150 mm) zrobiła
+się pusta na czterech środkowych poziomach — zostało to od razu zauważone.
+Rozwiązanie: półeczki wracają jako **osobne, małe elementy** (nie scalone
+z resztą przęsła jak w rundach 2–6), wspornikowo skręcone do lica lewego
+boku.
+
+To działa teraz prościej niż kiedykolwiek: lico lewego boku w x = 150 jest
+**płaskie i odsłonięte** (nie ma już grzebienia ani wrębu z rundy 7), więc
+mocowanie to zwykłe złącze na 2 śruby M6 w mimośrody — ten sam schemat co
+wszędzie indziej w meblu, bez żadnej nowej techniki.
+
+| Element | Wartość |
+|---|---|
+| Liczba | 4 (na każdym z czterech środkowych poziomów) |
+| Obrys | ćwiartka koła R150 do lica pionu (x = 150), pełna głębokość 396 mm |
+| Mocowanie | 2 śruby M6 poziomo w lico pionu, mimośrody w krawędzi półeczki |
+| Pozycje śrub (w głąb) | 60 i 300 mm |
+
+Dolna i górna płyta **nie potrzebują** tego zabiegu — obejmują cały obrys
+łuku R150 w jednym kawałku (§ 1), więc tam półeczka i tak już jest.
 
 ## 5. Cokół — runda 4–6, bez zmian w rundzie 7
 
@@ -191,26 +208,18 @@ Sprawdzane automatycznie dla każdego elementu.
 
 ## 7. Do rozstrzygnięcia
 
-Oba punkty są **decyzjami klienta**, nie problemami technicznymi:
+Jeden punkt, decyzja klienta, nie problem techniczny:
 
-1. **Nos — otwarta wnęka czy półki?** Strefa 150 mm na lewo od lewego boku
-   jest teraz pusta na całej wysokości (§ 4). Jeśli mają tam być półki,
-   trzeba je wspornikowo przykręcić do lewego boku — jego lico od strony
-   wnęki jest dostępne, więc śruby M6 w mimośrody w krawędzi półki działają
-   bez problemu. Wysięg 150 mm przy sklejce 18 mm jest do przyjęcia dla
-   lekkich rzeczy. **Do decyzji: zostawić otwartą wnękę czy dodać półki.**
-
-2. **Ile komór ma finalnie dostać szuflady/drzwiczki.** Model przyjmuje
+1. **Ile komór finalnie dostaje szuflady/drzwiczki.** Model przyjmuje
    dowolną kombinację; podgląd pokazuje wariant demonstracyjny (3 szuflady +
-   2 drzwiczki). Masa netto rośnie o ~20 kg przy pełnym wyposażeniu, więc
-   warto to świadomie ograniczyć.
+   2 drzwiczki). Masa netto rośnie wyraźnie przy pełnym wyposażeniu.
 
 **Zamknięte w rundzie 7:** wręby (usunięte całkowicie), dostęp dla łba śruby,
 reguła 1/3 grubości, mocowanie plecków, konstrukcja półek środkowych.
 **Zamknięte wcześniej:** wymiary okucia, konstrukcja ramy cokołu, kotwienie
 korpus ↔ cokół, nawis prawego boku (§ 5).
 
-**Do zapisania w instrukcji montażu:** masa netto **125 kg** z pełnym
+**Do zapisania w instrukcji montażu:** masa netto **127,6 kg** z pełnym
 wyposażeniem (same płyty, bez okuć). Montaż w dwie osoby, na miejscu
 ustawienia — kolejność: dolna płyta → piony → plecki → górna płyta →
-półki/szuflady/drzwiczki → cokół.
+półeczki narożnika → półki/szuflady/drzwiczki → cokół.

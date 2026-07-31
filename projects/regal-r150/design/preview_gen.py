@@ -169,9 +169,7 @@ def view_front():
     def fy(z):
         return total_h - z
 
-    # rysowane z prawdziwych czesci (nie z recznie odtwarzanych wspolrzednych) -
-    # lewy bok to teraz grzebien (grzbiet + zeby), nie jeden pelnowysokosciowy
-    # prostokat, a przeslo 0 to zaokraglona plyta 0-694, nie prostokat 168-694
+    # rysowane z prawdziwych czesci (nie z recznie odtwarzanych wspolrzednych)
     _K[0] = 2.0
     g = [rect(0, fy(total_h), P["W"], fy(0), CAV)]
     for part in m.build_parts():
@@ -265,7 +263,7 @@ def view_bolts():
 
     _K[0] = 2.0
     clusters = {}
-    for x, y, z, direction in m.bolt_positions():   # bolt_positions() -> Z globalny
+    for x, y, z, direction in m.bolt_positions() + m.nose_corner_bolt_positions():
         key = (round(x, 1), round(z, 1))
         clusters[key] = clusters.get(key, 0) + 1
 
@@ -731,6 +729,7 @@ def build_html(n_tests):
         "vertical-L-gable": "Lewy bok &middot; grzbiet + zeby (wrab)",
         "plate": "Dolna i gorna plyta &middot; jeden kawalek 1800 mm",
         "shelf-bay": "Polki srodkowe &middot; na kolkach, przestawialne",
+        "nose-corner": "Poleczki naroznika &middot; wspornikowe, skrecane do lewego boku",
         "plinth-rib": "Cokol &middot; zebra poprzeczne pod pionami",
         "drawer-front": "Szuflada &middot; front",
         "drawer-side": "Szuflada &middot; boki",
@@ -766,6 +765,12 @@ def build_html(n_tests):
     n_dr = len(P["DRAWER_CELLS"])
     n_do = len(P["DOOR_CELLS"])
     notes = [
+        ("i", "Male zaokraglone poleczki w rogu nosa - przywrocone.",
+         "Runda 7 usunela wreby, wiec strefa zaokraglonego naroznika (0-150 mm) "
+         "zrobila sie pusta na 4 srodkowych poziomach - zauwazyles to od razu. "
+         "Wracaja jako osobne czesci, wspornikowo skrecone do lica lewego boku "
+         "(2 sruby M6 kazda, poziomo) - lico jest teraz plaskie i odslonieta, "
+         "bo nie ma juz grzebienia/wrebu, wiec montaz jest prosty."),
         ("i", "Zero wrebow w calym meblu.",
          "Piony stoja miedzy dolna a gorna plyta, wiec nic przez nie nie przechodzi. "
          "Znika i wrab przelotowy, i wrab oporowy - a razem z nimi caly problem "

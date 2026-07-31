@@ -258,6 +258,17 @@ def run():
             "%d otworow, wszystkie na licu pionu" % len(pins) if not off
             else str(off[:3]))
 
+    # --- 6f. male poleczki naroznika (runda 8) obecne na 4 srodkowych
+    # poziomach, skrecone do lica lewego boku (x=R) ------------------------
+    corners = [q for q in parts if q.qty_group == "nose-corner"]
+    cbolts = m.nose_corner_bolt_positions(p, d)
+    bad_cb = [b for b in cbolts if abs(b[0] - p["R"]) > TOL]
+    r.check("4 poleczki naroznika, %d srub mocujacych do lica pionu"
+            % len(cbolts),
+            len(corners) == p["N_LEVELS"] - 2 and not bad_cb,
+            "%d poleczek, %d srub na x=%.0f" % (len(corners), len(cbolts), p["R"])
+            if not bad_cb else str(bad_cb[:3]))
+
     # --- 6c. kotwy korpus <-> cokol trafiaja w szyny/zebra ramy ----------
     anchors = m.plinth_bolt_positions(p, d)
     plinth_fp = [q.footprint() for q in parts if q.kind == "plinth"]

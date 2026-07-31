@@ -1,9 +1,9 @@
 # Regał R150 — brief
 
 **Klient:** wewnętrzny / własny
-**Runda:** 7 — zero wrębów, półki na kołkach, szuflady i drzwiczki jako opcja
+**Runda:** 8 — przywrócone półeczki narożnika nosa
 **Data:** 2026-07-31
-**Status:** czeka na akceptację bryły. Wszystkie kwestie techniczne zamknięte; otwarte dwie decyzje klienta (nos, zakres wyposażenia) — patrz §5
+**Status:** czeka na akceptację bryły. Wszystkie kwestie techniczne zamknięte; otwarta jedna decyzja klienta (zakres wyposażenia) — patrz §5
 
 ## 1. Zakres
 
@@ -74,16 +74,9 @@ Szczegóły stolarki: `design/joinery-notes.md`.
 
 ## 5. Otwarte kwestie
 
-Runda 7 zamknęła wszystkie kwestie techniczne. Zostały **dwie decyzje
-klienta**:
-
-1. **Nos — otwarta wnęka czy półki?** Bez wrębów płyta poziomu nie przechodzi
-   przez lewy bok, więc strefa 150 mm na lewo od niego jest otwarta na całą
-   wysokość. Można dodać półki wspornikowo przykręcone do lewego boku.
-   Patrz `design/joinery-notes.md` §7.
-2. **Zakres wyposażenia** — ile komór finalnie dostaje szuflady/drzwiczki.
-   Model przyjmuje dowolną kombinację; podgląd pokazuje wariant
-   demonstracyjny. Pełne wyposażenie to ~20 kg masy więcej.
+Została **jedna decyzja klienta**: ile komór finalnie dostaje
+szuflady/drzwiczki. Model przyjmuje dowolną kombinację; podgląd pokazuje
+wariant demonstracyjny. Pełne wyposażenie dokłada wyraźnie do masy netto.
 
 ## 6. Poza zakresem rundy 1–7
 
@@ -346,3 +339,26 @@ wyłącznie pozycje puszek Ø35, więc nie rusza listy cięć ani nestingu.
 wyposażeniem. **23/23 testów** geometrii, w tym nowe: piony niescieniane,
 piony stoją między płytami, kołki trafiają w lica pionów, zawiasy po
 zadanej stronie drzwi.
+
+## 13. Runda 8 — przywrócone półeczki narożnika nosa
+
+Klient zauważył od razu: *„usunąłeś wszystkie małe zaokrąglone półeczki"* —
+zgłoszone przeze mnie w rundzie 7 jako otwarte pytanie („nos: otwarta wnęka
+czy półki?"), teraz rozstrzygnięte jednoznacznie na „przywróć".
+
+Runda 7 usunęła wręby, więc płyty środkowych poziomów kończą się teraz na
+licu lewego boku (x = 150) — strefa zaokrąglonego narożnika (0–150 mm)
+zrobiła się pusta na czterech środkowych wysokościach (dolna i górna płyta
+nadal ją obejmują, bo są jednym kawałkiem na cały obrys).
+
+**Rozwiązanie:** półeczki wracają jako osobne, małe elementy, wspornikowo
+skręcone do lica lewego boku — 2 śruby M6 w mimośrody na półeczkę. Działa to
+teraz prościej niż w rundach 2–6: lico pionu w x = 150 jest płaskie i
+odsłonięte (nie ma już grzebienia ani wrębu), więc to zwykłe złącze na śruby,
+identyczne ze schematem używanym już wszędzie indziej w meblu — żadna nowa
+technika.
+
+**Wynik:** 51 elementów (było 47), 24 śruby M6 łącznie (16 pion↔płyta +
+8 nowych do półeczek narożnika) + 10 kotew do cokołu, masa netto 127,6 kg
+z pełnym wyposażeniem. **24/24 testów** geometrii, w tym nowy: cztery
+półeczki narożnika obecne i poprawnie skręcone do lica pionu.
