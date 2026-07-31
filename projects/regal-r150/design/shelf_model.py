@@ -40,11 +40,24 @@ PARAMS = {
     "N_LEVELS": 6,          # poziomy poziome: dno + 4 polki + wieniec
     "N_BAYS": 3,            # przesla miedzy pionami
     # stolarka
-    "NOTCH_DEPTH": 310.0,   # wrab w lewym boku: otwarty na ta glebokosc od frontu
-    "RABBET_DEPTH": 5.0,    # wrab oporowy pod polki - patrz joinery-notes.md sekcja 1
-    "BOLT_Y_RIGHT": (320.0, 380.0),   # tylko prawy bok - patrz bolt_positions
+    # runda 7: zero wrebow. Piony stoja miedzy dolna a gorna plyta, polki
+    # srodkowe leza na kolkach - patrz joinery-notes.md sekcja 1.
+    "BOLT_Y": (120.0, 300.0),   # osie srub pion <-> plyta, w glab
     "BOLT_D": 6.0,          # M6
     "DOWEL_D": 10.0,        # mimosrod beczkowy (gwint zenski, nie wkret)
+    "PIN_D": 5.0,           # kolek polkowy
+    "PIN_Y": (60.0, 340.0), # osie kolkow polkowych, w glab
+    "BACK_GROOVE_W": 4.0,   # wpust pod plecki w tylnych krawedziach
+    "BACK_GROOVE_D": 8.0,
+    # --- wyposazenie komor: opcje wlaczane parametrem (runda 7) ---
+    # klucz to (poziom, przeslo). Poziom 0 = komora tuz nad dolna plyta.
+    "DRAWER_CELLS": ((0, 0), (0, 1), (0, 2)),
+    "DOOR_CELLS": {(1, 0): "L", (1, 2): "R"},
+    "DRAWER_GAP": 3.0,      # szczelina wokol frontu
+    "RUNNER_CLEAR": 13.0,   # luz na prowadnice kulkowa, na strone
+    "DRAWER_DEPTH": 350.0,
+    "DRAWER_BOX_H": 220.0,
+    "DRAWER_BOX_Z": 30.0,   # dol korpusu szuflady nad plyta
     # cokol - runda 4: tyl i prawy bok przylegaja do sciany, listwa
     # przypodlogowa 85 mm wys. x 20 mm gl. (odstaje od sciany)
     "PLINTH_H": 100.0,      # 85 mm listwa + 15 mm przeswitu na nierownosci
@@ -262,64 +275,20 @@ def triangulate_2d(poly):
 
 # ---------------------------------------------------------------- profile
 
-def nose_bay_profile(p=PARAMS, d=DERIVED):
-    """Obrys scalonej plyty nos + polka przeslo 0 (bez poszycia, runda 2).
+def full_plate_profile(p=PARAMS, d=DERIVED):
+    """Obrys dolnej i gornej plyty (runda 7) - jeden kawalek na pelne
+    1800 mm, bez zadnych wciec. Piony staja MIEDZY plytami, wiec nic przez
+    nie nie przechodzi i wreby przelotowe zniknely z calego mebla.
 
-    Zaokraglony front-lewy naroznik R150 przechodzi wprost w prostokatna
-    czesc przeslau (bez cofniecia - poszycie gietego juz nie ma, wiec zebro
-    samo jest licem zewnetrznym). Od strony boku wciecie na wrab przelotowy:
-    otwarte od frontu na NOTCH_DEPTH, zamkniete na tyle grzbietem lewego boku.
-    Prawa krawedz wchodzi w wrab oporowy pionu mid-1 (runda 3 - patrz
-    joinery-notes.md sekcja 1), stad +RABBET_DEPTH.
+    Zaokraglony przedni lewy naroznik R150 przechodzi wprost w prosta
+    krawedz frontu i lewego boku (styczny w x=150 i y=150).
     """
     cx, cy = d["arc_center"]
     fd = d["frame_depth"]
-    gx0 = d["vertical_x"][0]
-    gx1 = gx0 + p["T"]
-    xr = d["vertical_x"][1] + p["RABBET_DEPTH"]
-    nd = p["NOTCH_DEPTH"]
-    pts = arc_points(cx, cy, p["R"], 270.0, 180.0, p["ARC_SEGMENTS"])   # (150,0) -> (0,150)
+    pts = arc_points(cx, cy, p["R"], 270.0, 180.0, p["ARC_SEGMENTS"])  # (150,0)->(0,150)
     pts.append((0.0, fd))
-    pts.append((gx0, fd))
-    pts.append((gx0, nd))       # wcina sie do wewnatrz - omija grzbiet boku
-    pts.append((gx1, nd))
-    pts.append((gx1, fd))       # wraca na krawedz tylna za grzbietem
-    pts.append((xr, fd))
-    pts.append((xr, 0.0))
-    return pts
-
-
-def full_width_shelf_profile(p=PARAMS, d=DERIVED):
-    """Obrys dna i wienca (runda 5) - jedna plyta na cala szerokosc 1800 mm,
-    zamiast trzech oddzielnych desek jak na czterech srodkowych poziomach.
-    Klient chce usztywnic konstrukcje: gorna i dolna polka maja przenosic
-    obciazenie jako jeden ciagly element, a nie trzy niezalezne kawalki.
-
-    Jak nose_bay_profile (ten sam luk R150 + ominiecie grzbietu lewego boku),
-    ale plyta NIE konczy sie w wrebie mid-1 - biegnie dalej przez mid-1 i
-    mid-2 tym samym schematem stop-notch co lewy bok (otwarta na NOTCH_DEPTH
-    od frontu, omija grzbiet kazdego z trzech pionow posrednich z tylu), i
-    dopiero konczy sie normalnie w jednostronnym wrebie oporowym prawego boku
-    (bez zmian wzgledem pozostalych czterech poziomow).
-    """
-    cx, cy = d["arc_center"]
-    fd = d["frame_depth"]
-    nd = p["NOTCH_DEPTH"]
-    xs = d["vertical_x"]
-    T = p["T"]
-    rd = p["RABBET_DEPTH"]
-
-    pts = arc_points(cx, cy, p["R"], 270.0, 180.0, p["ARC_SEGMENTS"])   # (150,0) -> (0,150)
-    pts.append((0.0, fd))
-    for gx0 in (xs[0], xs[1], xs[2]):    # lewy bok, mid-1, mid-2 - kazdy ma grzbiet tu
-        gx1 = gx0 + T
-        pts.append((gx0, fd))
-        pts.append((gx0, nd))            # wcina sie do wewnatrz - omija grzbiet
-        pts.append((gx1, nd))
-        pts.append((gx1, fd))            # wraca na krawedz tylna za grzbietem
-    xr = xs[3] + rd                       # wchodzi w wrab oporowy prawego boku
-    pts.append((xr, fd))
-    pts.append((xr, 0.0))
+    pts.append((p["W"], fd))
+    pts.append((p["W"], 0.0))
     return pts
 
 
@@ -341,51 +310,6 @@ def plinth_corner_profile(p=PARAMS, d=DERIVED):
 
 
 # ---------------------------------------------------------------- budowa
-
-def _rabbeted_vertical(name, x0, faces, p=PARAMS, d=DERIVED, qty_group=None,
-                        notch_levels=()):
-    """Pion z plytkim wrebem oporowym na wysokosci kazdej polki (runda 3 -
-    zamiast czopa: patrz joinery-notes.md sekcja 1). Miedzy polkami pion ma
-    pelna grubosc T; na wysokosci kazdej polki grubosc jest zmniejszona o
-    RABBET_DEPTH od strony/stron podanych w 'faces' ("L" i/lub "R") - tam
-    siada krawedz polki, ktora przenosi na tym progu obciazenie pionowe.
-
-    Poziomy w 'notch_levels' (runda 5 - dno i wieniec, patrz
-    full_width_shelf_profile) dostaja zamiast wrebu oporowego wrab przelotowy
-    stop-notch, jak grzebien lewego boku: brak materialu na NOTCH_DEPTH od
-    frontu (plyta przechodzi na wskros), grzbiet pelnej grubosci
-    NOTCH_DEPTH..frame_depth z tylu (ciaglosc pionu na tym poziomie).
-
-    Zwraca liste Part - kilka brol na jeden fizyczny pion (jak grzebien
-    lewego boku), pod wspolnym qty_group.
-    """
-    T = p["T"]
-    fd = d["frame_depth"]
-    rd = p["RABBET_DEPTH"]
-    nd = p["NOTCH_DEPTH"]
-    levels = d["level_z"]
-    qg = qty_group or name
-    xa = x0 + rd if "L" in faces else x0
-    xb = x0 + T - rd if "R" in faces else x0 + T
-
-    parts = [Part(
-        "%s-gap-%d" % (name, i), "vertical",
-        {"type": "box", "bounds": (x0, 0.0, levels[i] + T, x0 + T, fd, levels[i + 1])},
-        T, "sklejka brzozowa 18", "longitudinal", qg)
-        for i in range(len(levels) - 1)]
-    for i, z in enumerate(levels):
-        if i in notch_levels:
-            parts.append(Part(
-                "%s-spine-%d" % (name, i), "vertical",
-                {"type": "box", "bounds": (x0, nd, z, x0 + T, fd, z + T)},
-                T, "sklejka brzozowa 18", "longitudinal", qg))
-        else:
-            parts.append(Part(
-                "%s-rabbet-%d" % (name, i), "vertical",
-                {"type": "box", "bounds": (xa, 0.0, z, xb, fd, z + T)},
-                T, "sklejka brzozowa 18", "longitudinal", qg))
-    return parts
-
 
 def _translate_z(parts, dz):
     """Kopiuje liste Part z geometria przesunieta o dz w Z - uzywane zeby
@@ -457,102 +381,182 @@ def build_parts(p=PARAMS, d=DERIVED):
     return _translate_z(_build_corpus(p, d), p["PLINTH_H"]) + _build_plinth(p, d)
 
 
+def hinge_positions(p=PARAMS, d=DERIVED):
+    """Puszki zawiasow Ø35 w licu wewnetrznym drzwi (runda 7).
+
+    Jedyne miejsce, w ktorym strona zawiasow ('L'/'R') w ogole cokolwiek
+    zmienia - sama plyta drzwi jest w obu wariantach identyczna, wiec
+    przelozenie zawiasow na druga strone nie rusza listy ciec.
+    """
+    T, g = p["T"], p["DRAWER_GAP"]
+    z_off = p["PLINTH_H"]
+    out = []
+    for (li, b), side in sorted(p["DOOR_CELLS"].items()):
+        x0, x1, z0, z1 = _cell_opening(li, b, p, d)
+        xh = (x0 + g + 22.5) if side == "L" else (x1 - g - 22.5)
+        for z in (z0 + g + 100.0, z1 - g - 100.0):
+            out.append((xh, T, z + z_off, side))
+    return out
+
+
 def _build_corpus(p=PARAMS, d=DERIVED):
+    """Korpus (runda 7): dolna i gorna plyta na pelne 1800 mm, cztery piony
+    stojace MIEDZY nimi, polki srodkowe na kolkach. Zero wrebow."""
     parts = []
     xs = d["vertical_x"]
     fd = d["frame_depth"]
     T = p["T"]
-    rd = p["RABBET_DEPTH"]
+    H = p["H"]
+    mat = "sklejka brzozowa 18"
+    prof = full_plate_profile(p, d)
 
-    # --- lewy bok: grzbiet ciagly + 5 zebow miedzy wrebami (jedna sztuka
-    # materialu, wycieta jako grzebien - por. joinery-notes.md) ---
-    gx0, gx1 = xs[0], xs[0] + T
-    nd = p["NOTCH_DEPTH"]
-    parts.append(Part(
-        "vertical-L-gable-spine", "vertical",
-        {"type": "box", "bounds": (gx0, nd, 0.0, gx1, fd, p["H"])},
-        T, "sklejka brzozowa 18", "longitudinal", "vertical-L-gable"))
-    for i in range(p["N_LEVELS"] - 1):
-        z0 = d["level_z"][i] + T
-        z1 = d["level_z"][i + 1]
-        parts.append(Part(
-            "vertical-L-gable-tooth-%d" % i, "vertical",
-            {"type": "box", "bounds": (gx0, 0.0, z0, gx1, nd, z1)},
-            T, "sklejka brzozowa 18", "longitudinal", "vertical-L-gable"))
+    # --- dolna i gorna plyta: jeden kawalek, z zaokraglonym naroznikiem ---
+    parts.append(Part("plate-bottom", "shelf",
+                      {"type": "prism_z", "profile": prof, "z0": 0.0, "z1": T},
+                      T, mat, "free", "plate"))
+    parts.append(Part("plate-top", "shelf",
+                      {"type": "prism_z", "profile": prof, "z0": H - T, "z1": H},
+                      T, mat, "free", "plate"))
 
-    # --- pozostale piony, z wrebem oporowym na kazda strone, ktora nosi polke.
-    # mid-1 i mid-2 sa wymiarowo identyczne (wrab z obu stron) - wspolny
-    # qty_group; R-side ma wrab tylko z lewej, wiec inny przekroj progu.
-    # dno i wieniec (poziom 0 i ostatni) dostaja u mid-1/mid-2 wrab przelotowy
-    # zamiast wrebu oporowego - patrz notch_levels w _rabbeted_vertical i
-    # full_width_shelf_profile (runda 5, usztywnienie konstrukcji) ---
-    # runda 6: wrab przelotowy na WSZYSTKICH poziomach obu pionow posrednich.
-    # Wrab oporowy z obu stron na tej samej wysokosci usuwal 2 x 5 z 18 mm
-    # (56% grubosci) - reguła warsztatowa dopuszcza max 1/3 na strone i nigdy
-    # wiecej niz 1/2 lacznie. Do tego leb sruby M6 nie mial gdzie usiasc, bo
-    # oba lica rdzenia byly zakryte wpustami. Patrz joinery-notes.md sekcja 1.
-    notch_lv = set(range(p["N_LEVELS"]))
-    parts += _rabbeted_vertical("vertical-mid-1", xs[1], "", p, d, "vertical-mid",
-                                 notch_levels=notch_lv)
-    parts += _rabbeted_vertical("vertical-mid-2", xs[2], "", p, d, "vertical-mid",
-                                 notch_levels=notch_lv)
-    parts += _rabbeted_vertical("vertical-R-side", xs[3], "L", p, d)
+    # --- piony miedzy plytami: pelna grubosc, bez wrebow i bez czopow.
+    # Skrecane pionowo przez plyte w mimosrod w czole pionu - lico czolowe
+    # plyty jest wolne z gory i z dolu, wiec leb ma na czym usiasc ---
+    names = ("vertical-L-gable", "vertical-mid-1", "vertical-mid-2", "vertical-R-side")
+    groups = ("vertical-L-gable", "vertical-mid", "vertical-mid", "vertical-R-side")
+    for name, group, x in zip(names, groups, xs):
+        parts.append(Part(name, "vertical",
+                          {"type": "box", "bounds": (x, 0.0, T, x + T, fd, H - T)},
+                          T, mat, "longitudinal", group))
 
-    # --- polki: dno i wieniec jedna plyta na cala szerokosc (runda 5),
-    # pozostale cztery poziomy jak dotychczas: 3 na poziom, oparte na
-    # wrebach, bez czopow. przeslo 0 (przy nosie): jedna scalona plyta
-    # nos+polka, zlacze z bokiem to wrab przelotowy (patrz sekcja pionow
-    # wyzej), prawa strona wchodzi w wrab oporowy mid-1 jak kazda inna polka
-    prof_full = full_width_shelf_profile(p, d)
-    for li, z in enumerate(d["level_z"]):
-        parts.append(Part(
-            "shelf-L%d-full" % li, "shelf",
-            {"type": "prism_z", "profile": prof_full, "z0": z, "z1": z + T},
-            T, "sklejka brzozowa 18", "free", "shelf-full"))
+    # --- polki srodkowe: leza na kolkach (Ø5), nie sa niczym skrecone.
+    # Dzieki temu sa przestawialne i wyjmowalne - a przy przesle z szuflada
+    # lub drzwiczkami mozna je po prostu pominac ---
+    for li in range(1, p["N_LEVELS"] - 1):
+        z = d["level_z"][li]
+        for b in range(p["N_BAYS"]):
+            if (li, b) in p["DRAWER_CELLS"]:
+                continue
+            parts.append(Part(
+                "shelf-L%d-B%d" % (li, b), "shelf",
+                {"type": "box", "bounds": (xs[b] + T, 0.0, z, xs[b + 1], fd, z + T)},
+                T, mat, "longitudinal", "shelf-bay"))
 
-    # --- plecy: nos + po jednej plycie na przeslo, styk w osiach pionow ---
-    y0b = fd
-    y1b = p["D"]
-    parts.append(Part(
-        "back-nose", "back",
-        {"type": "box", "bounds": (0.0, y0b, 0.0, p["R"], y1b, p["H"])},
-        p["BACK"], "sklejka brzozowa 4", "longitudinal", "back-nose"))
-
+    # --- plecy: nos + po jednej plycie na przeslo, wsuwane we wpust
+    # 4 x 8 mm w tylnych krawedziach (patrz joinery-notes.md) ---
+    y0b, y1b = fd, p["D"]
+    parts.append(Part("back-nose", "back",
+                      {"type": "box", "bounds": (0.0, y0b, 0.0, p["R"], y1b, H)},
+                      p["BACK"], "sklejka brzozowa 4", "longitudinal", "back-nose"))
     edges = [p["R"]] + [x + T / 2.0 for x in xs[1:-1]] + [p["W"]]
     for b in range(p["N_BAYS"]):
-        parts.append(Part(
-            "back-B%d" % b, "back",
-            {"type": "box", "bounds": (edges[b], y0b, 0.0, edges[b + 1], y1b, p["H"])},
-            p["BACK"], "sklejka brzozowa 4", "longitudinal", "back-bay"))
+        parts.append(Part("back-B%d" % b, "back",
+                          {"type": "box", "bounds": (edges[b], y0b, 0.0, edges[b + 1], y1b, H)},
+                          p["BACK"], "sklejka brzozowa 4", "longitudinal", "back-bay"))
 
+    parts += _build_drawers(p, d)
+    parts += _build_doors(p, d)
     return parts
 
 
-# ---------------------------------------------------------------- okucia
+def _cell_opening(li, b, p, d):
+    """Swiatlo komory (li, b): x miedzy licami pionow, z miedzy plytami."""
+    xs, T = d["vertical_x"], p["T"]
+    z0 = d["level_z"][li] + T
+    z1 = d["level_z"][li + 1]
+    return xs[b] + T, xs[b + 1], z0, z1
+
+
+def _build_drawers(p=PARAMS, d=DERIVED):
+    """Szuflady - opcja wlaczana przez PARAMS['DRAWER_CELLS'] (runda 7).
+
+    Kazda szuflada to 5 elementow: front nakladany w swietle komory + korpus
+    (2 boki, tyl, dno 4 mm). Prowadnice kulkowe boczne 350 mm, po 13 mm luzu
+    na strone - stad korpus wezszy o 26 mm od swiatla przesla.
+    """
+    T, B = p["T"], p["BACK"]
+    g, run = p["DRAWER_GAP"], p["RUNNER_CLEAR"]
+    out = []
+    for li, b in sorted(p["DRAWER_CELLS"]):
+        x0, x1, z0, z1 = _cell_opening(li, b, p, d)
+        # front nakladany w swietle, z rowna szczelina dookola
+        out.append(Part("drawer-%d%d-front" % (li, b), "drawer",
+                        {"type": "box", "bounds": (x0 + g, 0.0, z0 + g, x1 - g, T, z1 - g)},
+                        T, "sklejka brzozowa 18", "longitudinal", "drawer-front"))
+        # korpus szuflady
+        bx0, bx1 = x0 + run, x1 - run
+        by0, by1 = T, T + p["DRAWER_DEPTH"]
+        bz0 = z0 + p["DRAWER_BOX_Z"]
+        bz1 = bz0 + p["DRAWER_BOX_H"]
+        out.append(Part("drawer-%d%d-side-L" % (li, b), "drawer",
+                        {"type": "box", "bounds": (bx0, by0, bz0, bx0 + T, by1, bz1)},
+                        T, "sklejka brzozowa 18", "longitudinal", "drawer-side"))
+        out.append(Part("drawer-%d%d-side-R" % (li, b), "drawer",
+                        {"type": "box", "bounds": (bx1 - T, by0, bz0, bx1, by1, bz1)},
+                        T, "sklejka brzozowa 18", "longitudinal", "drawer-side"))
+        out.append(Part("drawer-%d%d-back" % (li, b), "drawer",
+                        {"type": "box", "bounds": (bx0 + T, by1 - T, bz0, bx1 - T, by1, bz1)},
+                        T, "sklejka brzozowa 18", "longitudinal", "drawer-back"))
+        out.append(Part("drawer-%d%d-bottom" % (li, b), "drawer",
+                        {"type": "box", "bounds": (bx0 + T, by0, bz0, bx1 - T, by1 - T, bz0 + B)},
+                        B, "sklejka brzozowa 4", "free", "drawer-bottom"))
+    return out
+
+
+def _build_doors(p=PARAMS, d=DERIVED):
+    """Drzwiczki - opcja wlaczana przez PARAMS['DOOR_CELLS'] (runda 7).
+
+    Wartosc w slowniku to strona zawiasow: 'L' albo 'R'. Sama plyta drzwi
+    jest identyczna w obu wariantach - roznica siedzi wylacznie w pozycjach
+    puszek zawiasow (Ø35), patrz hinge_positions(). Dzieki temu zmiana
+    strony otwierania nie zmienia listy ciec, tylko wiercenia.
+    """
+    T, g = p["T"], p["DRAWER_GAP"]
+    out = []
+    for (li, b), side in sorted(p["DOOR_CELLS"].items()):
+        x0, x1, z0, z1 = _cell_opening(li, b, p, d)
+        out.append(Part("door-%d%d-%s" % (li, b, side), "door",
+                        {"type": "box", "bounds": (x0 + g, 0.0, z0 + g, x1 - g, T, z1 - g)},
+                        T, "sklejka brzozowa 18", "longitudinal", "door"))
+    return out
+
 
 def bolt_positions(p=PARAMS, d=DERIVED):
-    """Osie srub M6 (przez lico pionu w mimosrod beczkowy - gwint zenski,
-    nie wkret - osadzony w czole polki). Polka siedzi na wrebie oporowym
-    (patrz _rabbeted_vertical); sruby przenosza docisk i wyrywanie, nie
-    ciezar - ten bierze prog wrebu.
+    """Osie srub M6 laczacych piony z dolna i gorna plyta (runda 7).
 
-    Dno i wieniec (runda 5) sa jedna plyta na cala szerokosc, przechodzaca
-    przez mid-1/mid-2 wrebem przelotowym (jak lewy bok) - na tych dwoch
-    poziomach mid-1/mid-2 nie maja srub w ogole (analogicznie do lewego boku:
-    zlacze wrebowe, nie skrecane). Prawy bok zachowuje zlacze na sruby na
-    wszystkich szesciu poziomach bez zmian.
+    Sruba idzie PIONOWO przez plyte w mimosrod beczkowy osadzony w czole
+    pionu. Lico plyty jest wolne z gory (wieniec) i od spodu (dno, nad
+    cokolem), wiec leb ma na czym usiasc - to bylo nierozwiazywalne, dopoki
+    piony biegly ciagle, a polki wchodzily w nie wrebem z obu stron.
 
-    Zwraca (x, y, z, kierunek) w globalnym Z (korpus stoi na cokole -
-    patrz build_parts). Nie renderowane w 3D - dane pod wiercenia DXF.
+    Zwraca (x, y, z, kierunek) w globalnym Z (korpus stoi na cokole).
     """
     out = []
-    xs = d["vertical_x"]
     T = p["T"]
     z_off = p["PLINTH_H"]
-    for z in d["level_z"]:
-        zc = z + T / 2.0 + z_off
-        for y in p["BOLT_Y_RIGHT"]:
-            out.append((xs[3] + T / 2.0, y, zc, "-x"))         # tylko prawy bok
+    H = p["H"]
+    for x in d["vertical_x"]:
+        xc = x + T / 2.0
+        for y in p["BOLT_Y"]:
+            out.append((xc, y, z_off, "+z"))          # przez dno
+            out.append((xc, y, z_off + H, "-z"))      # przez wieniec
+    return out
+
+
+def shelf_pin_positions(p=PARAMS, d=DERIVED):
+    """Otwory Ø5 pod kolki polkowe - w licach pionow, po obu stronach kazdego
+    przesla, na kazdej z 4 srodkowych wysokosci (runda 7). Polki srodkowe
+    leza na kolkach, nie sa skrecane, wiec sa przestawialne i wyjmowalne.
+    """
+    out = []
+    T = p["T"]
+    z_off = p["PLINTH_H"]
+    xs = d["vertical_x"]
+    for li in range(1, p["N_LEVELS"] - 1):
+        z = d["level_z"][li] + z_off
+        for b in range(p["N_BAYS"]):
+            for y in p["PIN_Y"]:
+                out.append((xs[b] + T, y, z, "+x"))       # lico prawe lewego pionu
+                out.append((xs[b + 1], y, z, "-x"))       # lico lewe prawego pionu
     return out
 
 

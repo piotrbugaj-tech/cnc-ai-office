@@ -175,10 +175,13 @@ def view_front():
     _K[0] = 2.0
     g = [rect(0, fy(total_h), P["W"], fy(0), CAV)]
     for part in m.build_parts():
-        if part.kind not in ("vertical", "shelf", "plinth"):
+        if part.kind not in ("vertical", "shelf", "plinth", "drawer", "door"):
             continue
+        if part.kind == "drawer" and not part.name.endswith("-front"):
+            continue          # w elewacji widac tylko front szuflady
         x0, _, z0, x1, _, z1 = part.bbox()
-        g.append(rect(x0, fy(z1), x1, fy(z0), PLY_D if part.kind == "plinth" else PLY))
+        fill = {"plinth": PLY_D, "drawer": CAV, "door": CAV}.get(part.kind, PLY)
+        g.append(rect(x0, fy(z1), x1, fy(z0), fill))
 
     g.append(line(0, fy(ph), P["W"], fy(ph), RULE, 1.2, dash="16 12"))
     g.append(text(P["W"] / 2.0, fy(ph / 2.0) + 12, "cokol %.0f mm" % ph, 30, DIM))
@@ -198,15 +201,17 @@ def view_front():
 # ---------------------------------------------------------------- widok z prawej
 
 def view_right():
-    """Elewacja prawa - wrab oporowy, rozstaw srub i cofniecie cokolu od listwy.
+    """Przekroj pionowy przez prawy bok - plyty, kolki polkowe, sruby i cokol.
 
-    Prawy bok (pion) siedzi na X, ktory wrab cokolu juz nie obejmuje - patrz
-    joinery-notes.md sekcja cokolu: to normalne, korpus tu odrobine nawisa
-    nad cofnieciem. Sylwetka listwy pokazuje dlaczego cofniecie tam jest.
+    Runda 7: nie ma juz wrebow. Widac dolna i gorna plyte (ciagle, pelnej
+    glebokosci), pion stojacy miedzy nimi, otwory Ø5 pod kolki na czterech
+    srodkowych wysokosciach i pionowe sruby M6 przez czola plyt.
     """
     ph = P["PLINTH_H"]
     total_h = P["H"] + ph
     Dp = P["D"]
+    T = P["T"]
+    fd = D["frame_depth"]
 
     def fx(y):
         return Dp - y
@@ -216,30 +221,35 @@ def view_right():
 
     _K[0] = 2.0
     g = [rect(fx(Dp), fy(total_h), fx(0), fy(ph), PLY)]
-    g.append(line(fx(D["frame_depth"]), fy(total_h), fx(D["frame_depth"]), fy(ph),
-                  RULE, 1.0, dash="16 12"))
+    g.append(line(fx(fd), fy(total_h), fx(fd), fy(ph), RULE, 1.0, dash="16 12"))
 
-    for z in D["level_z"]:
-        # wrab oporowy - plytki rowek na cala glebokosc, nie lokalny czop
-        g.append(rect(fx(D["frame_depth"]), fy(z + P["T"] + ph), fx(0), fy(z + ph),
-                      PLY_D, ACC, 1.6))
-        for y in P["BOLT_Y_RIGHT"]:                       # sruby M6
+    # dolna i gorna plyta - ciagle, na pelna glebokosc
+    for z in (ph, ph + P["H"] - T):
+        g.append(rect(fx(fd), fy(z + T), fx(0), fy(z), PLY_D, ACC, 1.6))
+
+    # sruby M6 pionowo przez czola plyt w mimosrod w pionie
+    for y in P["BOLT_Y"]:
+        for z in (ph + T / 2.0, ph + P["H"] - T / 2.0):
             g.append('<circle cx="%.2f" cy="%.2f" r="9" fill="none" stroke="%s" '
                      'stroke-width="1.6" vector-effect="non-scaling-stroke"/>'
-                     % (fx(y), fy(z + P["T"] / 2.0 + ph), ACC))
+                     % (fx(y), fy(z), ACC))
+
+    # kolki polkowe Ø5 na czterech srodkowych wysokosciach
+    for li in range(1, P["N_LEVELS"] - 1):
+        z = D["level_z"][li] + ph
+        g.append(line(fx(fd), fy(z), fx(0), fy(z), RULE, 1.0, dash="10 8"))
+        for y in P["PIN_Y"]:
+            g.append('<circle cx="%.2f" cy="%.2f" r="5" fill="%s" stroke="none"/>'
+                     % (fx(y), fy(z), DIM))
 
     sd, sh = P["SKIRTING_DEPTH"], P["SKIRTING_H"]
     g.append(rect(fx(Dp - sd), fy(sh), fx(Dp), fy(0), "none", ACC, 1.4))
-    # opis obok, nie nad wypelnieniem - 100 mm cokolu to za malo miejsca na etykiete w rysunku
     g.append('<g transform="translate(%.2f,%.2f) rotate(-90)">%s</g>'
              % (fx(Dp) - 14, fy(sh / 2.0), text(0, 0, "listwa", 22, ACC)))
 
     g.append(dim_h(fx(Dp), fx(0), fy(0) + 110, "400"))
     g.append(dim_v(fy(total_h), fy(0), fx(Dp) - 60, "2000"))
     return (svg_open("-260 -160 900 2560", "Widok z prawej") + "".join(g) + "</svg>")
-
-
-# ---------------------------------------------------------------- rozmieszczenie srub
 
 def view_bolts():
     """Elewacja frontowa - dokladne (X, Z) kazdego zlacza srubowego.
@@ -261,10 +271,13 @@ def view_bolts():
 
     g = [rect(0, fy(total_h), W, fy(0), CAV)]
     for part in m.build_parts():
-        if part.kind not in ("vertical", "shelf", "plinth"):
+        if part.kind not in ("vertical", "shelf", "plinth", "drawer", "door"):
             continue
+        if part.kind == "drawer" and not part.name.endswith("-front"):
+            continue          # w elewacji widac tylko front szuflady
         x0, _, z0, x1, _, z1 = part.bbox()
-        g.append(rect(x0, fy(z1), x1, fy(z0), PLY_D if part.kind == "plinth" else PLY))
+        fill = {"plinth": PLY_D, "drawer": CAV, "door": CAV}.get(part.kind, PLY)
+        g.append(rect(x0, fy(z1), x1, fy(z0), fill))
 
     for (x, z), n in clusters.items():
         cy = fy(z)
@@ -655,6 +668,8 @@ KIND_META = {
     "shelf": ("Polki", (226, 199, 152)),
     "back": ("Plecy", (150, 121, 80)),
     "plinth": ("Cokol", (102, 84, 61)),
+    "drawer": ("Szuflady", (198, 156, 104)),
+    "door": ("Drzwiczki", (176, 140, 96)),
 }
 
 
@@ -714,8 +729,14 @@ def build_html(n_tests):
         "vertical-mid": "Piony posrednie (mid-1, mid-2)",
         "vertical-R-side": "Prawy bok",
         "vertical-L-gable": "Lewy bok &middot; grzbiet + zeby (wrab)",
-        "shelf-full": "Dno / wieniec &middot; jedna plyta pelnej szerokosci",
+        "plate": "Dolna i gorna plyta &middot; jeden kawalek 1800 mm",
+        "shelf-bay": "Polki srodkowe &middot; na kolkach, przestawialne",
         "plinth-rib": "Cokol &middot; zebra poprzeczne pod pionami",
+        "drawer-front": "Szuflada &middot; front",
+        "drawer-side": "Szuflada &middot; boki",
+        "drawer-back": "Szuflada &middot; tyl",
+        "drawer-bottom": "Szuflada &middot; dno",
+        "door": "Drzwiczki &middot; plyta",
         "back-nose": "Plecy &middot; nos",
         "back-bay": "Plecy &middot; przeslo",
         "plinth": "Cokol &middot; rama (lewy/tyl/prawy/przod/naroznik)",
@@ -742,41 +763,40 @@ def build_html(n_tests):
              "<th>Wymiar blanku</th><th>Grubosc</th><th>Sloje</th><th>Material</th>"
              "</tr></thead><tbody>%s</tbody></table></div>" % "".join(rows))
 
+    n_dr = len(P["DRAWER_CELLS"])
+    n_do = len(P["DOOR_CELLS"])
     notes = [
-        ("i", "Wrab dwustronny usuniety - lamal regule 1/3 grubosci.",
-         "Piony posrednie mialy wrab oporowy 5 mm z obu stron na tej samej "
-         "wysokosci: 10 z 18 mm (56%) usunietego materialu, rdzen 8 mm. Praktyka "
-         "warsztatowa dopuszcza max 1/3 grubosci na strone i nigdy wiecej niz 1/2 "
-         "lacznie. Teraz mid-1 i mid-2 maja na kazdym poziomie wrab przelotowy "
-         "(jak lewy bok), wiec nie sa scieniane w ogole. Sprawdzane automatycznie."),
-        ("i", "Kazda polka to jedna plyta pelnej szerokosci 1800 mm.",
-         "Prosiles o to dla dna i wienca; ta sama zmiana rozwiazuje przy okazji "
-         "problem z lbami srub i regule 1/3, wiec objela wszystkie 6 poziomow. "
-         "Konstrukcja to teraz krata: 4 grzebienie pionowe + 6 ciaglych plyt. "
-         "Sztywnosc na skrecanie rosnie wyraznie wzgledem 18 osobnych polek."),
-        ("i", "Sruby M6: 60 &rarr; 12, plus 10 kotew do cokolu.",
-         "Zostaly tylko tam, gdzie leb ma na czym usiasc: prawy bok, wrab "
-         "jednostronny, lico zewnetrzne plaskie. Wszystkie zlacza z pionami "
-         "posrednimi i lewym bokiem sa teraz wrebowe. Mimosrod M6 to Ø10 x 13 mm, "
-         "wiec otwor w plycie 18 mm jest slepy (zostaje 5 mm), nie przelotowy."),
-        ("i", "Cokol przebudowany z bryly pelnej na realne plyty 18 mm.",
-         "Wczesniej szyny byly w modelu litymi klockami 70 x 100 mm - nie dalo sie "
-         "ich wyciac z jednej plyty. Teraz to rama z plyt 18 mm ustawionych na rab, "
-         "100 mm wysokosci, plus 3 zebra poprzeczne pod lewym bokiem, mid-1 i mid-2, "
-         "zeby plyta dna nie pracowala na zginanie miedzy szynami."),
-        ("i", "Korpus przykrecony do cokolu - 10 kotew M6.",
-         "Wczesniej stal tylko wlasnym ciezarem. Sruba pionowo przez plyte dna "
-         "(Ø6,5 przelotowy) w mimosrod osadzony w szynie cokolu (Ø10 x 13 mm slepy). "
-         "Cala reszta konstrukcji zostaje rozbieralna."),
-        ("q", "Wrab przelotowy 310 / grzbiet 86 mm - jedyny otwarty punkt.",
-         "Ta proporcja to nadal moj dobor, nie Twoja specyfikacja. Po rundzie 6 "
-         "grzbiet jest podparty plyta co ~376 mm na calej wysokosci (dawniej tylko "
-         "na 2 poziomach), wiec wyboczenie przestaje byc realnym ryzykiem - ale "
-         "warto, zeby joinery-specialist potwierdzil 86 mm przed cieciem."),
-        ("w", "Masa netto %.0f kg. Montaz koniecznie w dwie osoby." % s["mass_kg"],
-         "Sama krata (6 plyt 1800 mm + 4 grzebienie) sklada sie na plasko, ale "
-         "gotowy korpus 1800 &times; %.0f mm jest ciezki i sztywny - nie da sie go "
-         "juz \u201erozlozyc na pol\u201d przy wnoszeniu." % (P["H"] + P["PLINTH_H"])),
+        ("i", "Zero wrebow w calym meblu.",
+         "Piony stoja miedzy dolna a gorna plyta, wiec nic przez nie nie przechodzi. "
+         "Znika i wrab przelotowy, i wrab oporowy - a razem z nimi caly problem "
+         "z lbem sruby i z regula 1/3 grubosci. Sruby ida teraz pionowo przez "
+         "czolo plyty w mimosrod w czole pionu: lico plyty jest wolne z gory "
+         "i od spodu, wiec leb zawsze ma na czym usiasc."),
+        ("i", "Polki srodkowe na kolkach Ø5 - przestawialne i wyjmowalne.",
+         "Cztery srodkowe poziomy nie sa juz niczym skrecone ani osadzone. "
+         "48 otworow Ø5 w licach pionow, polka po prostu na nich lezy. Dzieki temu "
+         "przeslo z szuflada lub drzwiczkami mozna zostawic puste bez zadnej "
+         "zmiany w konstrukcji."),
+        ("i", "Szuflady i drzwiczki jako parametr modelu.",
+         "DRAWER_CELLS i DOOR_CELLS przyjmuja pary (poziom, przeslo); DOOR_CELLS "
+         "dodatkowo strone zawiasow. Podglad: %d szuflady w dolnym rzedzie, %d drzwiczek "
+         "wyzej (jedne L, jedne R). Plyta drzwi jest w obu wariantach identyczna - "
+         "strona zawiasow zmienia wylacznie pozycje puszek Ø35, wiec nie rusza "
+         "listy ciec." % (n_dr, n_do)),
+        ("i", "Plecki wsuwane we wpust 4 x 8 mm, bez okuc.",
+         "Wpust w tylnych krawedziach pionow i plyt; plecki wsuwa sie przy montazu "
+         "i trzymaja sie same. Zero wkretow w plyte, a ciagly wpust na calym obwodzie "
+         "usztywnia na skrecanie lepiej niz punktowe mocowanie - to wazne teraz, "
+         "gdy piony tylko staja miedzy plytami."),
+        ("q", "Masa netto %.0f kg - wzrosla przez wyposazenie." % s["mass_kg"],
+         "Sam korpus wazy mniej niz w rundzie 6 (znikly grzebienie), ale doliczone "
+         "sa teraz szuflady i drzwiczki. Bez nich regal jest wyraznie lzejszy - "
+         "to argument, zeby nie wlaczac szuflad we wszystkich przeslach naraz."),
+        ("q", "Nos (zaoblony naroznik) jest teraz otwarta wneka na cala wysokosc.",
+         "Skoro nie ma wrebow, plyta poziomu nie moze przejsc przez lewy bok - "
+         "wiec strefa 150 mm na lewo od niego zostaje pusta miedzy dolna a gorna "
+         "plyta. Jesli chcesz tam polki, trzeba je wspornikowo przykrecic do lewego "
+         "boku (lico od strony wneki jest dostepne) - powiedz, czy dodac."),
     ]
     notes_html = "".join(
         '<div class="note"><span class="tag %s">%s</span>'
@@ -789,16 +809,16 @@ def build_html(n_tests):
 <div class="wrap">
 
 <header>
-  <p class="eyebrow">CNC Furniture Studio &middot; runda 6 &middot; bryla do oceny</p>
+  <p class="eyebrow">CNC Furniture Studio &middot; runda 7 &middot; bryla do oceny</p>
   <h1>Regal R150</h1>
   <p class="lede">Sklejka brzozowa 18 mm, ciecie CNC na gotowo, montaz rozbieralny.
-  Konstrukcja to krata: kazdy z 6 poziomow to jedna ciagla plyta na pelne 1800 mm,
-  przechodzaca przez wszystkie trzy piony posrednie wrebem przelotowym. Sruby M6
-  w mimosrod (gwint zenski, nie wkret) zostaly tylko na prawym boku, gdzie leb ma
-  na czym usiasc. Stoi na cokole 100 mm z plyt 18 mm na rab, cofnietym 22 mm od
-  krawedzi korpusu ze wszystkich stron i przykreconym do dna. Przedni lewy narozik
-  zaobolony promieniem 150 mm. Ponizej geometria do obejrzenia &mdash; dokumentacja
-  produkcyjna powstaje po Twojej akceptacji.</p>
+  Dolna i gorna plyta to jeden kawalek na pelne 1800 mm; cztery piony stoja
+  <b>miedzy</b> nimi, skrecane pionowo przez czolo plyty. <b>W calym meblu nie ma
+  ani jednego wrebu.</b> Polki srodkowe leza na kolkach, wiec sa przestawialne i
+  wyjmowalne. Szuflady i drzwiczki (zawiasy z lewej albo z prawej) sa opcja
+  wlaczana parametrem &mdash; podglad pokazuje trzy szuflady w dolnym rzedzie
+  i dwoje drzwiczek wyzej. Stoi na cokole 100 mm z plyt 18 mm na rab, cofnietym
+  22 mm ze wszystkich stron. Przedni lewy narozik zaobolony promieniem 150 mm.</p>
 </header>
 
 <section>

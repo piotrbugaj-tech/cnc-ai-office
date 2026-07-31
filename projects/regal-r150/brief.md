@@ -1,9 +1,9 @@
 # Regał R150 — brief
 
 **Klient:** wewnętrzny / własny
-**Runda:** 6 — rozstrzygnięcie wszystkich otwartych decyzji
+**Runda:** 7 — zero wrębów, półki na kołkach, szuflady i drzwiczki jako opcja
 **Data:** 2026-07-31
-**Status:** czeka na akceptację bryły. Blokada z łbami śrub zamknięta; otwarty jeden punkt (proporcja wrębu 310/86) — patrz §5
+**Status:** czeka na akceptację bryły. Wszystkie kwestie techniczne zamknięte; otwarte dwie decyzje klienta (nos, zakres wyposażenia) — patrz §5
 
 ## 1. Zakres
 
@@ -18,7 +18,8 @@ przez klienta.
 | Materiał nośny | sklejka brzozowa 18 mm |
 | Zaoblenie | przedni lewy narożnik, R150, cała wysokość (korpus i cokół) |
 | Cokół | 100 mm, cofnięty 22 mm od krawędzi korpusu na wszystkich czterech bokach |
-| Poziomy | 6 × jedna płyta pełnej szerokości 1800 mm (krata — runda 6) |
+| Poziomy | dolna i górna płyta 1800 mm; 4 półki środkowe na kołkach (przestawialne) |
+| Wyposażenie | szuflady i drzwiczki (zawiasy L/R) jako opcja parametryczna |
 | Montaż | rozbieralny na śruby (bez kleju) |
 
 ## 2. Decyzje klienta
@@ -50,41 +51,41 @@ samodzielny podgląd HTML generowany bez Blendera (`design/preview.html`).
 
 ## 4. Rozwiązanie
 
-Konstrukcja kratowa (od rundy 6):
+Konstrukcja bez jednego wrębu (od rundy 7):
 
-- **Cztery piony** pełnej wysokości, wszystkie jako grzebienie: lewy bok,
-  mid-1, mid-2 mają wrąb przelotowy na każdym z 6 poziomów (grzbiet 86 mm
-  z tyłu + zęby od frontu). Prawy bok jako jedyny ma wrąb oporowy 5 mm na
-  licu wewnętrznym — jego lico zewnętrzne zostaje wolne pod łby śrub.
-- **Sześć poziomów, każdy jako jedna ciągła płyta 1800 mm** przechodząca
-  przez wszystkie trzy piony pośrednie. Światło międzypółkowe 358,4 mm.
-- **Trzy przęsła po 526 mm** światła — bezpieczna rozpiętość dla 18 mm.
-- **Nos zaoblony** scalony z płytą poziomu, pełny promień R150, bez żeber
-  i bez poszycia giętego (usunięte w rundzie 2).
-- **Plecy** ze sklejki 4 mm — przykręcane do grzbietów pionów, trzymają
-  płyty przed wysunięciem do przodu.
+- **Dolna i górna płyta** — jeden kawałek na pełne 1800 mm, z zaokrąglonym
+  narożnikiem R150. Nic ich nie przecina.
+- **Cztery piony** stoją **między** płytami (1864 mm), pełne 18 mm na całej
+  wysokości. Skręcane pionowo: śruba M6 przez czoło płyty w mimośród
+  beczkowy w czole pionu — lico płyty jest wolne z góry i od spodu, więc łeb
+  zawsze ma na czym usiąść. 16 śrub.
+- **Cztery półki środkowe** leżą na kołkach Ø5 — przestawialne i wyjmowalne,
+  bez okuć. Przęsło z szufladą lub drzwiczkami zostaje bez półki.
+- **Trzy przęsła po 526 mm** światła.
+- **Plecki** ze sklejki 4 mm, wsuwane we wpust 4 × 8 mm w tylnych
+  krawędziach — zero okuć, przenoszą skręcanie.
+- **Szuflady i drzwiczki** jako opcja parametryczna (`DRAWER_CELLS`,
+  `DOOR_CELLS` ze stroną zawiasów). Płyta drzwi identyczna dla L i R —
+  strona zawiasów zmienia tylko pozycję puszek Ø35.
 - **Cokół** 100 mm z płyt 18 mm na rąb, cofnięty 22 mm ze wszystkich stron,
-  z 3 żebrami poprzecznymi, przykręcony do dna 10 kotwami M6.
-- **Okucia:** 12 śrub M6 (prawy bok) + 10 kotew M6 (korpus↔cokół), wszystkie
-  w mimośrody beczkowe Ø10 × 13 mm — gwint żeński, nie wkręt.
+  3 żebra poprzeczne, 10 kotew M6 do dolnej płyty.
 
 Szczegóły stolarki: `design/joinery-notes.md`.
 
 ## 5. Otwarte kwestie
 
-Runda 6 zamknęła wszystkie punkty poza jednym.
+Runda 7 zamknęła wszystkie kwestie techniczne. Zostały **dwie decyzje
+klienta**:
 
-1. **Proporcja wrębu przelotowego 310 / 86 mm** — mój dobór inżynierski, nie
-   specyfikacja klienta. Do potwierdzenia przez joinery-specialist przed
-   cięciem. Patrz `design/joinery-notes.md` §6.
+1. **Nos — otwarta wnęka czy półki?** Bez wrębów płyta poziomu nie przechodzi
+   przez lewy bok, więc strefa 150 mm na lewo od niego jest otwarta na całą
+   wysokość. Można dodać półki wspornikowo przykręcone do lewego boku.
+   Patrz `design/joinery-notes.md` §7.
+2. **Zakres wyposażenia** — ile komór finalnie dostaje szuflady/drzwiczki.
+   Model przyjmuje dowolną kombinację; podgląd pokazuje wariant
+   demonstracyjny. Pełne wyposażenie to ~20 kg masy więcej.
 
-**Zamknięte w rundzie 6:** dostęp dla łba śruby M6 (był blokerem), pięć
-brakujących wymiarów okucia, głębokość wrębu oporowego, liczba śrub,
-mocowanie złącza wrąb↔płyta, konstrukcja ramy cokołu, kotwienie
-korpus↔cokół, nawis prawego boku nad cokołem. Szczegóły z uzasadnieniem:
-`design/joinery-notes.md`.
-
-## 6. Poza zakresem rundy 1–6
+## 6. Poza zakresem rundy 1–7
 
 DXF z warstwami wg CLAUDE.md, cut-list CSV, BOM, nesting z kontrolą waste < 12 %,
 G-code, instrukcja montażu, karta produktu.
@@ -307,3 +308,41 @@ M6 × 45 mm.
 **Wynik:** 57 elementów (było 62), 12 śrub M6 + 10 kotew do cokołu (było 44),
 masa netto 105,2 kg. **20/20 testów** geometrii, w tym nowy test egzekwujący
 regułę 1/3 i test trafiania kotew w materiał ramy cokołu.
+
+## 12. Runda 7 — zero wrębów, opcje wyposażenia
+
+Klient: *„wręby przelotowe możemy całkowicie usunąć, chciałem to zrobić na
+pewno na górnej płycie i dolnej"*, plus dwa pytania: jak montowane są plecki
+i czy da się dodać szuflady, a następnie drzwiczki z zawiasami L/R.
+
+### Piony między płytami — jedna zmiana, która zamyka wszystko
+
+Wszystkie problemy rund 3–6 (ścienianie pionów o 56 % grubości, brak dostępu
+do łba śruby, konieczność wrębów) brały się z tego, że piony biegły ciągle,
+a poziome elementy musiały się przez nie przedostać. Odwrócenie tego —
+**piony stoją między dolną a górną płytą** — usuwa źródło:
+
+- zero wrębów w całym meblu, piony pełne 18 mm,
+- śruby pionowo przez czoło płyty: lico wolne z góry i od spodu, łeb zawsze
+  ma na czym usiąść,
+- półki środkowe na kołkach Ø5 → przestawialne, wyjmowalne, bez okuć.
+
+### Plecki — rozstrzygnięte
+
+Sposób mocowania nigdy nie był ustalony. Wybrany **wpust 4 × 8 mm** w tylnych
+krawędziach: zero okuć (wkręty w płytę odpadały z zasady), a ciągły wpust na
+całym obwodzie usztywnia na skręcanie lepiej niż punktowe mocowanie — co jest
+teraz istotne, skoro piony tylko stoją między płytami.
+
+### Szuflady i drzwiczki — parametr, nie przebudowa
+
+`DRAWER_CELLS` i `DOOR_CELLS` przyjmują pary (poziom, przęsło); drzwiczki
+dodatkowo stronę zawiasów. Włączenie komory automatycznie pomija w niej
+półkę. **Płyta drzwi jest identyczna dla L i R** — strona zawiasów zmienia
+wyłącznie pozycje puszek Ø35, więc nie rusza listy cięć ani nestingu.
+
+**Wynik:** 47 elementów, 16 śrub M6 (pion↔płyta) + 10 kotew do cokołu,
+48 otworów Ø5 pod kołki, masa netto 124,8 kg w wariancie z pełnym
+wyposażeniem. **23/23 testów** geometrii, w tym nowe: piony niescieniane,
+piony stoją między płytami, kołki trafiają w lica pionów, zawiasy po
+zadanej stronie drzwi.

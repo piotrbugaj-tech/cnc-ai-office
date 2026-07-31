@@ -132,9 +132,9 @@ def run():
             "korpus %.0f + cokol %.0f = %.1f" % (p["H"], p["PLINTH_H"], total_h))
 
     # --- 2. stycznosc luku ---------------------------------------------
-    # nose_bay_profile obejmuje tez prawa krawedz przesla (xr, 0) - stad
-    # min() zamiast all(), zeby wylapac wlasciwy punkt stycznosci luku
-    prof = m.nose_bay_profile(p, d)
+    # profil plyty obejmuje tez prosta krawedz frontu - stad min() zamiast
+    # all(), zeby wylapac wlasciwy punkt stycznosci luku
+    prof = m.full_plate_profile(p, d)
     at_front = [q for q in prof if abs(q[1]) < TOL]
     at_side = [q for q in prof if abs(q[0]) < TOL]
     front_x = min(q[0] for q in at_front) if at_front else None
@@ -189,68 +189,74 @@ def run():
             "0 kolizji na %d elementow" % len(parts) if not collisions
             else "%d kolizji, np. %s" % (len(collisions), collisions[:3]))
 
-    # --- 5. kazda polka to jedna plyta pelnej szerokosci (runda 6) --------
+    # --- 5. dolna i gorna plyta to jeden kawalek na pelne 1800 mm ---------
     xs = d["vertical_x"]
-    rd = p["RABBET_DEPTH"]
     by_name = {q.name: q for q in parts}
-    nd = p["NOTCH_DEPTH"]
-    full_gaps = []
-    for li in range(p["N_LEVELS"]):
-        shelf = by_name.get("shelf-L%d-full" % li)
-        if shelf is None:
-            full_gaps.append(("poziom %d" % li, "brak plyty pelnej szerokosci", None))
+    plate_bad = []
+    for nm in ("plate-bottom", "plate-top"):
+        q = by_name.get(nm)
+        if q is None:
+            plate_bad.append((nm, "brak"))
             continue
-        xr = shelf.bbox()[3]
-        # lewa krawedz to luk R150 (siega az do x=0) - sprawdzone juz przez
-        # testy stycznosci luku wyzej; tu tylko prawa krawedz (wrab R-side)
-        if abs(xr - (xs[3] + rd)) > TOL:
-            full_gaps.append(("shelf-L%d-full" % li, "prawa krawedz", xr))
-        prof = shelf.geom["profile"]
-        for gx0 in (xs[0], xs[1], xs[2]):
-            gx1 = gx0 + p["T"]
-            notch_pts = [q for q in prof if gx0 - TOL <= q[0] <= gx1 + TOL
-                         and abs(q[1] - nd) < TOL]
-            if len(notch_pts) < 2:
-                full_gaps.append(("shelf-L%d-full" % li, "brak wciecia przy x=%.0f" % gx0, None))
-    r.check("kazdy z %d poziomow to jedna plyta omijajaca 3 grzbiety" % p["N_LEVELS"],
-            not full_gaps,
-            "6 plyt pelnej szerokosci, wciecia na wszystkich pionach posrednich"
-            if not full_gaps else str(full_gaps[:3]))
+        bb = q.bbox()
+        if abs((bb[3] - bb[0]) - p["W"]) > TOL:
+            plate_bad.append((nm, "szerokosc %.1f" % (bb[3] - bb[0])))
+    r.check("dolna i gorna plyta: jeden kawalek 1800 mm", not plate_bad,
+            "2 plyty pelnej szerokosci, naroznik R150" if not plate_bad
+            else str(plate_bad))
 
-    # --- 5b. reguła warsztatowa: wrab <= 1/3 grubosci na strone i nigdy
-    # wiecej niz 1/2 lacznie. Runda 6 usunela wrab dwustronny (bylo 2 x 5
-    # z 18 mm = 56% - poza limitem); zostal tylko jednostronny w prawym boku.
+    # --- 5b. runda 7: zero wrebow - kazdy pion ma pelna grubosc T na calej
+    # wysokosci. Wczesniejsze rundy scieniały piony posrednie o 2 x 5 mm
+    # (56% grubosci), co lamalo regule "nigdy wiecej niz 1/2 lacznie". ---
     thin = []
     for q in parts:
-        if q.kind != "vertical" or "-rabbet-" not in q.name:
+        if q.kind != "vertical":
             continue
-        b = q.bbox()
-        removed = p["T"] - (b[3] - b[0])
-        if removed > p["T"] / 2.0 + TOL:
-            thin.append((q.name, round(removed, 1)))
-    r.check("zaden pion nie traci >1/2 grubosci na wysokosci wrebu",
-            not thin,
-            "max usuniete %.0f z %.0f mm (rdzen %.0f mm)"
-            % (rd, p["T"], p["T"] - rd) if not thin else str(thin[:3]))
+        bb = q.bbox()
+        if abs((bb[3] - bb[0]) - p["T"]) > TOL:
+            thin.append((q.name, round(bb[3] - bb[0], 1)))
+    r.check("zaden pion nie jest scieniany (zero wrebow)", not thin,
+            "%d pionow, kazdy pelne %.0f mm" % (
+                sum(1 for q in parts if q.kind == "vertical"), p["T"])
+            if not thin else str(thin[:3]))
 
-    # --- 6. sruby w granicach glebokosci polki --------------------------
-    bad_y = [y for y in p["BOLT_Y_RIGHT"] if not (0 < y < d["frame_depth"])]
-    r.check("sruby M6 w granicach glebokosci polki", not bad_y,
-            "2 sruby na zlacze, y = %s" % list(p["BOLT_Y_RIGHT"])
+    # --- 5c. piony stoja MIEDZY plytami, nie przez nie -------------------
+    T = p["T"]
+    span = []
+    for q in parts:
+        if q.kind != "vertical":
+            continue
+        z0, z1 = q.z_range()
+        if abs(z0 - (p["PLINTH_H"] + T)) > TOL or abs(z1 - (p["PLINTH_H"] + p["H"] - T)) > TOL:
+            span.append((q.name, round(z0, 1), round(z1, 1)))
+    r.check("piony stoja miedzy plytami (%.0f mm wysokosci)" % (p["H"] - 2 * T),
+            not span,
+            "wszystkie 4 piony od z=%.0f do z=%.0f" % (
+                p["PLINTH_H"] + T, p["PLINTH_H"] + p["H"] - T)
+            if not span else str(span[:3]))
+
+    # --- 6. sruby pion <-> plyta: pionowe, lico plyty wolne --------------
+    bolts = m.bolt_positions(p, d)
+    bad_y = [y for y in p["BOLT_Y"] if not (0 < y < d["frame_depth"])]
+    expect = len(xs) * len(p["BOLT_Y"]) * 2
+    r.check("%d srub M6 pion-plyta, wszystkie pionowe" % expect,
+            not bad_y and len(bolts) == expect
+            and all(bt[3] in ("+z", "-z") for bt in bolts),
+            "%d srub, 2 na czolo pionu, y = %s" % (len(bolts), list(p["BOLT_Y"]))
             if not bad_y else str(bad_y))
 
-    # --- 6b. sruby tylko tam, gdzie leb ma na czym usiasc (runda 6) ------
-    # Piony posrednie maja teraz wrab przelotowy z obu stron, wiec nie maja
-    # ani wrebu oporowego, ani srub. Zostaje prawy bok: wrab jednostronny,
-    # lico zewnetrzne plaskie -> leb siada normalnie.
-    bolts = m.bolt_positions(p, d)
-    x_rside = round(xs[3] + p["T"] / 2.0, 3)
-    stray = [b for b in bolts if round(b[0], 3) != x_rside]
-    expected_n = p["N_LEVELS"] * len(p["BOLT_Y_RIGHT"])
-    r.check("wszystkie %d srub M6 na prawym boku (leb na wolnym licu)" % expected_n,
-            not stray and len(bolts) == expected_n,
-            "%d srub, wszystkie na x=%.0f" % (len(bolts), x_rside) if not stray
-            else "%d poza prawym bokiem / %d lacznie" % (len(stray), len(bolts)))
+    # --- 6b. kolki polkowe trafiaja w lica pionow ------------------------
+    pins = m.shelf_pin_positions(p, d)
+    faces = set()
+    for x in xs:
+        faces.add(round(x, 3))
+        faces.add(round(x + T, 3))
+    off = [q for q in pins if round(q[0], 3) not in faces]
+    n_shelves = sum(1 for q in parts if q.qty_group == "shelf-bay")
+    r.check("kolki Ø5 w licach pionow, %d polek przestawialnych" % n_shelves,
+            not off,
+            "%d otworow, wszystkie na licu pionu" % len(pins) if not off
+            else str(off[:3]))
 
     # --- 6c. kotwy korpus <-> cokol trafiaja w szyny/zebra ramy ----------
     anchors = m.plinth_bolt_positions(p, d)
@@ -262,6 +268,40 @@ def run():
     r.check("kazda kotwa korpus-cokol trafia w material ramy", not missed,
             "%d kotew M6 w szynach/zebrach" % len(anchors) if not missed
             else "%d chybia: %s" % (len(missed), missed[:3]))
+
+    # --- 6d. wyposazenie komor miesci sie w swietle, nic sie nie dubluje --
+    cells_dr = set(p["DRAWER_CELLS"])
+    cells_do = set(p["DOOR_CELLS"])
+    clash = cells_dr & cells_do
+    oversize = []
+    for q in parts:
+        if q.kind not in ("drawer", "door"):
+            continue
+        bb = q.bbox()
+        if bb[0] < -TOL or bb[3] > p["W"] + TOL:
+            oversize.append(q.name)
+    r.check("szuflady i drzwiczki: %d + %d komor, bez kolizji zakresu"
+            % (len(cells_dr), len(cells_do)),
+            not clash and not oversize,
+            "%d szuflad, %d drzwi (zawiasy %s)" % (
+                len(cells_dr), len(cells_do),
+                "/".join(sorted(set(p["DOOR_CELLS"].values()))))
+            if not clash else "ta sama komora ma szuflade i drzwi: %s" % sorted(clash))
+
+    # --- 6e. zawiasy siedza przy wlasciwej krawedzi drzwi ----------------
+    hinges = m.hinge_positions(p, d)
+    hin_bad = []
+    for (li, b), side in p["DOOR_CELLS"].items():
+        x0, x1, _, _ = m._cell_opening(li, b, p, d)
+        mine = [h for h in hinges if h[3] == side
+                and x0 - TOL <= h[0] <= x1 + TOL]
+        for h in mine:
+            near_left = abs(h[0] - x0) < (x1 - x0) / 2.0
+            if (side == "L") != near_left:
+                hin_bad.append((li, b, side, round(h[0])))
+    r.check("puszki zawiasow Ø35 po zadanej stronie drzwi", not hin_bad,
+            "%d puszek, strona wg DOOR_CELLS" % len(hinges) if not hin_bad
+            else str(hin_bad[:3]))
 
     # --- 7. wymogi CLAUDE.md -------------------------------------------
     ok_grain = [q for q in parts if q.grain not in ("longitudinal", "crosswise", "free")]
