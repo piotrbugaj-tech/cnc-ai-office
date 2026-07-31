@@ -1,9 +1,9 @@
 # Regał R150 — brief
 
 **Klient:** wewnętrzny / własny
-**Runda:** 5 — cokół cofnięty jednolicie 22 mm + dno/wieniec pełnej szerokości
+**Runda:** 6 — rozstrzygnięcie wszystkich otwartych decyzji
 **Data:** 2026-07-31
-**Status:** czeka na akceptację bryły; [BLOKER] łeb śruby M6 na 32 z 44 śrub wymaga decyzji joinery-specialist przed rysunkiem detalu i cięciem — patrz §5
+**Status:** czeka na akceptację bryły. Blokada z łbami śrub zamknięta; otwarty jeden punkt (proporcja wrębu 310/86) — patrz §5
 
 ## 1. Zakres
 
@@ -18,7 +18,7 @@ przez klienta.
 | Materiał nośny | sklejka brzozowa 18 mm |
 | Zaoblenie | przedni lewy narożnik, R150, cała wysokość (korpus i cokół) |
 | Cokół | 100 mm, cofnięty 22 mm od krawędzi korpusu na wszystkich czterech bokach |
-| Dno / wieniec | jedna płyta pełnej szerokości (usztywnienie — runda 5) |
+| Poziomy | 6 × jedna płyta pełnej szerokości 1800 mm (krata — runda 6) |
 | Montaż | rozbieralny na śruby (bez kleju) |
 
 ## 2. Decyzje klienta
@@ -50,52 +50,44 @@ samodzielny podgląd HTML generowany bez Blendera (`design/preview.html`).
 
 ## 4. Rozwiązanie
 
-- **Cztery piony** pełnej wysokości: lewy bok to grzebień (grzbiet + 5 zębów,
-  wrąb przelotowy — patrz runda 2), dalej dwa piony pośrednie i prawy bok.
-  Piony pośrednie: wrąb oporowy pod półkami na czterech środkowych poziomach
-  (runda 3), wrąb przelotowy przy dnie/wieńcu (runda 5, jak lewy bok).
-- **Trzy przęsła po 526 mm** światła — bezpieczna rozpiętość dla półki 18 mm o
-  głębokości 400 mm.
-- **Sześć poziomów** (dno, 4 półki, wieniec), światło międzypółkowe 358,4 mm
-  (korpus 1900 mm — patrz runda 4). Dno i wieniec: jedna płyta pełnej
-  szerokości 1800 mm (runda 5, usztywnienie); cztery środkowe poziomy: nadal
-  osobne półki na przęsło.
-- **Nos zaoblony** — scalony z półką przęsła 0 na każdym poziomie, pełny
-  promień R150, bez żeber i bez poszycia giętego (usunięte w rundzie 2).
-- **Plecy** ze sklejki 4 mm, cztery płyty (nos + trzy przęsła).
-- **Cokół** 100 mm, cofnięty 22 mm od krawędzi korpusu na wszystkich
-  czterech bokach (runda 5) — nadal omija listwę przypodłogową przy tylnej
-  i prawej ścianie (22 mm > 20 mm listwy).
+Konstrukcja kratowa (od rundy 6):
+
+- **Cztery piony** pełnej wysokości, wszystkie jako grzebienie: lewy bok,
+  mid-1, mid-2 mają wrąb przelotowy na każdym z 6 poziomów (grzbiet 86 mm
+  z tyłu + zęby od frontu). Prawy bok jako jedyny ma wrąb oporowy 5 mm na
+  licu wewnętrznym — jego lico zewnętrzne zostaje wolne pod łby śrub.
+- **Sześć poziomów, każdy jako jedna ciągła płyta 1800 mm** przechodząca
+  przez wszystkie trzy piony pośrednie. Światło międzypółkowe 358,4 mm.
+- **Trzy przęsła po 526 mm** światła — bezpieczna rozpiętość dla 18 mm.
+- **Nos zaoblony** scalony z płytą poziomu, pełny promień R150, bez żeber
+  i bez poszycia giętego (usunięte w rundzie 2).
+- **Plecy** ze sklejki 4 mm — przykręcane do grzbietów pionów, trzymają
+  płyty przed wysunięciem do przodu.
+- **Cokół** 100 mm z płyt 18 mm na rąb, cofnięty 22 mm ze wszystkich stron,
+  z 3 żebrami poprzecznymi, przykręcony do dna 10 kotwami M6.
+- **Okucia:** 12 śrub M6 (prawy bok) + 10 kotew M6 (korpus↔cokół), wszystkie
+  w mimośrody beczkowe Ø10 × 13 mm — gwint żeński, nie wkręt.
 
 Szczegóły stolarki: `design/joinery-notes.md`.
 
 ## 5. Otwarte kwestie
 
-Zaktualizowane po rundzie 5 — poprzednie punkty tej sekcji dotyczyły żeber
-nosa i poszycia giętego usuniętych w rundzie 2 (nieaktualne) albo zostały
-rozstrzygnięte w kolejnych rundach. Aktualne otwarte punkty:
+Runda 6 zamknęła wszystkie punkty poza jednym.
 
-0. **[BLOKER] Dostęp dla łba śruby na pionach pośrednich, 32 z 44 śrub** —
-   runda 5 usunęła 16 z dawnych 48 przypadków razem ze zmianą dna/wieńca na
-   wrąb przelotowy (patrz pkt 4 niżej), ale cztery środkowe poziomy nadal
-   mają problem bez rozwiązania. Wstrzymuje zbliżenie na mocowanie śrubowe
-   i wiercenia w DXF. Patrz `design/joinery-notes.md` §1.
-1. **Konstrukcja ramy cokołu** — dziś bryła pełna w modelu, nie realne płyty
-   18 mm. Patrz `design/joinery-notes.md` §3, pkt 1.
-2. **Oparcie prawego boku na cokole** — wysięg 18–22 mm bez podparcia
-   bezpośredniego. Patrz `design/joinery-notes.md` §3, pkt 2.
-3. **Mocowanie korpus ↔ cokół** — dziś sam docisk ciężarem, bez śrub/kołków.
-   Patrz `design/joinery-notes.md` §3, pkt 3.
-4. **Mocowanie złącza wrąb ↔ płyta (nos, mid-1, mid-2)** — czysty wcisk, bez
-   śrub retencyjnych, na wszystkich wrębach przelotowych. Patrz
-   `design/joinery-notes.md` §2 i §4.
+1. **Proporcja wrębu przelotowego 310 / 86 mm** — mój dobór inżynierski, nie
+   specyfikacja klienta. Do potwierdzenia przez joinery-specialist przed
+   cięciem. Patrz `design/joinery-notes.md` §6.
 
-## 6. Poza zakresem rundy 1–4
+**Zamknięte w rundzie 6:** dostęp dla łba śruby M6 (był blokerem), pięć
+brakujących wymiarów okucia, głębokość wrębu oporowego, liczba śrub,
+mocowanie złącza wrąb↔płyta, konstrukcja ramy cokołu, kotwienie
+korpus↔cokół, nawis prawego boku nad cokołem. Szczegóły z uzasadnieniem:
+`design/joinery-notes.md`.
+
+## 6. Poza zakresem rundy 1–6
 
 DXF z warstwami wg CLAUDE.md, cut-list CSV, BOM, nesting z kontrolą waste < 12 %,
-G-code, instrukcja montażu, karta produktu. Dotyczy też docelowej konstrukcji
-ramy cokołu (patrz `design/joinery-notes.md` §3, pkt 1) — obecna bryła jest
-placeholderem obrysu, nie gotowym do wycięcia kształtem.
+G-code, instrukcja montażu, karta produktu.
 
 ## 7. Runda 2 — uproszczenie nosa
 
@@ -271,3 +263,47 @@ nie mają materiału tam, gdzie dawniej był pełny próg wrębu oporowego). 19/
 testów geometrii przechodzi, w tym dwa nowe: dno/wieniec poprawnie omijają
 grzbiety wszystkich trzech pionów pośrednich; brak srub na mid-1/mid-2 przy
 dnie/wieńcu z poprawną łączną liczbą 44.
+
+## 11. Runda 6 — rozstrzygnięcie wszystkich otwartych decyzji
+
+Klient: „znajdź odpowiedzi na wszystkie decyzje do rozstrzygnięcia".
+
+### Kluczowe odkrycie — wrąb dwustronny łamał regułę warsztatową
+
+Piony pośrednie miały wrąb oporowy 5 mm z **obu** stron na tej samej
+wysokości: 10 z 18 mm = **56 % usuniętego materiału**, rdzeń 8 mm. Praktyka
+warsztatowa dla wrębu/dado dopuszcza ≤ 1/3 grubości na stronę i **nigdy
+więcej niż 1/2 łącznie**. To był realny błąd konstrukcyjny — niezależny od
+zgłoszonego wcześniej problemu z łbem śruby, ale z tym samym rozwiązaniem.
+
+### Rozwiązanie — wrąb przelotowy na wszystkich pionach
+
+Piony pośrednie nie mają już wrębu oporowego: na każdym z 6 poziomów mają
+wrąb przelotowy (ten sam, co lewy bok od rundy 2). W konsekwencji **każdy
+poziom to jedna ciągła płyta 1800 mm** — rozszerzenie tego, o co klient
+poprosił dla dna i wieńca w rundzie 5. Konstrukcja jest teraz kratą:
+4 grzebienie pionowe + 6 ciągłych płyt.
+
+Efekty: zero ścieniania pionów pośrednich; śruby **60 → 12** (zostały tylko
+na prawym boku, gdzie lico zewnętrzne jest wolne i łeb ma na czym usiąść);
+blokada z rundy 4/5 zamknięta w całości.
+
+### Cokół — z bryły na realną konstrukcję
+
+Szyny były modelowane jako lite klocki 70 × 100 mm, których nie dało się
+wyciąć z płyty. Teraz: rama z płyt **18 mm na rąb**, 100 mm wysokości, plus
+**3 żebra poprzeczne** pod lewym bokiem, mid-1 i mid-2 (bez nich płyta dna
+pracowałaby na zginanie w świetle do 526 mm). Narożnik to pas 18 mm
+współśrodkowy z łukiem korpusu (R128 → R110). Korpus **przykręcony** do
+cokołu — 10 kotew M6 w mimośrody osadzone w szynach.
+
+### Wymiary okucia — ustalone
+
+Mimośród beczkowy M6 to standard **Ø10 × 13 mm**, więc otwór w płycie 18 mm
+jest **ślepy** (zostaje 5 mm), nie przelotowy. Oś mimośrodu 35 mm od czoła
+płyty, otwór przelotowy pod M6 Ø6,5, łeb walcowy imbusowy na licu, śruba
+M6 × 45 mm.
+
+**Wynik:** 57 elementów (było 62), 12 śrub M6 + 10 kotew do cokołu (było 44),
+masa netto 105,2 kg. **20/20 testów** geometrii, w tym nowy test egzekwujący
+regułę 1/3 i test trafiania kotew w materiał ramy cokołu.

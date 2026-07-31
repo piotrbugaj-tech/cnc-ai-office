@@ -338,7 +338,7 @@ def view_plinth():
     g.append(dim_h(W - sd, W, fy(0) + 46, "20"))
     g.append(dim_v(fy(Dp), fy(Dp - sd), -110, "20"))
     g.append(dim_h(0, inset, fy(0) + 146, "22"))
-    g.append(dim_h(inset, inset + P["PLINTH_FRAME_W"], fy(0) + 196, "70"))
+    g.append(dim_h(inset, inset + P["T"], fy(0) + 196, "18"))
 
     return (svg_open("-190 -120 2140 700", "Rzut cokolu") + "".join(g) + "</svg>")
 
@@ -681,7 +681,7 @@ def build_html(n_tests):
         ("Swiatlo polki", "%.1f" % D["shelf_clear"], "mm"),
         ("Rozpietosc", "526", "mm / przeslo"),
         ("Elementow", str(len(parts)), "szt."),
-        ("Srub M6", str(s["n_bolts"]), "szt."),
+        ("Srub M6", str(s["n_bolts"]), "+ %d kotew" % len(m.plinth_bolt_positions())),
         ("Masa netto", "%.0f" % s["mass_kg"], "kg"),
     ]
     stat_html = "".join(
@@ -715,9 +715,7 @@ def build_html(n_tests):
         "vertical-R-side": "Prawy bok",
         "vertical-L-gable": "Lewy bok &middot; grzbiet + zeby (wrab)",
         "shelf-full": "Dno / wieniec &middot; jedna plyta pelnej szerokosci",
-        "shelf-B0": "Polki + nos &middot; przeslo 1 (scalone)",
-        "shelf-B1": "Polki &middot; przeslo 2",
-        "shelf-B2": "Polki &middot; przeslo 3 (przy prawym boku)",
+        "plinth-rib": "Cokol &middot; zebra poprzeczne pod pionami",
         "back-nose": "Plecy &middot; nos",
         "back-bay": "Plecy &middot; przeslo",
         "plinth": "Cokol &middot; rama (lewy/tyl/prawy/przod/naroznik)",
@@ -745,55 +743,40 @@ def build_html(n_tests):
              "</tr></thead><tbody>%s</tbody></table></div>" % "".join(rows))
 
     notes = [
-        ("q", "Wrab oporowy zamiast czopa — moj dobor 5 mm, wymaga przegladu.",
-         "Zrezygnowalismy z czopa/gniazda na rzecz najprostszego ukladu: sruba M6 "
-         "w mimosrod (gwint zenski, nie wkret — mozna rozkrecac bez konca) plus plytki "
-         "wrab oporowy frezowany w pionie. Bez wrebu cale obciazenie polki spadaloby na "
-         "same 2 sruby i sklejke wokol otworow; z wrebem prog przenosi ciezar jak dawny "
-         "czop, a sruby wracaja do docisku i wyrywania. Konkretna glebokosc (5 mm) to moj "
-         "dobor inzynierski — do potwierdzenia przez joinery-specialist przed cieciem."),
-        ("q", "Wrab w lewym boku (nos) — osobna decyzja z rundy 2, nadal aktualna.",
-         "Wybrales „wreby przelotowe, bok zostaje jedna plyta”. Zeby to bylo geometrycznie "
-         "prawdziwe, wrab jest zamkniety od tylu: otwarty od frontu na 310 mm, z 86 mm "
-         "ciaglym grzbietem z tylu. Test kolizji potwierdza dopasowanie, ale milimetry "
-         "(310/86) to tez moj dobor — ten sam przeglad co wrab oporowy."),
-        ("q", "Zlacze plyta-wrab (nos) nie ma na razie zadnego mocowania.",
-         "Plyta siedzi w wrebie na wcisk, bez srub. Do rozstrzygniecia w rundzie "
-         "dokumentacji: sruby retencyjne przez grzbiet, czy wystarczy tarcie."),
-        ("q", "Rama cokolu 70 mm, cofnieta 22 mm — oba wymiary to moj dobor.",
-         "Cokol to rama (nie plyta pelna): lewa/tylna/prawa/przednia szyna 70 mm "
-         "szerokosci, cofnieta 22 mm od krawedzi korpusu na wszystkich czterech bokach "
-         "(Twoja decyzja co do samego cofniecia — 22 mm > 20 mm listwy, wiec nadal ja "
-         "omija), plus zaokraglony naroznik pod noskiem, ten sam luk R150 co korpus "
-         "powyzej — inaczej prostokatna rama wystawalaby poza zaokraglony nawis. "
-         "Szerokosc szyn (70 mm) to moj dobor konstrukcyjny, nie Twoja specyfikacja — "
-         "do potwierdzenia przez joinery-specialist przed cieciem."),
-        ("q", "Prawy bok nie ma wlasnego oparcia w cokole w tym miejscu.",
-         "Cokol jest cofniety 22 mm od tylnej i prawej sciany, ale prawy bok pionu stoi "
-         "18 mm dalej niz to cofniecie (4 mm szczeliny + cala grubosc pionu) — korpus "
-         "tam odrobine nawisa nad pusta przestrzenia zamiast siedziec wprost na ramie. "
-         "Normalne przy cokole chowajacym sie pod listwe, ale warto to swiadomie "
-         "zaakceptowac."),
-        ("q", "Dno i wieniec — jedna plyta pelnej szerokosci (Twoja decyzja, runda 5).",
-         "Usztywnienie: dno i wieniec przechodza teraz przez mid-1 i mid-2 tym samym "
-         "wrebem przelotowym stop-notch co lewy bok (otwarte na 310 mm od frontu, "
-         "grzbiet 86 mm z tylu) — sprawdzona juz technika, zastosowana teraz dodatkowo "
-         "na tych dwoch pionach. Skutek uboczny: na tych dwoch poziomach mid-1/mid-2 "
-         "nie maja juz srub (zlacze wrebowe, nie skrecane) — to czesciowo lagodzi blokada "
-         "z ponizej (16 z 48 srub bez dostepu dla lba znikneto razem z rabetem)."),
-        ("w", "[BLOKER] 32 z 44 srub nadal bez miejsca na leb — nierozwiazane.",
-         "Na czterech srodkowych poziomach mid-1/mid-2 nadal maja wrab oporowy z obu "
-         "stron na tej samej wysokosci, wiec leb sruby M6 nie ma na czym usiasc "
-         "(patrz design/joinery-notes.md &sect;1). Zbliżenie na mocowanie czeka na "
-         "decyzje joinery-specialist co do jednego z czterech wariantow naprawy."),
-        ("w", "Masa netto %.0f kg (104,6 kg w rundzie 4, 101 kg w rundzie 2)." % s["mass_kg"],
-         "Lekki spadek mimo cokolu wynika z otwartych (bez materialu) wrebow "
-         "przelotowych w dnie/wiencu zamiast pelnych progow. Montaz w dwie osoby "
-         "przy 1800 &times; %.0f mm." % (P["H"] + P["PLINTH_H"])),
-        ("i", "Korpus skurczyl sie do %.0f mm, zeby calosc zmiescila sie w 2000 mm." % P["H"],
-         "Wybrales „zmiescic sie w 2000 mm total”, wiec swiatlo miedzypolkowe zmienilo "
-         "sie z 378,4 mm (rundy 1&ndash;3) na %.1f mm. Rozstaw przesel (526 mm) i cala "
-         "reszta w poziomie sa bez zmian." % D["shelf_clear"]),
+        ("i", "Wrab dwustronny usuniety - lamal regule 1/3 grubosci.",
+         "Piony posrednie mialy wrab oporowy 5 mm z obu stron na tej samej "
+         "wysokosci: 10 z 18 mm (56%) usunietego materialu, rdzen 8 mm. Praktyka "
+         "warsztatowa dopuszcza max 1/3 grubosci na strone i nigdy wiecej niz 1/2 "
+         "lacznie. Teraz mid-1 i mid-2 maja na kazdym poziomie wrab przelotowy "
+         "(jak lewy bok), wiec nie sa scieniane w ogole. Sprawdzane automatycznie."),
+        ("i", "Kazda polka to jedna plyta pelnej szerokosci 1800 mm.",
+         "Prosiles o to dla dna i wienca; ta sama zmiana rozwiazuje przy okazji "
+         "problem z lbami srub i regule 1/3, wiec objela wszystkie 6 poziomow. "
+         "Konstrukcja to teraz krata: 4 grzebienie pionowe + 6 ciaglych plyt. "
+         "Sztywnosc na skrecanie rosnie wyraznie wzgledem 18 osobnych polek."),
+        ("i", "Sruby M6: 60 &rarr; 12, plus 10 kotew do cokolu.",
+         "Zostaly tylko tam, gdzie leb ma na czym usiasc: prawy bok, wrab "
+         "jednostronny, lico zewnetrzne plaskie. Wszystkie zlacza z pionami "
+         "posrednimi i lewym bokiem sa teraz wrebowe. Mimosrod M6 to Ø10 x 13 mm, "
+         "wiec otwor w plycie 18 mm jest slepy (zostaje 5 mm), nie przelotowy."),
+        ("i", "Cokol przebudowany z bryly pelnej na realne plyty 18 mm.",
+         "Wczesniej szyny byly w modelu litymi klockami 70 x 100 mm - nie dalo sie "
+         "ich wyciac z jednej plyty. Teraz to rama z plyt 18 mm ustawionych na rab, "
+         "100 mm wysokosci, plus 3 zebra poprzeczne pod lewym bokiem, mid-1 i mid-2, "
+         "zeby plyta dna nie pracowala na zginanie miedzy szynami."),
+        ("i", "Korpus przykrecony do cokolu - 10 kotew M6.",
+         "Wczesniej stal tylko wlasnym ciezarem. Sruba pionowo przez plyte dna "
+         "(Ø6,5 przelotowy) w mimosrod osadzony w szynie cokolu (Ø10 x 13 mm slepy). "
+         "Cala reszta konstrukcji zostaje rozbieralna."),
+        ("q", "Wrab przelotowy 310 / grzbiet 86 mm - jedyny otwarty punkt.",
+         "Ta proporcja to nadal moj dobor, nie Twoja specyfikacja. Po rundzie 6 "
+         "grzbiet jest podparty plyta co ~376 mm na calej wysokosci (dawniej tylko "
+         "na 2 poziomach), wiec wyboczenie przestaje byc realnym ryzykiem - ale "
+         "warto, zeby joinery-specialist potwierdzil 86 mm przed cieciem."),
+        ("w", "Masa netto %.0f kg. Montaz koniecznie w dwie osoby." % s["mass_kg"],
+         "Sama krata (6 plyt 1800 mm + 4 grzebienie) sklada sie na plasko, ale "
+         "gotowy korpus 1800 &times; %.0f mm jest ciezki i sztywny - nie da sie go "
+         "juz \u201erozlozyc na pol\u201d przy wnoszeniu." % (P["H"] + P["PLINTH_H"])),
     ]
     notes_html = "".join(
         '<div class="note"><span class="tag %s">%s</span>'
@@ -806,16 +789,15 @@ def build_html(n_tests):
 <div class="wrap">
 
 <header>
-  <p class="eyebrow">CNC Furniture Studio &middot; runda 5 &middot; bryla do oceny</p>
+  <p class="eyebrow">CNC Furniture Studio &middot; runda 6 &middot; bryla do oceny</p>
   <h1>Regal R150</h1>
-  <p class="lede">Sklejka brzozowa 18 mm, ciecie CNC na gotowo, montaz rozbieralny na
-  sruby M6 w mimosrod (gwint zenski, nie wkret) — bez czopow, tylko wiercone otwory
-  i plytki wrab oporowy pod kazda polka. Dno i wieniec sa teraz jedna plyta pelnej
-  szerokosci (usztywnienie), przechodzaca przez piony posrednie wrebem przelotowym
-  jak lewy bok. Stoi na cokole 100 mm, cofnietym 22 mm od krawedzi korpusu na
-  wszystkich czterech bokach (tyl i prawy bok regalu przylegaja do sciany, pod
-  listwe przypodlogowa). Przedni lewy narozik zaobolony promieniem 150 mm, bez
-  poszycia gietego. Ponizej geometria do obejrzenia &mdash; dokumentacja
+  <p class="lede">Sklejka brzozowa 18 mm, ciecie CNC na gotowo, montaz rozbieralny.
+  Konstrukcja to krata: kazdy z 6 poziomow to jedna ciagla plyta na pelne 1800 mm,
+  przechodzaca przez wszystkie trzy piony posrednie wrebem przelotowym. Sruby M6
+  w mimosrod (gwint zenski, nie wkret) zostaly tylko na prawym boku, gdzie leb ma
+  na czym usiasc. Stoi na cokole 100 mm z plyt 18 mm na rab, cofnietym 22 mm od
+  krawedzi korpusu ze wszystkich stron i przykreconym do dna. Przedni lewy narozik
+  zaobolony promieniem 150 mm. Ponizej geometria do obejrzenia &mdash; dokumentacja
   produkcyjna powstaje po Twojej akceptacji.</p>
 </header>
 
@@ -826,8 +808,8 @@ def build_html(n_tests):
 <section>
   <div class="hdr"><h2><span class="num">01</span>Bryla</h2>
   <p class="sub">Przeciagnij, zeby obrocic. Kolko myszy przybliza.
-  Wylacz „Piony", zeby zobaczyc scalona plyte noska bez lewego boku, albo
-  „Polki", zeby zobaczyc sam grzebien boku (grzbiet + 5 zebow) osobno.</p></div>
+  Wylacz „Piony", zeby zobaczyc same plyty poziomow z wycieciami pod grzbiety,
+  albo „Polki", zeby zobaczyc cztery grzebienie pionowe osobno.</p></div>
   <div class="viewer">
     <canvas id="cv"></canvas>
     <div class="hud">Regal R150 &middot; 1:20</div>
@@ -880,9 +862,9 @@ def build_html(n_tests):
 
 <section>
   <div class="hdr"><h2><span class="num">04</span>Do rozstrzygniecia</h2>
-  <p class="sub">Szesc decyzji wymagajacych przegladu przed cieciem, dwa ryzyka
-  do potwierdzenia (jeden to blokujacy problem z lbami srub) i jedna zmiana,
-  o ktorej warto wiedziec.</p></div>
+  <p class="sub">Runda 6 zamknela wszystkie punkty poza jednym. Blokada z lbami
+  srub zniknela razem z wrebem dwustronnym; cokol dostal realna konstrukcje.
+  Do potwierdzenia zostaje proporcja wrebu przelotowego.</p></div>
   <div class="notes">%s</div>
 </section>
 

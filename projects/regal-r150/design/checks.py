@@ -189,35 +189,17 @@ def run():
             "0 kolizji na %d elementow" % len(parts) if not collisions
             else "%d kolizji, np. %s" % (len(collisions), collisions[:3]))
 
-    # --- 5. polka siada plasko na progu wrebu oporowego, bez szczeliny ----
-    # (dno i wieniec - runda 5 - sa jedna plyta na cala szerokosc, wiec nie
-    # maja named shelf-L*-B* czesci na srodkowych pionach - pomijamy je tu,
-    # sprawdzane osobno nizej razem z wrebem przelotowym mid-1/mid-2)
+    # --- 5. kazda polka to jedna plyta pelnej szerokosci (runda 6) --------
     xs = d["vertical_x"]
     rd = p["RABBET_DEPTH"]
     by_name = {q.name: q for q in parts}
-    top_level = p["N_LEVELS"] - 1
-    full_width_levels = {0, top_level}
-    gaps = []
-    for li in range(p["N_LEVELS"]):
-        if li in full_width_levels:
-            continue
-        for b in range(p["N_BAYS"]):
-            shelf = by_name["shelf-L%d-B%d" % (li, b)]
-            xl, xr = shelf.bbox()[0], shelf.bbox()[3]
-            if b > 0 and abs(xl - (xs[b] + p["T"] - rd)) > TOL:
-                gaps.append(("shelf-L%d-B%d" % (li, b), "L", xl))
-            if abs(xr - (xs[b + 1] + rd)) > TOL:
-                gaps.append(("shelf-L%d-B%d" % (li, b), "R", xr))
-    r.check("polki siadaja na progu wrebu bez szczeliny", not gaps,
-            "wszystkie krawedzie na spodziewanym X" if not gaps else str(gaps[:3]))
-
-    # --- 5b. dno/wieniec (plyta pelnej szerokosci) omijaja grzbiety pionow
-    # posrednich dokladnie tam, gdzie te piony maja wrab przelotowy (runda 5)
     nd = p["NOTCH_DEPTH"]
     full_gaps = []
-    for li in full_width_levels:
-        shelf = by_name["shelf-L%d-full" % li]
+    for li in range(p["N_LEVELS"]):
+        shelf = by_name.get("shelf-L%d-full" % li)
+        if shelf is None:
+            full_gaps.append(("poziom %d" % li, "brak plyty pelnej szerokosci", None))
+            continue
         xr = shelf.bbox()[3]
         # lewa krawedz to luk R150 (siega az do x=0) - sprawdzone juz przez
         # testy stycznosci luku wyzej; tu tylko prawa krawedz (wrab R-side)
@@ -230,30 +212,56 @@ def run():
                          and abs(q[1] - nd) < TOL]
             if len(notch_pts) < 2:
                 full_gaps.append(("shelf-L%d-full" % li, "brak wciecia przy x=%.0f" % gx0, None))
-    r.check("dno/wieniec omijaja grzbiety wszystkich trzech pionow posrednich",
+    r.check("kazdy z %d poziomow to jedna plyta omijajaca 3 grzbiety" % p["N_LEVELS"],
             not full_gaps,
-            "obie plyty pelnej szerokosci maja poprawne wciecia" if not full_gaps
-            else str(full_gaps[:3]))
+            "6 plyt pelnej szerokosci, wciecia na wszystkich pionach posrednich"
+            if not full_gaps else str(full_gaps[:3]))
+
+    # --- 5b. reguła warsztatowa: wrab <= 1/3 grubosci na strone i nigdy
+    # wiecej niz 1/2 lacznie. Runda 6 usunela wrab dwustronny (bylo 2 x 5
+    # z 18 mm = 56% - poza limitem); zostal tylko jednostronny w prawym boku.
+    thin = []
+    for q in parts:
+        if q.kind != "vertical" or "-rabbet-" not in q.name:
+            continue
+        b = q.bbox()
+        removed = p["T"] - (b[3] - b[0])
+        if removed > p["T"] / 2.0 + TOL:
+            thin.append((q.name, round(removed, 1)))
+    r.check("zaden pion nie traci >1/2 grubosci na wysokosci wrebu",
+            not thin,
+            "max usuniete %.0f z %.0f mm (rdzen %.0f mm)"
+            % (rd, p["T"], p["T"] - rd) if not thin else str(thin[:3]))
 
     # --- 6. sruby w granicach glebokosci polki --------------------------
-    bad_y = [y for y in list(p["BOLT_Y_LEFT"]) + list(p["BOLT_Y_RIGHT"])
-             if not (0 < y < d["frame_depth"])]
+    bad_y = [y for y in p["BOLT_Y_RIGHT"] if not (0 < y < d["frame_depth"])]
     r.check("sruby M6 w granicach glebokosci polki", not bad_y,
-            "4 sruby na zlacze, y = %s" % (list(p["BOLT_Y_LEFT"]) + list(p["BOLT_Y_RIGHT"]))
+            "2 sruby na zlacze, y = %s" % list(p["BOLT_Y_RIGHT"])
             if not bad_y else str(bad_y))
 
-    # --- 6b. dno/wieniec (runda 5) bez srub na mid-1/mid-2 - to teraz
-    # zlacze wrebowe jak lewy bok, nie skrecane; prawy bok bez zmian ---
+    # --- 6b. sruby tylko tam, gdzie leb ma na czym usiasc (runda 6) ------
+    # Piony posrednie maja teraz wrab przelotowy z obu stron, wiec nie maja
+    # ani wrebu oporowego, ani srub. Zostaje prawy bok: wrab jednostronny,
+    # lico zewnetrzne plaskie -> leb siada normalnie.
     bolts = m.bolt_positions(p, d)
-    xs_mid = {round(xs[1] + p["T"] / 2.0, 3), round(xs[2] + p["T"] / 2.0, 3)}
-    full_z = {round(d["level_z"][li] + p["T"] / 2.0 + p["PLINTH_H"], 3)
-              for li in full_width_levels}
-    stray = [b for b in bolts if round(b[0], 3) in xs_mid and round(b[2], 3) in full_z]
-    expected_n = 60 - 2 * 2 * 4   # 4 sruby x 2 piony x 2 poziomy usuniete
-    r.check("brak srub na mid-1/mid-2 przy dnie/wiencu, %d srub lacznie" % expected_n,
+    x_rside = round(xs[3] + p["T"] / 2.0, 3)
+    stray = [b for b in bolts if round(b[0], 3) != x_rside]
+    expected_n = p["N_LEVELS"] * len(p["BOLT_Y_RIGHT"])
+    r.check("wszystkie %d srub M6 na prawym boku (leb na wolnym licu)" % expected_n,
             not stray and len(bolts) == expected_n,
-            "%d srub, 0 na mid-1/mid-2 przy dnie/wiencu" % len(bolts) if not stray
-            else "%d bledne pozycje / %d srub lacznie" % (len(stray), len(bolts)))
+            "%d srub, wszystkie na x=%.0f" % (len(bolts), x_rside) if not stray
+            else "%d poza prawym bokiem / %d lacznie" % (len(stray), len(bolts)))
+
+    # --- 6c. kotwy korpus <-> cokol trafiaja w szyny/zebra ramy ----------
+    anchors = m.plinth_bolt_positions(p, d)
+    plinth_fp = [q.footprint() for q in parts if q.kind == "plinth"]
+    missed = []
+    for ax, ay, _, _ in anchors:
+        if not any(point_in_poly((ax, ay), fp) for fp in plinth_fp):
+            missed.append((round(ax), round(ay)))
+    r.check("kazda kotwa korpus-cokol trafia w material ramy", not missed,
+            "%d kotew M6 w szynach/zebrach" % len(anchors) if not missed
+            else "%d chybia: %s" % (len(missed), missed[:3]))
 
     # --- 7. wymogi CLAUDE.md -------------------------------------------
     ok_grain = [q for q in parts if q.grain not in ("longitudinal", "crosswise", "free")]

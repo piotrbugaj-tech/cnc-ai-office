@@ -39,14 +39,12 @@ PARAMS = {
     # stolarka
     "NOTCH_DEPTH": 310.0,   # wrab w lewym boku: otwarty na ta glebokosc od frontu
     "RABBET_DEPTH": 5.0,    # wrab oporowy pod polki - patrz joinery-notes.md sekcja 1
-    "BOLT_Y_LEFT": (140.0, 200.0),
-    "BOLT_Y_RIGHT": (320.0, 380.0),
+    "BOLT_Y_RIGHT": (320.0, 380.0),   # tylko prawy bok - patrz bolt_positions
     "BOLT_D": 6.0,          # M6
     "DOWEL_D": 10.0,        # mimosrod beczkowy (gwint zenski, nie wkret)
     # cokol - runda 4: tyl i prawy bok przylegaja do sciany, listwa
     # przypodlogowa 85 mm wys. x 20 mm gl. (odstaje od sciany)
     "PLINTH_H": 100.0,      # 85 mm listwa + 15 mm przeswitu na nierownosci
-    "PLINTH_FRAME_W": 70.0, # szerokosc szyn ramy cokolowej
     "SKIRTING_H": 85.0,     # wysokosc listwy przypodlogowej (dane wejsciowe)
     "SKIRTING_DEPTH": 20.0, # o tyle listwa odstaje od sciany
     "PLINTH_INSET": 22.0,   # runda 5: cokol cofniety o tyle od krawedzi
@@ -333,7 +331,7 @@ def plinth_corner_profile(p=PARAMS, d=DERIVED):
     """
     cx, cy = d["arc_center"]
     r_out = p["R"] - p["PLINTH_INSET"]
-    r_in = r_out - p["PLINTH_FRAME_W"]
+    r_in = r_out - p["T"]
     outer = arc_points(cx, cy, r_out, 270.0, 180.0, p["ARC_SEGMENTS"])   # (150,0) -> (0,150)
     inner = arc_points(cx, cy, r_in, 180.0, 270.0, p["ARC_SEGMENTS"])     # (70,150) -> (150,70)
     return outer + inner
@@ -416,30 +414,38 @@ def _build_plinth(p=PARAMS, d=DERIVED):
     joinery-notes.md."""
     T = p["T"]
     ph = p["PLINTH_H"]
-    fw = p["PLINTH_FRAME_W"]
     inset = p["PLINTH_INSET"]
     W, Dp, R = p["W"], p["D"], p["R"]
     x0, y0 = inset, inset
     x1, y1 = W - inset, Dp - inset
 
     mat, grain = "sklejka brzozowa 18", "longitudinal"
-    return [
+    parts = [
         Part("plinth-left", "plinth",
-             {"type": "box", "bounds": (x0, R, 0.0, x0 + fw, y1 - fw, ph)},
+             {"type": "box", "bounds": (x0, R, 0.0, x0 + T, y1 - T, ph)},
              T, mat, grain, "plinth"),
         Part("plinth-back", "plinth",
-             {"type": "box", "bounds": (x0, y1 - fw, 0.0, x1, y1, ph)},
+             {"type": "box", "bounds": (x0, y1 - T, 0.0, x1, y1, ph)},
              T, mat, grain, "plinth"),
         Part("plinth-right", "plinth",
-             {"type": "box", "bounds": (x1 - fw, y0, 0.0, x1, y1 - fw, ph)},
+             {"type": "box", "bounds": (x1 - T, y0, 0.0, x1, y1 - T, ph)},
              T, mat, grain, "plinth"),
         Part("plinth-front", "plinth",
-             {"type": "box", "bounds": (R, y0, 0.0, x1 - fw, y0 + fw, ph)},
+             {"type": "box", "bounds": (R, y0, 0.0, x1 - T, y0 + T, ph)},
              T, mat, grain, "plinth"),
         Part("plinth-corner", "plinth",
              {"type": "prism_z", "profile": plinth_corner_profile(p, d), "z0": 0.0, "z1": ph},
              T, mat, "free", "plinth"),
     ]
+    # zebra poprzeczne pod kazdym pionem, ktory trafia w swiatlo ramy -
+    # bez nich plyta dna przenosilaby cale obciazenie pionu na zginanie
+    # miedzy szynami (runda 6, patrz joinery-notes.md sekcja 3)
+    for i, x in enumerate(d["vertical_x"][:3]):
+        parts.append(Part(
+            "plinth-rib-%d" % i, "plinth",
+            {"type": "box", "bounds": (x, y0 + T, 0.0, x + T, y1 - T, ph)},
+            T, mat, grain, "plinth-rib"))
+    return parts
 
 
 def build_parts(p=PARAMS, d=DERIVED):
@@ -477,11 +483,15 @@ def _build_corpus(p=PARAMS, d=DERIVED):
     # dno i wieniec (poziom 0 i ostatni) dostaja u mid-1/mid-2 wrab przelotowy
     # zamiast wrebu oporowego - patrz notch_levels w _rabbeted_vertical i
     # full_width_shelf_profile (runda 5, usztywnienie konstrukcji) ---
-    top_level = p["N_LEVELS"] - 1
-    notch_lv = {0, top_level}
-    parts += _rabbeted_vertical("vertical-mid-1", xs[1], "LR", p, d, "vertical-mid",
+    # runda 6: wrab przelotowy na WSZYSTKICH poziomach obu pionow posrednich.
+    # Wrab oporowy z obu stron na tej samej wysokosci usuwal 2 x 5 z 18 mm
+    # (56% grubosci) - reguła warsztatowa dopuszcza max 1/3 na strone i nigdy
+    # wiecej niz 1/2 lacznie. Do tego leb sruby M6 nie mial gdzie usiasc, bo
+    # oba lica rdzenia byly zakryte wpustami. Patrz joinery-notes.md sekcja 1.
+    notch_lv = set(range(p["N_LEVELS"]))
+    parts += _rabbeted_vertical("vertical-mid-1", xs[1], "", p, d, "vertical-mid",
                                  notch_levels=notch_lv)
-    parts += _rabbeted_vertical("vertical-mid-2", xs[2], "LR", p, d, "vertical-mid",
+    parts += _rabbeted_vertical("vertical-mid-2", xs[2], "", p, d, "vertical-mid",
                                  notch_levels=notch_lv)
     parts += _rabbeted_vertical("vertical-R-side", xs[3], "L", p, d)
 
@@ -490,28 +500,12 @@ def _build_corpus(p=PARAMS, d=DERIVED):
     # wrebach, bez czopow. przeslo 0 (przy nosie): jedna scalona plyta
     # nos+polka, zlacze z bokiem to wrab przelotowy (patrz sekcja pionow
     # wyzej), prawa strona wchodzi w wrab oporowy mid-1 jak kazda inna polka
-    prof0 = nose_bay_profile(p, d)
     prof_full = full_width_shelf_profile(p, d)
     for li, z in enumerate(d["level_z"]):
-        if li in notch_lv:
-            parts.append(Part(
-                "shelf-L%d-full" % li, "shelf",
-                {"type": "prism_z", "profile": prof_full, "z0": z, "z1": z + T},
-                T, "sklejka brzozowa 18", "free", "shelf-full"))
-            continue
-        for b in range(p["N_BAYS"]):
-            if b == 0:
-                parts.append(Part(
-                    "shelf-L%d-B0" % li, "shelf",
-                    {"type": "prism_z", "profile": prof0, "z0": z, "z1": z + T},
-                    T, "sklejka brzozowa 18", "free", "shelf-B0"))
-            else:
-                xl = xs[b] + T - rd     # wchodzi w wrab oporowy lewego pionu
-                xr = xs[b + 1] + rd     # wchodzi w wrab oporowy prawego pionu
-                parts.append(Part(
-                    "shelf-L%d-B%d" % (li, b), "shelf",
-                    {"type": "box", "bounds": (xl, 0.0, z, xr, fd, z + T)},
-                    T, "sklejka brzozowa 18", "longitudinal", "shelf-B%d" % b))
+        parts.append(Part(
+            "shelf-L%d-full" % li, "shelf",
+            {"type": "prism_z", "profile": prof_full, "z0": z, "z1": z + T},
+            T, "sklejka brzozowa 18", "free", "shelf-full"))
 
     # --- plecy: nos + po jednej plycie na przeslo, styk w osiach pionow ---
     y0b = fd
@@ -552,21 +546,33 @@ def bolt_positions(p=PARAMS, d=DERIVED):
     xs = d["vertical_x"]
     T = p["T"]
     z_off = p["PLINTH_H"]
-    top_level = p["N_LEVELS"] - 1
-    for li, z in enumerate(d["level_z"]):
+    for z in d["level_z"]:
         zc = z + T / 2.0 + z_off
-        full_width = li in (0, top_level)
-        if not full_width:
-            for y in p["BOLT_Y_RIGHT"]:
-                out.append((xs[1] + T / 2.0, y, zc, "-x"))     # mid-1, strona przeslo 0
-            for y in p["BOLT_Y_LEFT"]:
-                out.append((xs[1] + T / 2.0, y, zc, "+x"))     # mid-1, strona przeslo 1
-            for y in p["BOLT_Y_RIGHT"]:
-                out.append((xs[2] + T / 2.0, y, zc, "-x"))     # mid-2, strona przeslo 1
-            for y in p["BOLT_Y_LEFT"]:
-                out.append((xs[2] + T / 2.0, y, zc, "+x"))     # mid-2, strona przeslo 2
         for y in p["BOLT_Y_RIGHT"]:
-            out.append((xs[3] + T / 2.0, y, zc, "-x"))         # R-side, wszystkie poziomy
+            out.append((xs[3] + T / 2.0, y, zc, "-x"))         # tylko prawy bok
+    return out
+
+
+def plinth_bolt_positions(p=PARAMS, d=DERIVED):
+    """Kotwienie korpusu do cokolu (runda 6) - sruba M6 pionowo przez plyte
+    dna w mimosrod osadzony w szynie cokolu. Wczesniej korpus tylko stal na
+    cokole wlasnym ciezarem; przy 22 mm cofnieciu i przechyle bocznym to za
+    malo. Otwor Ø6,5 przelotowy przez dno + Ø10 x 13 mm ślepy w szynie.
+
+    Zwraca (x, y, z, kierunek) - z na gornej krawedzi cokolu.
+    """
+    inset, T = p["PLINTH_INSET"], p["T"]
+    W, Dp = p["W"], p["D"]
+    z = p["PLINTH_H"]
+    x0, y0 = inset + T / 2.0, inset + T / 2.0
+    x1, y1 = W - inset - T / 2.0, Dp - inset - T / 2.0
+    out = []
+    for x in (400.0, 900.0, 1400.0):          # szyna przednia i tylna
+        out.append((x, y0, z, "-z"))
+        out.append((x, y1, z, "-z"))
+    for y in (150.0, 300.0):                  # szyna lewa i prawa
+        out.append((x0, y, z, "-z"))
+        out.append((x1, y, z, "-z"))
     return out
 
 
