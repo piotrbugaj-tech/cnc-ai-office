@@ -127,8 +127,7 @@ def view_plan():
         z0, z1 = part.z_range()
         if not (z0 - 1e-6 <= z_probe <= z1 + 1e-6):
             continue
-        fill = {"back": PLY_D,
-                "vertical": PLY, "shelf": PLY, "tenon": PLY_D}.get(part.kind)
+        fill = {"back": PLY_D, "vertical": PLY, "shelf": PLY}.get(part.kind)
         if fill is None:
             continue
         pts = [(fx(x), fy(y)) for x, y in part.footprint()]
@@ -189,7 +188,7 @@ def view_front():
 # ---------------------------------------------------------------- widok z prawej
 
 def view_right():
-    """Elewacja prawa - czopy przelotowe i rozstaw srub."""
+    """Elewacja prawa - wrab oporowy pod kazda polka i rozstaw srub."""
     H, Dp = P["H"], P["D"]
 
     def fx(y):
@@ -204,8 +203,9 @@ def view_right():
                   RULE, 1.0, dash="16 12"))
 
     for z in D["level_z"]:
-        for y0, y1 in P["TENON_Y"]:                       # czopy przelotowe
-            g.append(rect(fx(y1), fy(z + P["T"]), fx(y0), fy(z), PLY_D, ACC, 1.6))
+        # wrab oporowy - plytki rowek na cala glebokosc, nie lokalny czop
+        g.append(rect(fx(D["frame_depth"]), fy(z + P["T"]), fx(0), fy(z),
+                      PLY_D, ACC, 1.6))
         for y in P["BOLT_Y_RIGHT"]:                       # sruby M6
             g.append('<circle cx="%.2f" cy="%.2f" r="9" fill="none" stroke="%s" '
                      'stroke-width="1.6" vector-effect="non-scaling-stroke"/>'
@@ -524,7 +524,6 @@ JS = r"""
 KIND_META = {
     "vertical": ("Piony", (216, 186, 138)),
     "shelf": ("Polki", (226, 199, 152)),
-    "tenon": ("Czopy", (176, 138, 82)),
     "back": ("Plecy", (150, 121, 80)),
 }
 
@@ -534,8 +533,7 @@ def build_html(n_tests):
     parts = s["parts"]
     payload = parts_payload()
 
-    body = [q for q in parts if q.kind != "tenon"]
-    bxs = [q.bbox() for q in body]
+    bxs = [q.bbox() for q in parts]
     bbox = [min(b[0] for b in bxs), min(b[1] for b in bxs), min(b[2] for b in bxs),
             max(b[3] for b in bxs), max(b[4] for b in bxs), max(b[5] for b in bxs)]
 
@@ -550,7 +548,7 @@ def build_html(n_tests):
         ("Zaoblenie", "R150", "przedni lewy"),
         ("Swiatlo polki", "378.4", "mm"),
         ("Rozpietosc", "526", "mm / przeslo"),
-        ("Elementow", str(len([q for q in parts if q.kind != "tenon"])), "szt."),
+        ("Elementow", str(len(parts)), "szt."),
         ("Srub M6", str(s["n_bolts"]), "szt."),
         ("Masa netto", "%.0f" % s["mass_kg"], "kg"),
     ]
@@ -571,17 +569,18 @@ def build_html(n_tests):
 
     groups = {}
     for q in parts:
-        if q.kind == "tenon":
-            continue
         e = groups.setdefault(q.qty_group, {"n": 0, "p": q, "a": 0.0, "dims": []})
         e["n"] += 1
         e["a"] += q.area_m2()
         if blank(q) not in e["dims"]:            # plecy przesel nie sa rownej szerokosci
             e["dims"].append(blank(q))
-    # etykiety per grupa - blanki przesel maja te same wymiary, ale rozna
-    # dlugosc czopow, wiec musza byc rozroznialne w tabeli
+    # etykiety per grupa - kazdy pion to w modelu kilka brol (pasma miedzy
+    # wrebami + pasma progu), ale fizycznie to jedna deska - "szt." w tabeli
+    # liczy bryly weryfikacyjne, nie gotowe wyciete czesci (te ustali dopiero
+    # runda DXF, laczac bryly z powrotem w jeden flat pattern na desce)
     GROUP_PL = {
-        "vertical": "Piony",
+        "vertical-mid": "Piony posrednie (mid-1, mid-2)",
+        "vertical-R-side": "Prawy bok",
         "vertical-L-gable": "Lewy bok &middot; grzbiet + zeby (wrab)",
         "shelf-B0": "Polki + nos &middot; przeslo 1 (scalone)",
         "shelf-B1": "Polki &middot; przeslo 2",
@@ -612,24 +611,24 @@ def build_html(n_tests):
              "</tr></thead><tbody>%s</tbody></table></div>" % "".join(rows))
 
     notes = [
-        ("q", "Wrab w lewym boku — moje rozwiniecie Twojej decyzji, wymaga przegladu.",
+        ("q", "Wrab oporowy zamiast czopa — moj dobor 5 mm, wymaga przegladu.",
+         "Zrezygnowalismy z czopa/gniazda na rzecz najprostszego ukladu: sruba M6 "
+         "w mimosrod (gwint zenski, nie wkret — mozna rozkrecac bez konca) plus plytki "
+         "wrab oporowy frezowany w pionie. Bez wrebu cale obciazenie polki spadaloby na "
+         "same 2 sruby i sklejke wokol otworow; z wrebem prog przenosi ciezar jak dawny "
+         "czop, a sruby wracaja do docisku i wyrywania. Konkretna glebokosc (5 mm) to moj "
+         "dobor inzynierski — do potwierdzenia przez joinery-specialist przed cieciem."),
+        ("q", "Wrab w lewym boku (nos) — osobna decyzja z rundy 2, nadal aktualna.",
          "Wybrales „wreby przelotowe, bok zostaje jedna plyta”. Zeby to bylo geometrycznie "
-         "prawdziwe (a nie po prostu 5 rozlacznych slupkow pod inna nazwa), zrobilem wrab "
-         "zamkniety od tylu: otwarty od frontu na 310 mm, z 86 mm ciaglym grzbietem z tylu. "
-         "To dziala i przechodzi test kolizji, ale konkretne milimetry (310/86) to moj dobor "
-         "inzynierski, nie wprost Twoja decyzja — przed cieciem chce to zobaczyc "
-         "joinery-specialist i qa-inspector."),
-        ("q", "Zlacze plyta-wrab nie ma na razie zadnego mocowania.",
-         "Plyta siedzi w wrebie na wcisk, bez srub ani kleju — sam wrab ja pozycjonuje, "
-         "ale nic jej nie przytrzymuje przy wielokrotnym montazu/demontazu. Do "
-         "rozstrzygniecia w rundzie dokumentacji: sruby retencyjne przez grzbiet, czy "
-         "wystarczy tarcie."),
-        ("w", "Masa netto spadla do %.0f kg (bylo 107 kg w rundzie 1)." % s["mass_kg"],
-         "Bez poszycia gietego i 5 nadmiarowych zeber. Nadal montaz w dwie osoby "
-         "przy 1800 &times; 2000 mm — do podania w instrukcji."),
-        ("i", "Czopy przelotowe wystaja 2 mm poza prawy bok.",
-         "Swiadomy detal — widoczne zakonczenia czopow czytaja konstrukcje. "
-         "Zlacze przy lewym boku to teraz wrab, nie czop — patrz notatka wyzej."),
+         "prawdziwe, wrab jest zamkniety od tylu: otwarty od frontu na 310 mm, z 86 mm "
+         "ciaglym grzbietem z tylu. Test kolizji potwierdza dopasowanie, ale milimetry "
+         "(310/86) to tez moj dobor — ten sam przeglad co wrab oporowy."),
+        ("q", "Zlacze plyta-wrab (nos) nie ma na razie zadnego mocowania.",
+         "Plyta siedzi w wrebie na wcisk, bez srub. Do rozstrzygniecia w rundzie "
+         "dokumentacji: sruby retencyjne przez grzbiet, czy wystarczy tarcie."),
+        ("w", "Masa netto %.0f kg (101 kg w rundzie 2, 107 kg w rundzie 1)." % s["mass_kg"],
+         "Lekki wzrost wzgledem rundy 2 — polki siegaja teraz o 5 mm dalej w kazdy wrab "
+         "oporowy. Montaz nadal w dwie osoby przy 1800 &times; 2000 mm."),
         ("i", "Cokol pominiety.",
          "Dno lezy na podlodze. Cofniety cokol okolo 80 mm jest latwy do dodania, "
          "ale zmienia proporcje — dlatego czeka na Twoja ocene bryly."),
@@ -645,13 +644,13 @@ def build_html(n_tests):
 <div class="wrap">
 
 <header>
-  <p class="eyebrow">CNC Furniture Studio &middot; runda 2 &middot; bryla do oceny</p>
+  <p class="eyebrow">CNC Furniture Studio &middot; runda 3 &middot; bryla do oceny</p>
   <h1>Regal R150</h1>
   <p class="lede">Sklejka brzozowa 18 mm, ciecie CNC na gotowo, montaz rozbieralny na
-  sruby. Przedni lewy narozik zaobolony promieniem 150 mm na calej wysokosci, bez
-  poszycia gietego &mdash; zaoblenie tworzy teraz sama plyta polki, scalona z noskiem.
-  Ponizej geometria do obejrzenia &mdash; dokumentacja produkcyjna powstaje
-  po Twojej akceptacji.</p>
+  sruby M6 w mimosrod (gwint zenski, nie wkret) — bez czopow, tylko wiercone otwory
+  i plytki wrab oporowy pod kazda polka. Przedni lewy narozik zaobolony promieniem
+  150 mm na calej wysokosci, bez poszycia gietego. Ponizej geometria do obejrzenia
+  &mdash; dokumentacja produkcyjna powstaje po Twojej akceptacji.</p>
 </header>
 
 <section>
@@ -686,21 +685,23 @@ def build_html(n_tests):
   <div class="draw">
     <div class="plan"><div class="sheet"><h3>Rzut z gory &middot; poziom polki</h3>%s</div></div>
     <div class="sheet"><h3>Widok z przodu</h3>%s</div>
-    <div class="sheet"><h3>Widok z prawej &middot; czopy i sruby</h3>%s</div>
+    <div class="sheet"><h3>Widok z prawej &middot; wrab oporowy i sruby</h3>%s</div>
   </div>
 </section>
 
 <section>
   <div class="hdr"><h2><span class="num">03</span>Elementy</h2>
-  <p class="sub">Wymiar blanku bez naddatku na czopy. Pelna lista ciec, nesting i BOM
+  <p class="sub">Wymiar blanku wliczajac wejscie we wrab. Pion to w tej tabeli kilka
+  bryl weryfikacyjnych (pasma miedzy wrebami + pasma progu) — fizycznie jedna deska;
+  runda DXF polaczy je w jeden flat pattern. Pelna lista ciec, nesting i BOM
   wchodza w kolejnej rundzie.</p></div>
   %s
 </section>
 
 <section>
   <div class="hdr"><h2><span class="num">04</span>Do rozstrzygniecia</h2>
-  <p class="sub">Dwie decyzje wymagajace przegladu przed cieciem, jedno ryzyko
-  do potwierdzenia i dwa detale, ktore warto zaakceptowac swiadomie.</p></div>
+  <p class="sub">Trzy decyzje wymagajace przegladu przed cieciem, jedno ryzyko
+  do potwierdzenia i jeden detal, ktory warto zaakceptowac swiadomie.</p></div>
   <div class="notes">%s</div>
 </section>
 

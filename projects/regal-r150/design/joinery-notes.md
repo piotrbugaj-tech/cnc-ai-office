@@ -1,64 +1,70 @@
 # Regał R150 — decyzje stolarskie
 
 Zgodnie z CLAUDE.md § 9 — dokumentacja decyzji technicznych.
-Runda 2: geometria, bez poszycia giętego. Wymiary gniazd i dog-bone'ów wchodzą
-do DXF w kolejnej rundzie.
+Runda 3: bez czopów. Wymiary otworów wchodzą do DXF w kolejnej rundzie.
 
 ## Status
 
 Bryła czeka na akceptację. Stolarka poniżej jest zamodelowana i przetestowana
-geometrycznie (16/16 testów w `checks.py`, w tym zero kolizji na 91 elementach),
-ale **nie została jeszcze zwalidowana przez `qa-inspector` ani `safety-officer`**.
+geometrycznie (13/13 testów w `checks.py`, w tym zero kolizji na 61 elementach,
+bez żadnych wyjątków w teście kolizji — dawniej czop/gniazdo był jawnie pomijany
+jako "z założenia wspólny", teraz nic nie jest pomijane), ale **nie została
+jeszcze zwalidowana przez `qa-inspector` ani `safety-officer`**.
 
-**Sekcja 2 (wrąb w lewym boku) wymaga przeglądu przed cięciem w szczególności** —
-konkretne wymiary (310 mm otwarcia, 86 mm grzbietu) to moje techniczne
-rozwinięcie decyzji klienta „wręby przelotowe, bok zostaje jedną płytą",
-nie jego dosłowna specyfikacja w milimetrach.
+**Sekcja 1 (wrąb oporowy) i sekcja 2 (wrąb w lewym boku) wymagają przeglądu
+przed cięciem** — konkretne wymiary (głębokość wrębu oporowego 5 mm; otwarcie
+310 mm / grzbiet 86 mm w lewym boku) to moje techniczne rozwinięcie decyzji
+klienta, nie jego dosłowna specyfikacja w milimetrach.
 
-## 1. Złącze półka ↔ pion (piony pośrednie i prawy bok)
+## 1. Złącze półka ↔ pion (piony pośrednie i prawy bok) — runda 3: bez czopów
 
 Podstawowe złącze konstrukcji, powtarzalne dla **30 końców półek** (przęsła 1
 i 2 na obu pionach pośrednich + prawy bok; przęsło 0 przy nosie łączy się z
-lewym bokiem przez wrąb — patrz sekcja 2, nie przez to złącze).
+lewym bokiem przez wrąb przelotowy — patrz sekcja 2, inne złącze).
 
-| Element | Wartość |
-|---|---|
-| Czopy na koniec | 2 szt. |
-| Szerokość czopa | 60 mm (wzdłuż głębokości) |
-| Grubość czopa | 18 mm (= grubość półki) |
-| Pozycje czopów (Y) | 40–100 mm i 236–296 mm |
-| Gniazdo | 60,1 × 18,1 mm |
-| Luz | 0,1 mm (CLAUDE.md § 6) |
-| Dog-bone | R3,1 (= R freza Ø6 + 0,1) — na każdym narożniku wewnętrznym |
-| Śruby | 2 × M6 na złącze + mimośród beczkowy Ø10 × 18 w czole półki |
-| Pozycje śrub (Y) | złącze lewe 140 i 200 mm, prawe 320 i 380 mm |
+### Dlaczego zrezygnowaliśmy z czopa
 
-### Dlaczego nie finger jointy
+Klient poprosił o najprostsze możliwe rozwiązanie: **żadnych wkrętów
+wkręcających się bezpośrednio w płytę** (ścierają gniazdo przy wielokrotnym
+montażu/demontażu), tylko śruby maszynowe w osadzony gwint żeński, i wszystko
+ma dać się zrobić jako wiercenie w tym samym ustawieniu co cięcie konturu —
+zero frezowania kieszeni, zero profilowania krawędzi pod czop. To wyklucza
+czop/gniazdo/dog-bone (frezowana kieszeń z poprawką na promień freza) na rzecz
+czystych, wierconych otworów.
 
-CLAUDE.md § 6 wymaga finger jointów z nieparzystą liczbą palców, ale **to jest
-złącze teowe, nie narożne** — półka wchodzi w bok pionu w połowie jego wysokości,
-a nie styka się z nim krawędzią. Palce są tu geometrycznie nie na miejscu.
-Finger jointy wrócą, jeśli w rundzie 2 zdecydujemy o łączeniu elementów na długości.
+**Konsekwencja, którą trzeba było rozwiązać:** bez czopa półka opierałaby się
+o pion tylko płasko, na styk — cały ciężar tego, co stoi na półce, przenosiłyby
+same 2 śruby i sklejka wokół otworów, zamiast drewna na drewnie jak przy czopie.
+Klient wybrał dodanie **płytkiego wrębu oporowego** zamiast akceptować to
+ryzyko wprost.
 
-### Długość czopa zależy od pozycji pionu
+### Złącze — dwa elementy, dwie funkcje
 
-Pion ma 18 mm — z obu stron nie da się zrobić gniazd nieprzelotowych po 12 mm.
-Stąd dwa przypadki (trzeci, lewy bok, opisany w sekcji 2 — to już nie czop):
+| Element | Funkcja | Wartość |
+|---|---|---|
+| Wrąb oporowy | przenosi **ciężar** (ścinanie pionowe) przez bezpośrednie oparcie | głębokość 5 mm, wysokość 18,1 mm (grubość półki + luz) |
+| Śruba M6 + mimośród beczkowy | przenosi **docisk i wyrywanie** | 2 szt. na złącze, w mimośród (gwint żeński — nie wkręt, można rozkręcać bez końca) |
+| Pozycje śrub (Y) | — | złącze lewe 140 i 200 mm, prawe 320 i 380 mm |
 
-- **Piony pośrednie** — czopy z obu przęseł mają po 9 mm i **spotykają się w osi
-  pionu**, dzieląc jedno gniazdo przelotowe. Jedna operacja CNC zamiast dwóch,
-  wszystkie półki mają identyczny raster czopów, a zakończenia są niewidoczne.
-- **Prawy bok (x = 1782)** — czop przelotowy **wystający 2 mm** poza lico.
-  Świadomy detal: widoczne zakończenia czopów czytają konstrukcję.
+Wrąb jest **otwartym rowkiem na całą głębokość** (0–396 mm), frezowanym w
+jednej prostej operacji wzdłuż całego pionu — bez kieszeni, bez wewnętrznych
+narożników, więc **bez dog-bone'ów**: prosty rowek otwarty na obu krawędziach
+nie ma gdzie ich potrzebować.
 
-### Śruby nie kolidują z czopami
+### Piony pośrednie: wrąb z obu stron; prawy bok: z jednej
 
-Sprawdzane automatycznie (`checks.py`, test „osie śrub M6 omijają czopy"):
-osie 140 / 200 / 320 / 380 mm leżą w prześwitach między czopami (100–236 i 296–396),
-z zapasem na średnicę otworu.
+- **Piony pośrednie (mid-1, mid-2)** mają wrąb 5 mm na **obu** licach — z
+  każdej strony wchodzi w niego inna półka. Rdzeń pionu na wysokości wrębu:
+  18 − 5 − 5 = **8 mm**.
+- **Prawy bok** ma wrąb tylko na licu wewnętrznym (od strony przęsła 3) — lico
+  zewnętrzne (widoczne z zewnątrz mebla) zostaje płaskie, pełnej grubości na
+  całej wysokości. Rdzeń na wysokości wrębu: 18 − 5 = **13 mm**.
 
-Na pionie pośrednim śruby przęsła lewego (320, 380) i prawego (140, 200) są na
-różnych wysokościach Y, więc otwory przelotowe się nie spotykają.
+W modelu każdy z tych pionów to seria naprzemiennych brył — pełna grubość
+między półkami, zredukowana grubość na wysokości każdej z 6 półek — pod
+wspólnym `qty_group` (fizycznie jedna deska, tak jak grzebień lewego boku
+w sekcji 2). Test kolizji potwierdza dokładne dopasowanie: półka sięga
+dokładnie do dna wrębu, bez szczeliny i bez zakładki.
 
 ## 2. Nos zaoblony — runda 2: bez poszycia, scalony z półką
 
@@ -145,13 +151,17 @@ Każdy element ma zadeklarowany `grain_direction` w modelu — sprawdzane automa
 
 ## 4. Do rozstrzygnięcia
 
-1. **Wrąb w lewym boku** — moje rozwinięcie decyzji „wręby przelotowe" (sekcja 2).
+1. **Głębokość wrębu oporowego (5 mm)** — mój dobór inżynierski, nie decyzja
+   klienta podana wprost (sekcja 1). Wymaga przeglądu joinery-specialist przed
+   cięciem — zwłaszcza rdzeń pionów pośrednich (8 mm) na wysokości wrębu.
+2. **Wrąb w lewym boku** — moje rozwinięcie decyzji „wręby przelotowe" (sekcja 2).
    Wymaga przeglądu joinery-specialist/qa-inspector przed cięciem.
-2. **Mocowanie złącza wrąb ↔ płyta** — obecnie czysty wcisk, bez śrub. Dodać
-   retencję czy polegać na tarciu?
-3. **60 śrub M6** (po usunięciu 12 przy lewym boku) to nadal sporo jak na
-   samodzielny montaż. Zejście do 1 na złącze dałoby 30; czopy i tak przenoszą
-   ścinanie, śruba pracuje głównie na wyrywanie.
-4. **Cokół** — pominięty, dno leży na podłodze.
-5. **Masa 101 kg** (same płyty, bez okuć; spadła ze 107 kg po usunięciu
-   poszycia i 5 żeber) — montaż w dwie osoby, do zapisania w instrukcji.
+3. **Mocowanie złącza wrąb ↔ płyta (nos)** — obecnie czysty wcisk, bez śrub.
+   Dodać retencję czy polegać na tarciu?
+4. **60 śrub M6** — 2 na złącze, 30 złączy (piony pośrednie i prawy bok).
+   Skoro wrąb oporowy przenosi teraz ciężar, można rozważyć zejście do 1 śruby
+   na złącze (docisk/wyrywanie nie wymaga dwóch), ale to zmniejsza odporność
+   na skręcanie — do potwierdzenia razem z przeglądem wrębu.
+5. **Cokół** — pominięty, dno leży na podłodze.
+6. **Masa 102 kg** (same płyty, bez okuć; 107 kg → 101 kg → 102 kg w kolejnych
+   rundach) — montaż w dwie osoby, do zapisania w instrukcji.

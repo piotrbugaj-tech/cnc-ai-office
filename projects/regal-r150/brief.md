@@ -1,9 +1,9 @@
 # Regał R150 — brief
 
 **Klient:** wewnętrzny / własny
-**Runda:** 2 — uproszczenie nosa, bez poszycia
+**Runda:** 3 — złącza półka↔pion bez czopów
 **Data:** 2026-07-29
-**Status:** czeka na akceptację bryły i przegląd wrębu (joinery-specialist / qa-inspector)
+**Status:** czeka na akceptację bryły i przegląd wrębów (joinery-specialist / qa-inspector)
 
 ## 1. Zakres
 
@@ -25,8 +25,9 @@ Trzy kwestie rozstrzygnięte przed projektowaniem:
 
 1. **Geometria zaoblenia** — zaokrąglony jest *przedni lewy narożnik*, nie całe lewe
    zakończenie. Łuk owija front na lewy bok; lewa ścianka boczna pozostaje płaska.
-2. **Montaż** — rozbieralny na śruby. Czopy pozycjonują, śruby M6 z mimośrodem
-   beczkowym skręcają. Regał można rozłożyć i złożyć wielokrotnie.
+2. **Montaż** — rozbieralny na śruby. Od rundy 3: wrąb oporowy pozycjonuje i
+   przenosi ciężar, śruby M6 z mimośrodem beczkowym (gwint żeński, nie wkręt)
+   dociskają i przenoszą wyrywanie. Regał można rozłożyć i złożyć wielokrotnie.
 3. **Kolejność prac** — najpierw bryła do obejrzenia i oceny, dokumentacja
    produkcyjna dopiero po akceptacji.
 
@@ -69,7 +70,7 @@ Wymagają decyzji przed uruchomieniem dokumentacji:
 4. **Sklejka gięta** — poszycie na R146 wymaga flexi-ply; do potwierdzenia
    dostępności i ceny z materials-managerem.
 
-## 6. Poza zakresem rundy 1–2
+## 6. Poza zakresem rundy 1–3
 
 DXF z warstwami wg CLAUDE.md, cut-list CSV, BOM, nesting z kontrolą waste < 12 %,
 G-code, instrukcja montażu, karta produktu.
@@ -118,3 +119,39 @@ Model nadal dostarczany jako `design/build_shelf_blender.py` do wklejenia.
 
 **Wynik:** 91 elementów (było 110), 60 śrub M6 (było 72), masa netto 101 kg
 (było 107 kg). 16/16 testów geometrii przechodzi, w tym zero kolizji.
+
+## 8. Runda 3 — złącza półka↔pion bez czopów
+
+Po wyjaśnieniu, jak działa złącze czop/gniazdo + śruba (raport w rozmowie),
+klient zdecydował o dalszym uproszczeniu: zrezygnować z czopa na rzecz
+najprostszego rozwiązania — pod warunkiem, że da się je wywiercić w tym samym
+ustawieniu co cięcie konturu na CNC, i że jest DIY-friendly (cel całego
+projektu to własnoręczne złożenie regału).
+
+**Kluczowe zastrzeżenie klienta:** żadnych wkrętów wkręcających się
+bezpośrednio w płytę — mają ścierać się przy wielokrotnym montażu/demontażu.
+Śruba ma wkręcać się w osadzony **gwint żeński** (mimośród beczkowy), nie
+w drewno. To zresztą już było zamodelowane od rundy 1 — mimośród beczkowy
+zawsze był metalową tuleją z gwintem, nie wkrętem.
+
+**Konsekwencja, którą trzeba było rozwiązać:** czysty styk płaski (bez czopa)
+przenosi cały ciężar półki przez same 2 śruby i sklejkę wokół otworów, a nie
+przez drewno na drewnie jak przy czopie. Klient wybrał (`AskUserQuestion`)
+dodanie **płytkiego wrębu oporowego** (5 mm) zamiast akceptować to ryzyko
+wprost — prosty rowek frezowany na całą głębokość pionu, bez kieszeni, bez
+dog-bone'ów (nie ma wewnętrznych narożników do obejścia).
+
+Piony pośrednie mają wrąb na obu licach (rdzeń 8 mm na wysokości wrębu); prawy
+bok tylko na licu wewnętrznym (rdzeń 13 mm), zewnętrzne lico zostaje płaskie
+na całej wysokości. Każdy pion to w modelu seria brył — pełna grubość między
+półkami, zredukowana na wysokości każdej półki — fizycznie jedna deska.
+
+**Środowisko:** bez zmian względem rundy 2 — nadal skrypt do wklejenia,
+Blender MCP nadal nieosiągalny z tej sesji.
+
+**Wynik:** 61 elementów weryfikacyjnych (31 rzeczywistych sztuk + rozkład
+pionów na bryły kontrolne), 60 śrub M6 (bez zmian), masa netto 102 kg
+(nieznaczny wzrost — półki sięgają teraz 5 mm dalej w każdy wrąb). 13/13 testów
+przechodzi, w tym zero kolizji **bez żadnych wyjątków** (dawniej czop/gniazdo
+były jawnie pomijane w teście jako "z założenia wspólne" — teraz nic nie jest
+pomijane, to prawdziwa weryfikacja dopasowania wrębu).

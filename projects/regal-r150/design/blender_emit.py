@@ -19,14 +19,12 @@ MM = 0.001                 # model liczony w mm, scena Blendera w metrach
 COLLECTIONS = {
     "vertical": "01_Piony",
     "shelf": "02_Polki",
-    "tenon": "03_Czopy",
-    "back": "04_Plecy",
+    "back": "03_Plecy",
 }
 
 COLORS = {
     "vertical": (0.86, 0.72, 0.50, 1.0),
     "shelf": (0.90, 0.78, 0.57, 1.0),
-    "tenon": (0.72, 0.55, 0.33, 1.0),
     "back": (0.62, 0.50, 0.35, 1.0),
 }
 
@@ -72,7 +70,7 @@ def clear_previous(bpy, root_name):
         bpy.data.collections.remove(col)
 
 
-def build_scene(root_name="Regal_R150", with_tenons=True):
+def build_scene(root_name="Regal_R150"):
     import bpy               # dostepny tylko wewnatrz Blendera
     import bmesh
 
@@ -88,8 +86,6 @@ def build_scene(root_name="Regal_R150", with_tenons=True):
     parts = build_parts()
     made = 0
     for part in parts:
-        if part.kind == "tenon" and not with_tenons:
-            continue
         verts, faces = part.mesh()
 
         mesh = bpy.data.meshes.new(part.name)
@@ -130,6 +126,8 @@ def main():
           % (p["N_LEVELS"], d["shelf_clear"]))
     print("  nos + przeslo0 scalone w jedna plyte na kazdym z %d poziomow" % p["N_LEVELS"])
     print("  lewy bok       grzbiet + 5 zebow, wrab przelotowy w kazdym zlaczu")
+    print("  pozostale piony wrab oporowy %.0f mm pod kazda polka, bez czopow"
+          % p["RABBET_DEPTH"])
     print("  obiektow       %d" % n)
     print("  srub M6        %d" % s["n_bolts"])
     print("  masa netto     %.1f kg" % s["mass_kg"])

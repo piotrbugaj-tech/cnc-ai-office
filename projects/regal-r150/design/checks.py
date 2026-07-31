@@ -117,19 +117,13 @@ def run():
     r = Results()
 
     # --- 1. gabaryty ---------------------------------------------------
-    body = [q for q in parts if q.kind != "tenon"]
-    bxs = [q.bbox() for q in body]
+    bxs = [q.bbox() for q in parts]
     bb = (min(b[0] for b in bxs), min(b[1] for b in bxs), min(b[2] for b in bxs),
           max(b[3] for b in bxs), max(b[4] for b in bxs), max(b[5] for b in bxs))
     r.check("bbox bryly = 1800 x 400 x 2000",
             abs(bb[3] - bb[0] - p["W"]) < TOL and abs(bb[4] - bb[1] - p["D"]) < TOL
             and abs(bb[5] - bb[2] - p["H"]) < TOL,
             "%.1f x %.1f x %.1f mm" % (bb[3] - bb[0], bb[4] - bb[1], bb[5] - bb[2]))
-
-    all_bx = [q.bbox() for q in parts]
-    r.check("czopy wystaja tylko poza prawy bok",
-            abs(max(b[3] for b in all_bx) - (p["W"] + p["TENON_PROUD"])) < TOL,
-            "max X = %.1f mm (1800 + %.0f)" % (max(b[3] for b in all_bx), p["TENON_PROUD"]))
 
     # --- 2. stycznosc luku ---------------------------------------------
     # nose_bay_profile obejmuje tez prawa krawedz przesla (xr, 0) - stad
@@ -168,17 +162,13 @@ def run():
             % (p["N_LEVELS"] - 1, d["shelf_clear"], p["N_LEVELS"], vert))
 
     # --- 4. przenikanie ------------------------------------------------
-    # czopy siedza w gniazdach pionow - ta para jest z zalozenia wspolna
-    def skip(a, b):
-        kinds = {a.kind, b.kind}
-        return kinds == {"tenon", "vertical"}
-
+    # zaden legalny para elementow nie powinna sie juz przenikac - polka
+    # siedzi we wrebie oporowym pionu (rowna sciezka co wczesniej wrab
+    # noska), wiec brak wyjatkow: to jest prawdziwa weryfikacja dopasowania.
     collisions = []
     for i in range(len(parts)):
         for j in range(i + 1, len(parts)):
             a, b = parts[i], parts[j]
-            if skip(a, b):
-                continue
             az, bz = a.z_range(), b.z_range()
             if not ranges_overlap(az[0], az[1], bz[0], bz[1]):
                 continue
@@ -193,64 +183,45 @@ def run():
             "0 kolizji na %d elementow" % len(parts) if not collisions
             else "%d kolizji, np. %s" % (len(collisions), collisions[:3]))
 
-    # --- 5. czopy zawarte w gniazdach ----------------------------------
-    verts = [q for q in parts if q.kind == "vertical"]
-    bad = []
-    for t in (q for q in parts if q.kind == "tenon"):
-        tb = t.bbox()
-        host = None
-        for v in verts:
-            vb = v.bbox()
-            if tb[0] >= vb[0] - TOL and tb[3] <= vb[3] + p["TENON_PROUD"] + TOL:
-                host = v
-                break
-        if host is None:
-            bad.append((t.name, "brak pionu"))
-            continue
-        vb = host.bbox()
-        if not (tb[1] >= vb[1] - TOL and tb[4] <= vb[4] + TOL
-                and tb[2] >= vb[2] - TOL and tb[5] <= vb[5] + TOL):
-            bad.append((t.name, "poza obrysem pionu"))
-    r.check("kazdy czop miesci sie w gniezdzie pionu", not bad,
-            "%d czopow zweryfikowanych" % len([q for q in parts if q.kind == "tenon"])
-            if not bad else str(bad[:3]))
+    # --- 5. polka siada plasko na progu wrebu oporowego, bez szczeliny ----
+    xs = d["vertical_x"]
+    rd = p["RABBET_DEPTH"]
+    by_name = {q.name: q for q in parts}
+    gaps = []
+    for li in range(p["N_LEVELS"]):
+        for b in range(p["N_BAYS"]):
+            shelf = by_name["shelf-L%d-B%d" % (li, b)]
+            xl, xr = shelf.bbox()[0], shelf.bbox()[3]
+            if b > 0 and abs(xl - (xs[b] + p["T"] - rd)) > TOL:
+                gaps.append(("shelf-L%d-B%d" % (li, b), "L", xl))
+            if abs(xr - (xs[b + 1] + rd)) > TOL:
+                gaps.append(("shelf-L%d-B%d" % (li, b), "R", xr))
+    r.check("polki siadaja na progu wrebu bez szczeliny", not gaps,
+            "wszystkie krawedzie na spodziewanym X" if not gaps else str(gaps[:3]))
 
-    # --- 6. sruby omijaja czopy ----------------------------------------
-    clash = []
-    for y in list(p["BOLT_Y_LEFT"]) + list(p["BOLT_Y_RIGHT"]):
-        for y0, y1 in p["TENON_Y"]:
-            if y0 - p["BOLT_D"] / 2.0 < y < y1 + p["BOLT_D"] / 2.0:
-                clash.append(y)
-    r.check("osie srub M6 omijaja czopy", not clash,
+    # --- 6. sruby w granicach glebokosci polki --------------------------
+    bad_y = [y for y in list(p["BOLT_Y_LEFT"]) + list(p["BOLT_Y_RIGHT"])
+             if not (0 < y < d["frame_depth"])]
+    r.check("sruby M6 w granicach glebokosci polki", not bad_y,
             "4 sruby na zlacze, y = %s" % (list(p["BOLT_Y_LEFT"]) + list(p["BOLT_Y_RIGHT"]))
-            if not clash else "kolizja przy y = %s" % clash)
+            if not bad_y else str(bad_y))
 
     # --- 7. wymogi CLAUDE.md -------------------------------------------
     ok_grain = [q for q in parts if q.grain not in ("longitudinal", "crosswise", "free")]
     r.check("kazdy element ma zadeklarowane sloje", not ok_grain,
             "%d elementow" % len(parts) if not ok_grain else str(ok_grain[:3]))
 
-    r.check("dog-bone = promien freza + 0.1",
-            abs(p["DOGBONE_R"] - (p["TOOL_D"] / 2.0 + 0.1)) < 1e-9,
-            "R%.1f dla freza fi%.0f" % (p["DOGBONE_R"], p["TOOL_D"]))
-    r.check("luz gniazda = 0.1 mm",
-            abs(p["MORTISE_W"] - p["TENON_W"] - 0.1) < 1e-9,
-            "gniazdo %.1f x %.1f na czop %.0f x %.0f"
-            % (p["MORTISE_W"], p["MORTISE_T"], p["TENON_W"], p["T"]))
-
     # --- 8. elementy miesza sie na arkuszu 2440 x 1220 ------------------
     over = []
     for q in parts:
-        if q.kind == "tenon":
-            continue
         b = q.bbox()
         dims = sorted([b[3] - b[0], b[4] - b[1], b[5] - b[2]])[1:]
         if dims[0] > 1220 - 20 or dims[1] > 2440 - 20:
             over.append((q.name, round(dims[0], 1), round(dims[1], 1)))
     r.check("kazdy element miesci sie na arkuszu 2440 x 1220", not over,
             "najwiekszy: %s" % max(
-                ((sorted([b[3] - b[0], b[4] - b[1], b[5] - b[2]])[1:], q.name)
-                 for q in parts if q.kind != "tenon"))[1]
+                (sorted([b[3] - b[0], b[4] - b[1], b[5] - b[2]])[1:], q.name)
+                for q in parts)[1]
             if not over else str(over[:3]))
 
     # --- 9. triangulacja pokrywa profil bez dziur i zakladek ------------

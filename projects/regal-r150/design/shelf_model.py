@@ -33,25 +33,16 @@ PARAMS = {
     "N_LEVELS": 6,          # poziomy poziome: dno + 4 polki + wieniec
     "N_BAYS": 3,            # przesla miedzy pionami
     # stolarka
-    "TENON_W": 60.0,        # szerokosc czopa (wzdluz Y)
-    "TENON_PROUD": 2.0,     # wystawanie czopa poza lico eksponowane
-    "CLEARANCE": 0.1,       # luz gniazda wg CLAUDE.md par. 6
-    "TOOL_D": 6.0,          # frez spiralny
     "NOTCH_DEPTH": 310.0,   # wrab w lewym boku: otwarty na ta glebokosc od frontu
-    "TENON_Y": ((40.0, 100.0), (236.0, 296.0)),
+    "RABBET_DEPTH": 5.0,    # wrab oporowy pod polki - patrz joinery-notes.md sekcja 1
     "BOLT_Y_LEFT": (140.0, 200.0),
     "BOLT_Y_RIGHT": (320.0, 380.0),
     "BOLT_D": 6.0,          # M6
-    "DOWEL_D": 10.0,        # mimosrod beczkowy
+    "DOWEL_D": 10.0,        # mimosrod beczkowy (gwint zenski, nie wkret)
     # rendering / material
     "ARC_SEGMENTS": 40,
     "PLY_DENSITY": 700.0,   # kg/m3
 }
-
-# gniazdo = czop + luz; dog-bone = promien freza + 0.1 (CLAUDE.md par. 6)
-PARAMS["MORTISE_W"] = PARAMS["TENON_W"] + PARAMS["CLEARANCE"]
-PARAMS["MORTISE_T"] = PARAMS["T"] + PARAMS["CLEARANCE"]
-PARAMS["DOGBONE_R"] = PARAMS["TOOL_D"] / 2.0 + 0.1
 
 
 def derived(p=PARAMS):
@@ -105,7 +96,7 @@ class Part:
     def __init__(self, name, kind, geom, thickness, material, grain,
                  qty_group=None, area_override=None):
         self.name = name
-        self.kind = kind                # vertical | shelf | tenon | back
+        self.kind = kind                # vertical | shelf | back
         self.geom = geom
         self.thickness = thickness
         self.material = material
@@ -262,12 +253,14 @@ def nose_bay_profile(p=PARAMS, d=DERIVED):
     czesc przeslau (bez cofniecia - poszycie gietego juz nie ma, wiec zebro
     samo jest licem zewnetrznym). Od strony boku wciecie na wrab przelotowy:
     otwarte od frontu na NOTCH_DEPTH, zamkniete na tyle grzbietem lewego boku.
+    Prawa krawedz wchodzi w wrab oporowy pionu mid-1 (runda 3 - patrz
+    joinery-notes.md sekcja 1), stad +RABBET_DEPTH.
     """
     cx, cy = d["arc_center"]
     fd = d["frame_depth"]
     gx0 = d["vertical_x"][0]
     gx1 = gx0 + p["T"]
-    xr = d["vertical_x"][1]
+    xr = d["vertical_x"][1] + p["RABBET_DEPTH"]
     nd = p["NOTCH_DEPTH"]
     pts = arc_points(cx, cy, p["R"], 270.0, 180.0, p["ARC_SEGMENTS"])   # (150,0) -> (0,150)
     pts.append((0.0, fd))
@@ -282,11 +275,43 @@ def nose_bay_profile(p=PARAMS, d=DERIVED):
 
 # ---------------------------------------------------------------- budowa
 
+def _rabbeted_vertical(name, x0, faces, p=PARAMS, d=DERIVED, qty_group=None):
+    """Pion z plytkim wrebem oporowym na wysokosci kazdej polki (runda 3 -
+    zamiast czopa: patrz joinery-notes.md sekcja 1). Miedzy polkami pion ma
+    pelna grubosc T; na wysokosci kazdej polki grubosc jest zmniejszona o
+    RABBET_DEPTH od strony/stron podanych w 'faces' ("L" i/lub "R") - tam
+    siada krawedz polki, ktora przenosi na tym progu obciazenie pionowe.
+
+    Zwraca liste Part - kilka brol na jeden fizyczny pion (jak grzebien
+    lewego boku), pod wspolnym qty_group.
+    """
+    T = p["T"]
+    fd = d["frame_depth"]
+    rd = p["RABBET_DEPTH"]
+    levels = d["level_z"]
+    qg = qty_group or name
+    xa = x0 + rd if "L" in faces else x0
+    xb = x0 + T - rd if "R" in faces else x0 + T
+
+    parts = [Part(
+        "%s-gap-%d" % (name, i), "vertical",
+        {"type": "box", "bounds": (x0, 0.0, levels[i] + T, x0 + T, fd, levels[i + 1])},
+        T, "sklejka brzozowa 18", "longitudinal", qg)
+        for i in range(len(levels) - 1)]
+    parts += [Part(
+        "%s-rabbet-%d" % (name, i), "vertical",
+        {"type": "box", "bounds": (xa, 0.0, z, xb, fd, z + T)},
+        T, "sklejka brzozowa 18", "longitudinal", qg)
+        for i, z in enumerate(levels)]
+    return parts
+
+
 def build_parts(p=PARAMS, d=DERIVED):
     parts = []
     xs = d["vertical_x"]
     fd = d["frame_depth"]
     T = p["T"]
+    rd = p["RABBET_DEPTH"]
 
     # --- lewy bok: grzbiet ciagly + 5 zebow miedzy wrebami (jedna sztuka
     # materialu, wycieta jako grzebien - por. joinery-notes.md) ---
@@ -304,17 +329,17 @@ def build_parts(p=PARAMS, d=DERIVED):
             {"type": "box", "bounds": (gx0, 0.0, z0, gx1, nd, z1)},
             T, "sklejka brzozowa 18", "longitudinal", "vertical-L-gable"))
 
-    # --- pozostale piony (pelna wysokosc, sloje wzdluz wysokosci) ---
-    labels = ["mid-1", "mid-2", "R-side"]
-    for i, x in enumerate(xs[1:]):
-        parts.append(Part(
-            "vertical-%s" % labels[i], "vertical",
-            {"type": "box", "bounds": (x, 0.0, 0.0, x + T, fd, p["H"])},
-            T, "sklejka brzozowa 18", "longitudinal", "vertical"))
+    # --- pozostale piony, z wrebem oporowym na kazda strone, ktora nosi polke.
+    # mid-1 i mid-2 sa wymiarowo identyczne (wrab z obu stron) - wspolny
+    # qty_group; R-side ma wrab tylko z lewej, wiec inny przekroj progu ---
+    parts += _rabbeted_vertical("vertical-mid-1", xs[1], "LR", p, d, "vertical-mid")
+    parts += _rabbeted_vertical("vertical-mid-2", xs[2], "LR", p, d, "vertical-mid")
+    parts += _rabbeted_vertical("vertical-R-side", xs[3], "L", p, d)
 
-    # --- polki (3 na poziom) + czopy przelotowe ---
+    # --- polki (3 na poziom), oparte na wrebach, bez czopow ---
     # przeslo 0 (przy nosie): jedna scalona plyta nos+polka, zlacze z bokiem
-    # to wrab (patrz sekcja pionow wyzej), bez czopow/srub na tej stronie
+    # to wrab przelotowy (patrz sekcja pionow wyzej), prawa strona wchodzi
+    # w wrab oporowy mid-1 jak kazda inna polka
     prof0 = nose_bay_profile(p, d)
     for li, z in enumerate(d["level_z"]):
         for b in range(p["N_BAYS"]):
@@ -324,31 +349,12 @@ def build_parts(p=PARAMS, d=DERIVED):
                     {"type": "prism_z", "profile": prof0, "z0": z, "z1": z + T},
                     T, "sklejka brzozowa 18", "free", "shelf-B0"))
             else:
-                xl = xs[b] + T          # lico prawe lewego pionu
-                xr = xs[b + 1]          # lico lewe prawego pionu
+                xl = xs[b] + T - rd     # wchodzi w wrab oporowy lewego pionu
+                xr = xs[b + 1] + rd     # wchodzi w wrab oporowy prawego pionu
                 parts.append(Part(
                     "shelf-L%d-B%d" % (li, b), "shelf",
                     {"type": "box", "bounds": (xl, 0.0, z, xr, fd, z + T)},
                     T, "sklejka brzozowa 18", "longitudinal", "shelf-B%d" % b))
-
-            # czopy: skrajne przechodza na wylot, srodkowe spotykaja sie w osi pionu
-            for side in ("L", "R"):
-                if side == "L":
-                    if b == 0:
-                        continue         # zlacze z bokiem to wrab, nie czop
-                    vx = xs[b]
-                    tx0 = vx + T / 2.0
-                    tx1 = vx + T
-                else:
-                    vx = xs[b + 1]
-                    tx0 = vx
-                    # prawy bok jest eksponowany - czop wystaje 2 mm
-                    tx1 = (vx + T + p["TENON_PROUD"]) if b == p["N_BAYS"] - 1 else vx + T / 2.0
-                for k, (y0, y1) in enumerate(p["TENON_Y"]):
-                    parts.append(Part(
-                        "tenon-L%d-B%d-%s%d" % (li, b, side, k), "tenon",
-                        {"type": "box", "bounds": (tx0, y0, z, tx1, y1, z + T)},
-                        T, "sklejka brzozowa 18", "longitudinal", "tenon"))
 
     # --- plecy: nos + po jednej plycie na przeslo, styk w osiach pionow ---
     y0b = fd
@@ -371,7 +377,10 @@ def build_parts(p=PARAMS, d=DERIVED):
 # ---------------------------------------------------------------- okucia
 
 def bolt_positions(p=PARAMS, d=DERIVED):
-    """Osie srub M6 (przez lico pionu w mimosrod beczkowy w czole polki).
+    """Osie srub M6 (przez lico pionu w mimosrod beczkowy - gwint zenski,
+    nie wkret - osadzony w czole polki). Polka siedzi na wrebie oporowym
+    (patrz _rabbeted_vertical); sruby przenosza docisk i wyrywanie, nie
+    ciezar - ten bierze prog wrebu.
 
     Zwraca (x, y, z, kierunek). Nie renderowane w 3D - dane pod wiercenia DXF.
     """
@@ -396,8 +405,7 @@ def summary(p=PARAMS, d=DERIVED):
         e = by_kind.setdefault(pt.kind, {"n": 0, "area": 0.0})
         e["n"] += 1
         e["area"] += pt.area_m2()
-    mass = sum(pt.area_m2() * pt.thickness / 1000.0 * p["PLY_DENSITY"]
-               for pt in parts if pt.kind != "tenon")
+    mass = sum(pt.area_m2() * pt.thickness / 1000.0 * p["PLY_DENSITY"] for pt in parts)
     return {
         "parts": parts,
         "by_kind": by_kind,
