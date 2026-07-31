@@ -185,7 +185,11 @@ def view_front():
 
     g.append(dim_v(fy(total_h), fy(0), -60, "2000"))
     z0 = D["level_z"][0] + P["T"] + ph
-    g.append(dim_v(fy(z0 + D["shelf_clear"]), fy(z0), P["W"] + 60, "378.4"))
+    # etykieta liczona z modelu, nie wpisana recznie - do rundy 4 zostala tu
+    # zamrozona wartosc 378.4 z rundy 3, mimo ze korpus skurczyl sie do 1900 mm
+    # i swiatlo wynosi 358.4 mm (rysunek geometrycznie dobry, opis klamal)
+    g.append(dim_v(fy(z0 + D["shelf_clear"]), fy(z0), P["W"] + 60,
+                   "%.1f" % D["shelf_clear"]))
     g.append(dim_h(0, P["W"], fy(0) + 190, "1800"))
     g.append(dim_h(0, P["R"], fy(0) + 80, "150"))
     return (svg_open("-260 -140 2340 2560", "Widok z przodu") + "".join(g) + "</svg>")

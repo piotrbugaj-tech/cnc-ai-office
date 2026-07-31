@@ -79,6 +79,13 @@ cokół: dodany w rundzie 4). Aktualne otwarte punkty:
    Patrz `design/joinery-notes.md` §3, pkt 3.
 4. **Mocowanie złącza wrąb ↔ płyta (nos)** — czysty wcisk, bez śrub
    retencyjnych. Patrz `design/joinery-notes.md` §2.
+5. **[BLOKER] Dostęp dla łba śruby na pionach pośrednich** — wyszło przy
+   próbie wykonania zbliżenia na mocowanie śrubowe (prośba klienta po
+   rundzie 4). Na wysokości wrębu oba lica rdzenia pionu są zakryte wpustami
+   sąsiednich półek, więc łeb M6 nie ma na czym usiąść — dotyczy 48 z 60
+   śrub. Dodatkowo brakuje pięciu wymiarów okucia, których `PARAMS` nigdy
+   nie zawierał. Patrz `design/joinery-notes.md` §1. Wstrzymuje rysunek
+   detalu złącza i wiercenia w DXF.
 
 ## 6. Poza zakresem rundy 1–4
 

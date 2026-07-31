@@ -68,6 +68,73 @@ wspólnym `qty_group` (fizycznie jedna deska, tak jak grzebień lewego boku
 w sekcji 2). Test kolizji potwierdza dokładne dopasowanie: półka sięga
 dokładnie do dna wrębu, bez szczeliny i bez zakładki.
 
+### BLOKER — łeb śruby nie ma gdzie usiąść na pionach pośrednich
+
+Wyszło przy próbie narysowania detalu złącza w powiększeniu (prośba klienta
+o „zbliżenie na mocowanie śrubowe"). Dotychczasowe widoki to elewacje całej
+wysokości albo mapa rozmieszczenia — w tej skali problem był niewidoczny.
+
+Przekrój poziomy przez pion pośredni **na wysokości wrębu** (X od lewego do
+prawego lica, 18 mm):
+
+| Zakres X (lokalnie) | Co tam jest |
+|---|---|
+| 0–5 mm | wpust półki **lewego** przęsła (wrąb 5 mm) |
+| 5–13 mm | rdzeń pionu (8 mm) |
+| 13–18 mm | wpust półki **prawego** przęsła (wrąb 5 mm) |
+
+Obie półki leżą na **tym samym poziomie** i biegną na **pełnej głębokości**
+0–396 mm, więc oba lica rdzenia są zakryte wpustami na całej długości złącza.
+Śruba M6 ma iść „przez pion w mimośród osadzony w czole półki", ale na tej
+wysokości **nie ma dostępnego lica, na którym mógłby usiąść łeb** — startuje
+albo wewnątrz wpustu półki lewej, albo wewnątrz prawej. Różne Y (140/200 dla
+`+x`, 320/380 dla `-x`) rozwiązują kolizję śruba–śruba, ale nie dają dostępu
+dla łba.
+
+**Skala:** 48 z 60 śrub (piony `mid-1` i `mid-2`, po 8 na poziom × 6 poziomów).
+Pozostałe 12 (prawy bok, po 2 na poziom) są **czyste** — wrąb jest tam tylko
+na licu wewnętrznym, rdzeń ma 13 mm, a lico zewnętrzne zostaje płaskie na
+całej wysokości, więc łeb siada na nim normalnie. Uwaga eksploatacyjna: to
+lico stoi przy ścianie, więc demontaż wymaga wcześniejszego odsunięcia regału.
+
+Model geometryczny jest **poprawny** — `bolt_positions()` zwraca same osie
+(linie środkowe), nie bryły łbów, więc `checks.py` nie miało czego wykryć.
+To luka w specyfikacji okucia, nie błąd w bryle.
+
+**Kierunki do rozstrzygnięcia przez joinery-specialist** (żaden nie jest
+jeszcze wybrany — to nie jest decyzja do podjęcia przy rysowaniu):
+
+1. **Łeb stożkowy licowany w dnie wrębu** — łeb wpuszczony w rdzeń, zakryty
+   wpustem sąsiedniej półki. Montaż idzie kolejno lewa→prawa. Do sprawdzenia:
+   DIN 7991 M6 ma łeb Ø12 × 3,3 mm, a pasmo wrębu ma tylko 18,1 mm wysokości
+   (zostaje ~3 mm z każdej strony) i rdzeń tylko 8 mm (zostaje 4,7 mm).
+   Gniazdo walcowe pod łeb imbusowy (Ø11 × 6 mm) odpada — w 8 mm rdzenia
+   zostałyby 2 mm.
+2. **Jedna śruba przelotowa na dwa mimośrody** — jedna M6 przez rdzeń,
+   z mimośrodem w czole obu sąsiadujących półek.
+3. **Odwrócenie złącza** — mimośród w pionie, śruba przez półkę.
+4. **Zmiana geometrii wrębu** — np. wrąb krótszy niż pełna głębokość, żeby
+   odsłonić lico rdzenia w strefie śruby.
+
+Każdy z tych wariantów zmienia albo okucie, albo geometrię wrębu, albo
+kolejność montażu — czyli wykracza poza „dorysowanie detalu".
+
+### Wymiary okucia, których nadal nie ma w modelu
+
+Niezależnie od powyższego, detal złącza wymaga liczb, których `PARAMS` nie
+zawiera i których nikt jeszcze nie ustalił:
+
+| Wielkość | Status |
+|---|---|
+| Odsunięcie osi mimośrodu od czoła półki | **brak** — decyduje o długości śruby i o wytrzymałości czoła na wyrwanie |
+| Otwór przelotowy pod M6 w pionie | **brak** (typowo Ø6,5) |
+| Długość mimośrodu / czy otwór Ø10 jest przelotowy | **brak** — Ø10 w półce 18 mm zostawia po 4 mm materiału nad i pod otworem |
+| Rodzaj łba (stożkowy / walcowy / z podkładką) | **brak** — patrz punkt 1 wyżej |
+| Długość śruby M6 | **brak** — wynika z dwóch pierwszych pozycji |
+
+Dopóki te pozycje nie są ustalone, rysunek detalu w powiększeniu byłby
+rysunkiem wymyślonych wymiarów, nie dokumentacją.
+
 ## 2. Nos zaoblony — runda 2: bez poszycia, scalony z półką
 
 Runda 1 miała 11 żeber profilowych owiniętych pasem sklejki giętej 4 mm.
@@ -227,6 +294,12 @@ została podana wprost przez klienta. Typowy zakres dla cokołu meblowego to
 Każdy element ma zadeklarowany `grain_direction` w modelu — sprawdzane automatycznie.
 
 ## 5. Do rozstrzygnięcia
+
+**PIERWSZEŃSTWO — bloker rysunku detalu:** łeb śruby M6 nie ma dostępnego lica
+na pionach pośrednich (48 z 60 śrub) oraz brak pięciu wymiarów okucia
+(odsunięcie mimośrodu, otwór przelotowy, długość mimośrodu, rodzaj łba,
+długość śruby). Patrz sekcja 1. Blokuje wykonanie zbliżenia na mocowanie
+śrubowe, a tym samym wiercenia w DXF.
 
 1. **Głębokość wrębu oporowego (5 mm)** — mój dobór inżynierski, nie decyzja
    klienta podana wprost (sekcja 1). Wymaga przeglądu joinery-specialist przed
