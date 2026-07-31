@@ -42,7 +42,6 @@ def parts_payload():
 
 PLY = "var(--ply)"
 PLY_D = "var(--ply-dark)"
-SKIN_C = "var(--ply-skin)"
 CAV = "var(--cavity)"
 RULE = "var(--rule)"
 DIM = "var(--dim)"
@@ -128,7 +127,7 @@ def view_plan():
         z0, z1 = part.z_range()
         if not (z0 - 1e-6 <= z_probe <= z1 + 1e-6):
             continue
-        fill = {"skin": SKIN_C, "rib": PLY_D, "back": PLY_D,
+        fill = {"back": PLY_D,
                 "vertical": PLY, "shelf": PLY, "tenon": PLY_D}.get(part.kind)
         if fill is None:
             continue
@@ -168,16 +167,16 @@ def view_front():
     def fy(z):
         return H - z
 
+    # rysowane z prawdziwych czesci (nie z recznie odtwarzanych wspolrzednych) -
+    # lewy bok to teraz grzebien (grzbiet + zeby), nie jeden pelnowysokosciowy
+    # prostokat, a przeslo 0 to zaokraglona plyta 0-694, nie prostokat 168-694
     _K[0] = 2.0
     g = [rect(0, fy(H), P["W"], fy(0), CAV)]
-    g.append(rect(0, fy(H), P["R"], fy(0), SKIN_C))       # zaoblony nos
-
-    for x in D["vertical_x"]:
-        g.append(rect(x, fy(H), x + P["T"], fy(0), PLY))
-    for z in D["level_z"]:
-        for b in range(P["N_BAYS"]):
-            g.append(rect(D["vertical_x"][b] + P["T"], fy(z + P["T"]),
-                          D["vertical_x"][b + 1], fy(z), PLY))
+    for part in m.build_parts():
+        if part.kind not in ("vertical", "shelf"):
+            continue
+        x0, _, z0, x1, _, z1 = part.bbox()
+        g.append(rect(x0, fy(z1), x1, fy(z0), PLY))
 
     g.append(dim_v(fy(H), fy(0), -60, "2000"))
     z0 = D["level_z"][0] + P["T"]
@@ -226,7 +225,7 @@ CSS = """
   --rule:#9aa5ad; --dim:#5d6a73; --edge:#c9d1d6;
   --accent:#c62f24; --drill:#2c8154; --grain:#a8781a;
   --viewer:#101519; --viewer-2:#1a2126; --viewer-rule:#2c363d;
-  --ply:#d9bd8e; --ply-dark:#b8965f; --ply-skin:#e8d3ac; --cavity:#7d6844;
+  --ply:#d9bd8e; --ply-dark:#b8965f; --cavity:#7d6844;
   --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
   --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
 }
@@ -526,8 +525,6 @@ KIND_META = {
     "vertical": ("Piony", (216, 186, 138)),
     "shelf": ("Polki", (226, 199, 152)),
     "tenon": ("Czopy", (176, 138, 82)),
-    "rib": ("Zebra nosa", (198, 166, 112)),
-    "skin": ("Poszycie giete", (238, 214, 172)),
     "back": ("Plecy", (150, 121, 80)),
 }
 
@@ -568,10 +565,6 @@ def build_html(n_tests):
 
     # --- tabela elementow ---
     def blank(q):
-        """Wymiar blanku. Elementy giete leza na arkuszu w rozwinieciu."""
-        if q.kind == "skin":
-            return "%.0f &times; %.0f (rozwiniecie)" % (
-                m.skin_developed_length(), P["H"])
         b = q.bbox()
         dd = sorted([b[3] - b[0], b[4] - b[1], b[5] - b[2]], reverse=True)
         return "%.0f &times; %.0f" % (dd[0], dd[1])
@@ -589,11 +582,10 @@ def build_html(n_tests):
     # dlugosc czopow, wiec musza byc rozroznialne w tabeli
     GROUP_PL = {
         "vertical": "Piony",
-        "shelf-B0": "Polki &middot; przeslo 1 (przy nosie)",
+        "vertical-L-gable": "Lewy bok &middot; grzbiet + zeby (wrab)",
+        "shelf-B0": "Polki + nos &middot; przeslo 1 (scalone)",
         "shelf-B1": "Polki &middot; przeslo 2",
         "shelf-B2": "Polki &middot; przeslo 3 (przy prawym boku)",
-        "rib": "Zebra nosa",
-        "skin": "Poszycie giete",
         "back-nose": "Plecy &middot; nos",
         "back-bay": "Plecy &middot; przeslo",
     }
@@ -620,23 +612,24 @@ def build_html(n_tests):
              "</tr></thead><tbody>%s</tbody></table></div>" % "".join(rows))
 
     notes = [
-        ("q", "Montaz nosa zaoblonego — decyzja przed dokumentacja.",
-         "W modelu klient sam skreca 11 zeber i przykreca poszycie: okolo 40 wkretow, "
-         "realnie zmudne. Alternatywa: nos jedzie zmontowany fabrycznie jako modul na "
-         "6 srub — duzo lepszy montaz, ale paczka przestaje byc plaska "
-         "(bryla 168 &times; 400 &times; 2000 mm)."),
-        ("q", "72 sruby M6 to duzo jak na samodzielny montaz.",
-         "Po 4 na zlacze polki. Zejscie do 2 na zlacze daje 36 srub — czopy i tak "
-         "przenosza scinanie, sruba pracuje glownie na wyrywanie. Do rozstrzygniecia."),
-        ("w", "Masa netto 107 kg — montaz w dwie osoby.",
-         "Same plyty, bez okuc. Przy 1800 &times; 2000 mm to wartosc oczekiwana, ale "
-         "trzeba ja podac w instrukcji i na karcie produktu."),
-        ("w", "Poszycie R146 wymaga sklejki gietej (flexi-ply).",
-         "Zwykla brzoza 4 mm na tym promieniu jest na granicy pekania. "
-         "Do potwierdzenia z materials-managerem przy zamowieniu."),
+        ("q", "Wrab w lewym boku — moje rozwiniecie Twojej decyzji, wymaga przegladu.",
+         "Wybrales „wreby przelotowe, bok zostaje jedna plyta”. Zeby to bylo geometrycznie "
+         "prawdziwe (a nie po prostu 5 rozlacznych slupkow pod inna nazwa), zrobilem wrab "
+         "zamkniety od tylu: otwarty od frontu na 310 mm, z 86 mm ciaglym grzbietem z tylu. "
+         "To dziala i przechodzi test kolizji, ale konkretne milimetry (310/86) to moj dobor "
+         "inzynierski, nie wprost Twoja decyzja — przed cieciem chce to zobaczyc "
+         "joinery-specialist i qa-inspector."),
+        ("q", "Zlacze plyta-wrab nie ma na razie zadnego mocowania.",
+         "Plyta siedzi w wrebie na wcisk, bez srub ani kleju — sam wrab ja pozycjonuje, "
+         "ale nic jej nie przytrzymuje przy wielokrotnym montazu/demontazu. Do "
+         "rozstrzygniecia w rundzie dokumentacji: sruby retencyjne przez grzbiet, czy "
+         "wystarczy tarcie."),
+        ("w", "Masa netto spadla do %.0f kg (bylo 107 kg w rundzie 1)." % s["mass_kg"],
+         "Bez poszycia gietego i 5 nadmiarowych zeber. Nadal montaz w dwie osoby "
+         "przy 1800 &times; 2000 mm — do podania w instrukcji."),
         ("i", "Czopy przelotowe wystaja 2 mm poza prawy bok.",
          "Swiadomy detal — widoczne zakonczenia czopow czytaja konstrukcje. "
-         "Przy lewym boku czopy koncza sie w licu, ukryte w komorze nosa."),
+         "Zlacze przy lewym boku to teraz wrab, nie czop — patrz notatka wyzej."),
         ("i", "Cokol pominiety.",
          "Dno lezy na podlodze. Cofniety cokol okolo 80 mm jest latwy do dodania, "
          "ale zmienia proporcje — dlatego czeka na Twoja ocene bryly."),
@@ -652,10 +645,11 @@ def build_html(n_tests):
 <div class="wrap">
 
 <header>
-  <p class="eyebrow">CNC Furniture Studio &middot; runda 1 &middot; bryla do oceny</p>
+  <p class="eyebrow">CNC Furniture Studio &middot; runda 2 &middot; bryla do oceny</p>
   <h1>Regal R150</h1>
   <p class="lede">Sklejka brzozowa 18 mm, ciecie CNC na gotowo, montaz rozbieralny na
-  sruby. Przedni lewy narozik zaobolony promieniem 150 mm na calej wysokosci.
+  sruby. Przedni lewy narozik zaobolony promieniem 150 mm na calej wysokosci, bez
+  poszycia gietego &mdash; zaoblenie tworzy teraz sama plyta polki, scalona z noskiem.
   Ponizej geometria do obejrzenia &mdash; dokumentacja produkcyjna powstaje
   po Twojej akceptacji.</p>
 </header>
@@ -667,7 +661,8 @@ def build_html(n_tests):
 <section>
   <div class="hdr"><h2><span class="num">01</span>Bryla</h2>
   <p class="sub">Przeciagnij, zeby obrocic. Kolko myszy przybliza.
-  Wylacz poszycie, zeby zobaczyc zebra nosa pod spodem.</p></div>
+  Wylacz „Piony", zeby zobaczyc scalona plyte noska bez lewego boku, albo
+  „Polki", zeby zobaczyc sam grzebien boku (grzbiet + 5 zebow) osobno.</p></div>
   <div class="viewer">
     <canvas id="cv"></canvas>
     <div class="hud">Regal R150 &middot; 1:20</div>
@@ -698,14 +693,14 @@ def build_html(n_tests):
 <section>
   <div class="hdr"><h2><span class="num">03</span>Elementy</h2>
   <p class="sub">Wymiar blanku bez naddatku na czopy. Pelna lista ciec, nesting i BOM
-  wchodza w runde 2.</p></div>
+  wchodza w kolejnej rundzie.</p></div>
   %s
 </section>
 
 <section>
   <div class="hdr"><h2><span class="num">04</span>Do rozstrzygniecia</h2>
-  <p class="sub">Dwie decyzje nalezace do Ciebie, dwa ryzyka do potwierdzenia
-  i dwa detale, ktore warto zaakceptowac swiadomie.</p></div>
+  <p class="sub">Dwie decyzje wymagajace przegladu przed cieciem, jedno ryzyko
+  do potwierdzenia i dwa detale, ktore warto zaakceptowac swiadomie.</p></div>
   <div class="notes">%s</div>
 </section>
 

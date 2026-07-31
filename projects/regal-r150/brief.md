@@ -1,9 +1,9 @@
 # Regał R150 — brief
 
 **Klient:** wewnętrzny / własny
-**Runda:** 1 — bryła do oceny
+**Runda:** 2 — uproszczenie nosa, bez poszycia
 **Data:** 2026-07-29
-**Status:** czeka na akceptację bryły
+**Status:** czeka na akceptację bryły i przegląd wrębu (joinery-specialist / qa-inspector)
 
 ## 1. Zakres
 
@@ -69,7 +69,52 @@ Wymagają decyzji przed uruchomieniem dokumentacji:
 4. **Sklejka gięta** — poszycie na R146 wymaga flexi-ply; do potwierdzenia
    dostępności i ceny z materials-managerem.
 
-## 6. Poza zakresem rundy 1
+## 6. Poza zakresem rundy 1–2
 
 DXF z warstwami wg CLAUDE.md, cut-list CSV, BOM, nesting z kontrolą waste < 12 %,
 G-code, instrukcja montażu, karta produktu.
+
+## 7. Runda 2 — uproszczenie nosa
+
+Klient poprosił o usunięcie poszycia giętego i żeber nosa bez odpowiednika
+w reszcie regału.
+
+**Diagnoza:** `N_RIBS=11` dawało rozstaw żeber dokładnie o połowę mniejszy niż
+rozstaw półek — 6 z 11 żeber leżało dokładnie na wysokości prawdziwych półek,
+5 siedziało na wysokościach pośrednich bez żadnego odpowiednika. Usunięto te 5,
+a pozostałe 6 przebudowano tak, by wynikały wprost z poziomów półek (nie z
+osobnego rozstawu), co eliminuje możliwość ponownego rozjechania się w
+przyszłości.
+
+**Decyzje klienta** (`AskUserQuestion`):
+
+1. Bez poszycia żebra rozciągnięte do pełnego R150 (były cofnięte o 4 mm pod
+   poszycie).
+2. Żebro nosa i sąsiadująca półka przęsła 0 scalone w jeden element na każdym
+   z 6 poziomów.
+3. Lewy bok zostaje jedną, ciągłą płytą z wrębami przelotowymi, przez które
+   przechodzi scalona płyta (nie rozpada się na 5 osobnych słupków).
+
+**Rozwiązanie mechaniczne wrębu — wyprowadzone przeze mnie, nie zadane wprost:**
+scalona płyta zajmuje pełną głębokość (0–396 mm), więc wrąb otwarty na całej
+głębokości fizycznie przecina bok na wylot — nie różniłoby się to geometrycznie
+od „5 słupków". Żeby bok faktycznie pozostał jedną sztuką materiału, wrąb jest
+**zamknięty od tyłu**: otwarty od frontu na 310 mm, zamknięty na tylnych 86 mm
+ciągłym grzbietem. Bok = 1 grzbiet (pełna wysokość, 86 mm głęboki) + 5 „zębów"
+między wrębami (378,4 mm wysokości każdy, 310 mm głęboki). Test kolizji
+potwierdza zero przenikań między grzbietem/zębami a sześcioma scalonymi płytami.
+
+**To wymaga przeglądu przed cięciem** — konkretne milimetry (310/86) i brak
+mocowania w złączu wrąb↔płyta (obecnie czysty wcisk, bez śrub) to moje
+techniczne rozwinięcie decyzji klienta, nie jego dosłowna specyfikacja.
+Szczegóły: `design/joinery-notes.md`.
+
+**Środowisko (potwierdzone ponownie w rundzie 2):** użytkownik wskazał, że
+w innej sesji (aplikacja desktopowa na Macu) Blender MCP działa i jest
+włączony. To nie zmienia sytuacji w tej sesji — `hostname vm`, `Linux`,
+port 9876 nieosiągalny, żadne narzędzie blenderowe nie ładuje się przez
+`ToolSearch`. Dwie sesje pod tym samym kontem mają rozłączne zestawy narzędzi.
+Model nadal dostarczany jako `design/build_shelf_blender.py` do wklejenia.
+
+**Wynik:** 91 elementów (było 110), 60 śrub M6 (było 72), masa netto 101 kg
+(było 107 kg). 16/16 testów geometrii przechodzi, w tym zero kolizji.

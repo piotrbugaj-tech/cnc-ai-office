@@ -11,7 +11,7 @@ try:                       # noqa: SIM105 - sprawdzamy czy jestesmy w wersji skl
     build_parts           # type: ignore[used-before-def]  # noqa: B018
 except NameError:
     from shelf_model import (  # noqa: F401
-        PARAMS, DERIVED, build_parts, summary, skin_developed_length,
+        PARAMS, DERIVED, build_parts, summary,
     )
 
 MM = 0.001                 # model liczony w mm, scena Blendera w metrach
@@ -20,17 +20,13 @@ COLLECTIONS = {
     "vertical": "01_Piony",
     "shelf": "02_Polki",
     "tenon": "03_Czopy",
-    "rib": "04_Zebra_nosa",
-    "skin": "05_Poszycie_giete",
-    "back": "06_Plecy",
+    "back": "04_Plecy",
 }
 
 COLORS = {
     "vertical": (0.86, 0.72, 0.50, 1.0),
     "shelf": (0.90, 0.78, 0.57, 1.0),
     "tenon": (0.72, 0.55, 0.33, 1.0),
-    "rib": (0.80, 0.66, 0.45, 1.0),
-    "skin": (0.93, 0.83, 0.65, 1.0),
     "back": (0.62, 0.50, 0.35, 1.0),
 }
 
@@ -128,11 +124,12 @@ def main():
     print("=" * 58)
     print("Regal R150  %.0f x %.0f x %.0f mm" % (p["W"], p["H"], p["D"]))
     print("=" * 58)
-    print("  zaoblenie      R%.0f, przedni lewy narozik, cala wysokosc" % p["R"])
+    print("  zaoblenie      R%.0f, przedni lewy narozik, cala wysokosc, bez poszycia" % p["R"])
     print("  przesla        %d x %.0f mm swiatla" % (p["N_BAYS"], d["bay_clear"]))
     print("  poziomy        %d, swiatlo miedzypolkowe %.1f mm"
           % (p["N_LEVELS"], d["shelf_clear"]))
-    print("  zebra nosa     %d w rozstawie %.1f mm" % (p["N_RIBS"], d["rib_pitch"]))
+    print("  nos + przeslo0 scalone w jedna plyte na kazdym z %d poziomow" % p["N_LEVELS"])
+    print("  lewy bok       grzbiet + 5 zebow, wrab przelotowy w kazdym zlaczu")
     print("  obiektow       %d" % n)
     print("  srub M6        %d" % s["n_bolts"])
     print("  masa netto     %.1f kg" % s["mass_kg"])

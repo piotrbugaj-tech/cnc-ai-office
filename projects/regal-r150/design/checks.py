@@ -132,12 +132,15 @@ def run():
             "max X = %.1f mm (1800 + %.0f)" % (max(b[3] for b in all_bx), p["TENON_PROUD"]))
 
     # --- 2. stycznosc luku ---------------------------------------------
-    prof = m.skin_profile(p, d)
+    # nose_bay_profile obejmuje tez prawa krawedz przesla (xr, 0) - stad
+    # min() zamiast all(), zeby wylapac wlasciwy punkt stycznosci luku
+    prof = m.nose_bay_profile(p, d)
     at_front = [q for q in prof if abs(q[1]) < TOL]
     at_side = [q for q in prof if abs(q[0]) < TOL]
+    front_x = min(q[0] for q in at_front) if at_front else None
     r.check("luk styczny do frontu w x=150",
-            bool(at_front) and all(abs(q[0] - p["R"]) < TOL for q in at_front),
-            "punkt stycznosci (%.1f, 0)" % at_front[0][0] if at_front else "brak")
+            front_x is not None and abs(front_x - p["R"]) < TOL,
+            "punkt stycznosci (%.1f, 0)" % front_x if front_x is not None else "brak")
     r.check("luk styczny do lewego boku w y=150",
             bool(at_side) and min(q[1] for q in at_side) - p["R"] > -TOL,
             "punkt stycznosci (0, %.1f)" % min(q[1] for q in at_side) if at_side else "brak")
@@ -241,10 +244,7 @@ def run():
         if q.kind == "tenon":
             continue
         b = q.bbox()
-        if q.kind == "skin":
-            dims = sorted([m.skin_developed_length(p, d), p["H"]])
-        else:
-            dims = sorted([b[3] - b[0], b[4] - b[1], b[5] - b[2]])[1:]
+        dims = sorted([b[3] - b[0], b[4] - b[1], b[5] - b[2]])[1:]
         if dims[0] > 1220 - 20 or dims[1] > 2440 - 20:
             over.append((q.name, round(dims[0], 1), round(dims[1], 1)))
     r.check("kazdy element miesci sie na arkuszu 2440 x 1220", not over,

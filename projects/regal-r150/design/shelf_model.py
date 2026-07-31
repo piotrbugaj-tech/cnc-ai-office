@@ -26,19 +26,18 @@ PARAMS = {
     "D": 400.0,             # glebokosc calkowita
     # material
     "T": 18.0,              # sklejka brzozowa konstrukcyjna
-    "SKIN": 4.0,            # sklejka gieta (flexi-ply) - poszycie nosa
     "BACK": 4.0,            # sklejka - plecy
     # zaoblenie
     "R": 150.0,             # promien zewnetrzny przedniego lewego naroznika
     # podzialy
     "N_LEVELS": 6,          # poziomy poziome: dno + 4 polki + wieniec
     "N_BAYS": 3,            # przesla miedzy pionami
-    "N_RIBS": 11,           # zebra profilowe nosa
     # stolarka
     "TENON_W": 60.0,        # szerokosc czopa (wzdluz Y)
     "TENON_PROUD": 2.0,     # wystawanie czopa poza lico eksponowane
     "CLEARANCE": 0.1,       # luz gniazda wg CLAUDE.md par. 6
     "TOOL_D": 6.0,          # frez spiralny
+    "NOTCH_DEPTH": 310.0,   # wrab w lewym boku: otwarty na ta glebokosc od frontu
     "TENON_Y": ((40.0, 100.0), (236.0, 296.0)),
     "BOLT_Y_LEFT": (140.0, 200.0),
     "BOLT_Y_RIGHT": (320.0, 380.0),
@@ -59,8 +58,6 @@ def derived(p=PARAMS):
     """Wielkosci pochodne - liczone raz, uzywane wszedzie."""
     d = {}
     d["frame_depth"] = p["D"] - p["BACK"]                 # 396 - glebokosc rusztu
-    d["rib_inset"] = p["SKIN"]                            # profil zebra cofniety o grubosc poszycia
-    d["rib_radius"] = p["R"] - p["SKIN"]                  # 146
     d["arc_center"] = (p["R"], p["R"])                    # (150, 150)
 
     # piony: lewy bok stoi dokladnie w punkcie stycznosci luku
@@ -82,10 +79,6 @@ def derived(p=PARAMS):
     d["level_pitch"] = (p["H"] - p["T"]) / (p["N_LEVELS"] - 1)
     d["level_z"] = [i * d["level_pitch"] for i in range(p["N_LEVELS"])]
     d["shelf_clear"] = d["level_pitch"] - p["T"]
-
-    # zebra nosa
-    d["rib_pitch"] = (p["H"] - p["T"]) / (p["N_RIBS"] - 1)
-    d["rib_z"] = [i * d["rib_pitch"] for i in range(p["N_RIBS"])]
     return d
 
 
@@ -112,7 +105,7 @@ class Part:
     def __init__(self, name, kind, geom, thickness, material, grain,
                  qty_group=None, area_override=None):
         self.name = name
-        self.kind = kind                # vertical | shelf | tenon | rib | skin | back
+        self.kind = kind                # vertical | shelf | tenon | back
         self.geom = geom
         self.thickness = thickness
         self.material = material
@@ -262,40 +255,32 @@ def triangulate_2d(poly):
 
 # ---------------------------------------------------------------- profile
 
-def nose_profile(p=PARAMS, d=DERIVED):
-    """Obrys zebra nosa: luk R146 + powrot lewego boku + oparcie o lewy bok."""
+def nose_bay_profile(p=PARAMS, d=DERIVED):
+    """Obrys scalonej plyty nos + polka przeslo 0 (bez poszycia, runda 2).
+
+    Zaokraglony front-lewy naroznik R150 przechodzi wprost w prostokatna
+    czesc przeslau (bez cofniecia - poszycie gietego juz nie ma, wiec zebro
+    samo jest licem zewnetrznym). Od strony boku wciecie na wrab przelotowy:
+    otwarte od frontu na NOTCH_DEPTH, zamkniete na tyle grzbietem lewego boku.
+    """
     cx, cy = d["arc_center"]
-    r = d["rib_radius"]
-    s = p["SKIN"]
-    pts = arc_points(cx, cy, r, 270.0, 180.0, p["ARC_SEGMENTS"])   # (150,4) -> (4,150)
-    pts.append((s, d["frame_depth"]))
-    pts.append((p["R"], d["frame_depth"]))
+    fd = d["frame_depth"]
+    gx0 = d["vertical_x"][0]
+    gx1 = gx0 + p["T"]
+    xr = d["vertical_x"][1]
+    nd = p["NOTCH_DEPTH"]
+    pts = arc_points(cx, cy, p["R"], 270.0, 180.0, p["ARC_SEGMENTS"])   # (150,0) -> (0,150)
+    pts.append((0.0, fd))
+    pts.append((gx0, fd))
+    pts.append((gx0, nd))       # wcina sie do wewnatrz - omija grzbiet boku
+    pts.append((gx1, nd))
+    pts.append((gx1, fd))       # wraca na krawedz tylna za grzbietem
+    pts.append((xr, fd))
+    pts.append((xr, 0.0))
     return pts
 
 
-def skin_profile(p=PARAMS, d=DERIVED):
-    """Pas poszycia 4 mm: lico zewnetrzne R150 + lico wewnetrzne R146."""
-    cx, cy = d["arc_center"]
-    s = p["SKIN"]
-    outer = arc_points(cx, cy, p["R"], 270.0, 180.0, p["ARC_SEGMENTS"])   # (150,0) -> (0,150)
-    outer.append((0.0, p["D"]))
-    inner = [(s, p["D"])]
-    inner += arc_points(cx, cy, d["rib_radius"], 180.0, 270.0, p["ARC_SEGMENTS"])  # (4,150) -> (150,4)
-    return outer + inner
-
-
 # ---------------------------------------------------------------- budowa
-
-def skin_developed_length(p=PARAMS, d=DERIVED):
-    """Rozwiniecie poszycia liczone po warstwie obojetnej (srodek grubosci).
-
-    Cwiercluk R(150-2) + prosty powrot lewego boku od y=150 do y=400.
-    """
-    r_mid = p["R"] - p["SKIN"] / 2.0
-    arc = math.pi / 2.0 * r_mid
-    straight = p["D"] - p["R"]
-    return arc + straight
-
 
 def build_parts(p=PARAMS, d=DERIVED):
     parts = []
@@ -303,31 +288,56 @@ def build_parts(p=PARAMS, d=DERIVED):
     fd = d["frame_depth"]
     T = p["T"]
 
-    # --- piony (pelna wysokosc, sloje wzdluz wysokosci) ---
-    labels = ["L-gable", "mid-1", "mid-2", "R-side"]
-    for i, x in enumerate(xs):
+    # --- lewy bok: grzbiet ciagly + 5 zebow miedzy wrebami (jedna sztuka
+    # materialu, wycieta jako grzebien - por. joinery-notes.md) ---
+    gx0, gx1 = xs[0], xs[0] + T
+    nd = p["NOTCH_DEPTH"]
+    parts.append(Part(
+        "vertical-L-gable-spine", "vertical",
+        {"type": "box", "bounds": (gx0, nd, 0.0, gx1, fd, p["H"])},
+        T, "sklejka brzozowa 18", "longitudinal", "vertical-L-gable"))
+    for i in range(p["N_LEVELS"] - 1):
+        z0 = d["level_z"][i] + T
+        z1 = d["level_z"][i + 1]
+        parts.append(Part(
+            "vertical-L-gable-tooth-%d" % i, "vertical",
+            {"type": "box", "bounds": (gx0, 0.0, z0, gx1, nd, z1)},
+            T, "sklejka brzozowa 18", "longitudinal", "vertical-L-gable"))
+
+    # --- pozostale piony (pelna wysokosc, sloje wzdluz wysokosci) ---
+    labels = ["mid-1", "mid-2", "R-side"]
+    for i, x in enumerate(xs[1:]):
         parts.append(Part(
             "vertical-%s" % labels[i], "vertical",
             {"type": "box", "bounds": (x, 0.0, 0.0, x + T, fd, p["H"])},
             T, "sklejka brzozowa 18", "longitudinal", "vertical"))
 
     # --- polki (3 na poziom) + czopy przelotowe ---
+    # przeslo 0 (przy nosie): jedna scalona plyta nos+polka, zlacze z bokiem
+    # to wrab (patrz sekcja pionow wyzej), bez czopow/srub na tej stronie
+    prof0 = nose_bay_profile(p, d)
     for li, z in enumerate(d["level_z"]):
         for b in range(p["N_BAYS"]):
-            xl = xs[b] + T          # lico prawe lewego pionu
-            xr = xs[b + 1]          # lico lewe prawego pionu
-            parts.append(Part(
-                "shelf-L%d-B%d" % (li, b), "shelf",
-                {"type": "box", "bounds": (xl, 0.0, z, xr, fd, z + T)},
-                T, "sklejka brzozowa 18", "longitudinal", "shelf-B%d" % b))
+            if b == 0:
+                parts.append(Part(
+                    "shelf-L%d-B0" % li, "shelf",
+                    {"type": "prism_z", "profile": prof0, "z0": z, "z1": z + T},
+                    T, "sklejka brzozowa 18", "free", "shelf-B0"))
+            else:
+                xl = xs[b] + T          # lico prawe lewego pionu
+                xr = xs[b + 1]          # lico lewe prawego pionu
+                parts.append(Part(
+                    "shelf-L%d-B%d" % (li, b), "shelf",
+                    {"type": "box", "bounds": (xl, 0.0, z, xr, fd, z + T)},
+                    T, "sklejka brzozowa 18", "longitudinal", "shelf-B%d" % b))
 
             # czopy: skrajne przechodza na wylot, srodkowe spotykaja sie w osi pionu
             for side in ("L", "R"):
                 if side == "L":
+                    if b == 0:
+                        continue         # zlacze z bokiem to wrab, nie czop
                     vx = xs[b]
-                    # przy lewym boku czop przelotowy (konczy sie w licu x=150,
-                    # ukrytym w komorze nosa); przy pionach posrednich - do osi
-                    tx0 = vx if b == 0 else vx + T / 2.0
+                    tx0 = vx + T / 2.0
                     tx1 = vx + T
                 else:
                     vx = xs[b + 1]
@@ -340,27 +350,12 @@ def build_parts(p=PARAMS, d=DERIVED):
                         {"type": "box", "bounds": (tx0, y0, z, tx1, y1, z + T)},
                         T, "sklejka brzozowa 18", "longitudinal", "tenon"))
 
-    # --- zebra nosa ---
-    prof = nose_profile(p, d)
-    for ri, z in enumerate(d["rib_z"]):
-        parts.append(Part(
-            "rib-%02d" % ri, "rib",
-            {"type": "prism_z", "profile": prof, "z0": z, "z1": z + T},
-            T, "sklejka brzozowa 18", "free", "rib"))
-
-    # --- poszycie nosa ---
-    parts.append(Part(
-        "skin-nose", "skin",
-        {"type": "prism_z", "profile": skin_profile(p, d), "z0": 0.0, "z1": p["H"]},
-        p["SKIN"], "sklejka gieta (flexi) 4", "longitudinal", "skin",
-        area_override=skin_developed_length(p, d) * p["H"] / 1e6))
-
     # --- plecy: nos + po jednej plycie na przeslo, styk w osiach pionow ---
     y0b = fd
     y1b = p["D"]
     parts.append(Part(
         "back-nose", "back",
-        {"type": "box", "bounds": (p["SKIN"], y0b, 0.0, p["R"], y1b, p["H"])},
+        {"type": "box", "bounds": (0.0, y0b, 0.0, p["R"], y1b, p["H"])},
         p["BACK"], "sklejka brzozowa 4", "longitudinal", "back-nose"))
 
     edges = [p["R"]] + [x + T / 2.0 for x in xs[1:-1]] + [p["W"]]
@@ -386,8 +381,9 @@ def bolt_positions(p=PARAMS, d=DERIVED):
     for li, z in enumerate(d["level_z"]):
         zc = z + T / 2.0
         for b in range(p["N_BAYS"]):
-            for y in p["BOLT_Y_LEFT"]:
-                out.append((xs[b] + T / 2.0, y, zc, "+x"))
+            if b > 0:                   # b==0 lewa strona: wrab, nie sruba
+                for y in p["BOLT_Y_LEFT"]:
+                    out.append((xs[b] + T / 2.0, y, zc, "+x"))
             for y in p["BOLT_Y_RIGHT"]:
                 out.append((xs[b + 1] + T / 2.0, y, zc, "-x"))
     return out
