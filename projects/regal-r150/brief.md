@@ -1,9 +1,9 @@
 # Regał R150 — brief
 
 **Klient:** wewnętrzny / własny
-**Runda:** 8 — przywrócone półeczki narożnika nosa
+**Runda:** 9 — szuflady na prowadnicach Blum (dwa dolne rzędy)
 **Data:** 2026-07-31
-**Status:** czeka na akceptację bryły. Wszystkie kwestie techniczne zamknięte; otwarta jedna decyzja klienta (zakres wyposażenia) — patrz §5
+**Status:** czeka na akceptację bryły. Wszystkie kwestie techniczne zamknięte; otwarte dwie decyzje biznesowe (masa z pełnym wyposażeniem, termin szablonu DXF) — patrz §5
 
 ## 1. Zakres
 
@@ -18,8 +18,8 @@ przez klienta.
 | Materiał nośny | sklejka brzozowa 18 mm |
 | Zaoblenie | przedni lewy narożnik, R150, cała wysokość (korpus i cokół) |
 | Cokół | 100 mm, cofnięty 22 mm od krawędzi korpusu na wszystkich czterech bokach |
-| Poziomy | dolna i górna płyta 1800 mm; 4 półki środkowe na kołkach (przestawialne) |
-| Wyposażenie | szuflady i drzwiczki (zawiasy L/R) jako opcja parametryczna |
+| Poziomy | dolna i górna płyta 1800 mm; 2 półki środkowe na kołkach (poziomy 2–4, po 3) |
+| Wyposażenie | 6 szuflad (dwa dolne rzędy, Blum TANDEM 562H) + 2 drzwiczki (poziom 3, zawiasy L/R) |
 | Montaż | rozbieralny na śruby (bez kleju) |
 
 ## 2. Decyzje klienta
@@ -59,14 +59,17 @@ Konstrukcja bez jednego wrębu (od rundy 7):
   wysokości. Skręcane pionowo: śruba M6 przez czoło płyty w mimośród
   beczkowy w czole pionu — lico płyty jest wolne z góry i od spodu, więc łeb
   zawsze ma na czym usiąść. 16 śrub.
-- **Cztery półki środkowe** leżą na kołkach Ø5 — przestawialne i wyjmowalne,
-  bez okuć. Przęsło z szufladą lub drzwiczkami zostaje bez półki.
+- **Dwie środkowe wysokości** (3 przęsła każda) leżą na kołkach Ø5 —
+  przestawialne i wyjmowalne, bez okuć.
 - **Trzy przęsła po 526 mm** światła.
 - **Plecki** ze sklejki 4 mm, wsuwane we wpust 4 × 8 mm w tylnych
   krawędziach — zero okuć, przenoszą skręcanie.
-- **Szuflady i drzwiczki** jako opcja parametryczna (`DRAWER_CELLS`,
-  `DOOR_CELLS` ze stroną zawiasów). Płyta drzwi identyczna dla L i R —
-  strona zawiasów zmienia tylko pozycję puszek Ø35.
+- **Sześć szuflad** w dwóch dolnych rzędach, na prowadnicach kulkowych
+  **Blum TANDEM 562H** (bez BLUMOTION, NL 350 mm) — boki i tył korpusu
+  szuflady scienione do 16 mm (limit systemu prowadnicy). **Dwoje
+  drzwiczek** wyżej, jako opcja parametryczna (`DRAWER_CELLS`, `DOOR_CELLS`
+  ze stroną zawiasów). Płyta drzwi identyczna dla L i R — strona zawiasów
+  zmienia tylko pozycję puszek Ø35.
 - **Cokół** 100 mm z płyt 18 mm na rąb, cofnięty 22 mm ze wszystkich stron,
   3 żebra poprzeczne, 10 kotew M6 do dolnej płyty.
 
@@ -74,11 +77,14 @@ Szczegóły stolarki: `design/joinery-notes.md`.
 
 ## 5. Otwarte kwestie
 
-Została **jedna decyzja klienta**: ile komór finalnie dostaje
-szuflady/drzwiczki. Model przyjmuje dowolną kombinację; podgląd pokazuje
-wariant demonstracyjny. Pełne wyposażenie dokłada wyraźnie do masy netto.
+Zostały **dwie decyzje biznesowe** (nie techniczne):
 
-## 6. Poza zakresem rundy 1–7
+1. Czy masa 135,5 kg z sześcioma szufladami jest akceptowalna przy
+   transporcie i montażu w dwie osoby.
+2. Kiedy zrobić szablon DXF do cięcia CNC — model jest gotowy pod eksport
+   (realne wymiary Blum), ale generator DXF jeszcze nie istnieje (§6).
+
+## 6. Poza zakresem rundy 1–9
 
 DXF z warstwami wg CLAUDE.md, cut-list CSV, BOM, nesting z kontrolą waste < 12 %,
 G-code, instrukcja montażu, karta produktu.
@@ -362,3 +368,50 @@ technika.
 8 nowych do półeczek narożnika) + 10 kotew do cokołu, masa netto 127,6 kg
 z pełnym wyposażeniem. **24/24 testów** geometrii, w tym nowy: cztery
 półeczki narożnika obecne i poprawnie skręcone do lica pionu.
+
+## 14. Runda 9 — szuflady na prowadnicach Blum (dwa dolne rzędy)
+
+Klient: *„jednak chciałbym aby dwa dolne rzędy miały szuflady. znajdź i
+pobierz wymiarowanie szyn do szuflady firmy Blum, wybierz jakiś tańszy
+model. dodaj je do modelu (...) zbuduj też całą szufladę i przelicz ilość
+materiału"*, plus osobne zlecenie do subagenta: research fornirów efektowych
+(patrz raport w rozmowie — poza zakresem tego pliku, materiał do dyspozycji
+`head-of-design`/`sales-rep`).
+
+### Prowadnice — Blum TANDEM 562H
+
+Najtańsza pełnowymiarowa prowadnica kulkowa Blum w systemie 16 mm: pełny
+wysuw, bez BLUMOTION (droższy wariant tej samej rodziny to 569H — dodaje
+tylko samodociąg). NL 350 mm (dopasowane do głębokości szuflady), luz
+systemowy 13 mm/stronę (to samo `RUNNER_CLEAR`, które model miał już
+poprawnie od rundy 7), nośność ~45 kg/parę.
+
+**Konsekwencja, którą trzeba było rozwiązać:** system 16 mm ma twardy limit
+grubości boku szuflady — 18 mm (standard reszty mebla) jest za grube.
+Zamiast droższego systemu 19 mm, **boki i tył korpusu szuflady scieniono do
+16 mm** (front zostaje 18 mm, bo nie wchodzi w złącze z prowadnicą). Dotyczy
+18 elementów; reszta mebla bez zmian. Model generuje wyłącznie punkty pod
+wiercenie wkrętów mocujących prowadnicę (nie geometrię samej prowadnicy —
+to kupowane okucie metalowe) — 72 wkręty, osobno liczone od 24 śrub M6
+konstrukcji.
+
+### Rozmieszczenie
+
+Dwa dolne rzędy (poziomy 0 i 1) w całości szufladami — 6 szt. Drzwiczki
+przesunęły się z poziomu 1 na poziom 2, żeby zwolnić miejsce.
+
+### Materiał — przeliczone
+
+„Takie same elementy × ilość": 6× front (sklejka 18), 12× bok (sklejka 16),
+6× tył (sklejka 16), 6× dno (sklejka 4), 2× płyta drzwi (sklejka 18).
+Pełny wydruk w `design/joinery-notes.md` §3.
+
+**Szablon do cięcia CNC:** model ma teraz realne wymiary handlowe (grubość
+boków, rozstaw wkrętów Blum), więc jest gotowy pod eksport DXF — ale sam
+generator DXF z warstwami jeszcze nie istnieje (patrz §6, poza zakresem).
+To jawnie osobna, przyszła runda pracy, nie coś pominiętego.
+
+**Wynik:** 63 elementy (było 51), 24 śruby M6 + 10 kotew do cokołu + 72
+wkręty prowadnic, masa netto 135,5 kg (było 127,6 kg). **26/26 testów**
+geometrii, w tym dwa nowe: boki/tył szuflad w limicie grubości Blum,
+wkręty prowadnic trafiają w lica pionów.

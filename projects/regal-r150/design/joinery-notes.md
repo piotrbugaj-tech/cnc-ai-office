@@ -1,17 +1,17 @@
 # Regał R150 — decyzje stolarskie
 
 Zgodnie z CLAUDE.md § 9 — dokumentacja decyzji technicznych.
-**Runda 8:** małe zaokrąglone półeczki w rogu nosa wracają jako osobne,
-wspornikowo skręcane elementy (zniknęły w rundzie 7 razem z wrębami).
+**Runda 9:** dwa dolne rzędy dostają szuflady na prowadnicach Blum TANDEM
+562H (realne wymiary handlowe, nie przybliżenie). Boki i tył korpusu szuflady
+scienione z 18 do 16 mm — to limit systemu, nie mój dobór.
 
 ## Status
 
-**24/24 testów** w `checks.py`, zero kolizji na 51 elementach. Nie było
+**26/26 testów** w `checks.py`, zero kolizji na 63 elementach. Nie było
 jeszcze walidacji przez `qa-inspector` ani `safety-officer`.
 
-Konstrukcja bez wrębów (runda 7) i przywrócone półeczki narożnika (runda 8)
-są zamknięte technicznie. Otwarte pozostaje jedno pytanie **do Ciebie**
-(nie do stolarza) — patrz § 7.
+Konstrukcja jest zamknięta technicznie. Otwarte pozostają dwa punkty **do
+Ciebie** (nie do stolarza) — patrz § 7.
 
 ---
 
@@ -103,43 +103,91 @@ mieści się na arkuszu 2440 × 1220.
 
 ---
 
-## 3. Szuflady i drzwiczki — opcja parametryczna (runda 7)
+## 3. Szuflady i drzwiczki — runda 9: realne okucie Blum
 
-Sterowane wyłącznie parametrami w `shelf_model.PARAMS`:
+Sterowane parametrami w `shelf_model.PARAMS`:
 
 ```python
-"DRAWER_CELLS": ((0, 0), (0, 1), (0, 2)),      # (poziom, przęsło)
-"DOOR_CELLS":   {(1, 0): "L", (1, 2): "R"},    # + strona zawiasów
+"DRAWER_CELLS": ((0,0),(0,1),(0,2),(1,0),(1,1),(1,2)),  # dwa dolne rzedy
+"DOOR_CELLS":   {(2, 0): "L", (2, 2): "R"},              # przesunieta wyzej
 ```
 
-Poziom 0 = komora tuż nad dolną płytą. Przęsła 0–2 od lewej. Wariant w
-podglądzie: **3 szuflady w dolnym rzędzie + 2 drzwiczki wyżej** (jedne na
-lewych zawiasach, jedne na prawych) — po to, żeby oba warianty były widoczne
-naraz. Włączenie komory automatycznie pomija w niej półkę.
+Klient: *„jednak chciałbym aby dwa dolne rzędy miały szuflady"* — poprzednio
+(runda 7) szuflady były tylko w dolnym rzędzie (3 szt.), drzwiczki na
+poziomie 1. Poziom 1 jest teraz w całości szufladami, więc drzwiczki
+przeniosły się o poziom wyżej (2).
 
-### Szuflada — 5 elementów
+### Prowadnice — Blum TANDEM 562H (wariant ekonomiczny)
+
+Klient: *„znajdź i pobierz wymiarowanie szyn do szuflady firmy Blum, wybierz
+jakiś tańszy model"*. **TANDEM 562H** to najtańsza pełnowymiarowa prowadnica
+kulkowa Blum w systemie 16 mm — bez mechanizmu BLUMOTION (samodociąg), pełny
+wysuw. Droższy wariant tej samej rodziny (**569H**) dodaje tylko
+BLUMOTION — mechanicznie identyczny montaż.
+
+| Parametr | Wartość | Źródło |
+|---|---|---|
+| Model | Blum TANDEM 562H, bez BLUMOTION | wwhardware.com / cabinetparts.com specyfikacje 562H |
+| Długość nominalna (NL) | **350 mm** | dopasowana do `DRAWER_DEPTH`; 350 mm to standardowa metryczna długość w ofercie |
+| Maks. grubość boku szuflady | **16 mm** | oficjalny limit systemu 16 mm (Blum ma osobny system 19 mm dla grubszych boków — nie wybrany, droższy) |
+| Luz systemowy | **13 mm na stronę** | `RUNNER_CLEAR` — już to miałem poprawnie zgadnięte w rundzie 7 |
+| Nośność statyczna | **~45 kg/parę** | wg konkretnego wariantu długości 533 mm w specyfikacji handlowej |
+| Mocowanie | wkręty w lico pionu (strona korpusu) + w bok szuflady (strona ruchoma) | `runner_positions()` |
+
+**Konsekwencja, którą trzeba było rozwiązać:** system 16 mm ma twardy limit
+grubości boku. Nasz standard to sklejka 18 mm — o 2 mm za grubo. Zamiast
+kupować droższy system 19 mm (istnieje w ofercie Blum, ale to nie jest
+„tańszy model"), **boki i tył korpusu szuflady scieniono do 16 mm**
+(osobny parametr `DRAWER_SIDE_T`, osobny wpis materiałowy „sklejka
+brzozowa 16"). Front zostaje 18 mm — nie wchodzi w złącze z prowadnicą,
+więc nic nie stoi na przeszkodzie, żeby pasował wizualnie do drzwiczek.
+Dotyczy tylko 18 elementów (6 tyłów + 12 boków); reszta mebla bez zmian.
+Sprawdzane automatycznie („boki/tył szuflad <= 16 mm").
+
+Model **nie generuje geometrii samej prowadnicy** (kupowane okucie
+metalowe, nie płyta) — tylko punkty pod wiercenie wkrętów montażowych
+(`runner_positions()`), tym samym schematem co `bolt_positions()` i
+`hinge_positions()`. 72 wkręty łącznie (6 na parę × 6 par), osobno liczone
+od 24 śrub M6 konstrukcji nośnej.
+
+Poziom 0 = komora tuż nad dolną płytą. Przęsła 0–2 od lewej. Włączenie
+komory automatycznie pomija w niej półkę (bez zmian względem rundy 7).
+
+### Szuflada — 5 elementów, dwie grubości materiału
 
 | Element | Wymiar | Materiał |
 |---|---|---|
-| Front (nakładany w świetle, szczelina 3 mm) | 520 × 352 mm | sklejka 18 |
-| Boki (2 szt.) | 350 × 220 mm | sklejka 18 |
-| Tył | 464 × 220 mm | sklejka 18 |
-| Dno | 464 × 350 mm | sklejka 4 |
+| Front (nakładany w świetle, szczelina 3 mm) | 520 × 352 mm | sklejka **18** |
+| Boki (2 szt.) | 350 × 220 mm | sklejka **16** |
+| Tył | 464 × 220 mm | sklejka **16** |
+| Dno | 460 × 348 mm | sklejka 4 |
 
-Prowadnice kulkowe boczne 350 mm, luz **13 mm na stronę** — stąd korpus
-szuflady jest o 26 mm węższy od światła przęsła (526 → 500 mm).
+Prowadnice kulkowe boczne NL 350, luz **13 mm na stronę** (Blum, potwierdzone
+wyżej) — stąd korpus szuflady jest o 26 mm węższy od światła przęsła
+(526 → 500 mm).
 
 ### Drzwiczki — strona zawiasów nie zmienia listy cięć
 
-**Płyta drzwi jest identyczna w obu wariantach.** Strona zawiasów zmienia
-wyłącznie pozycję puszek Ø35: oś 22,5 mm od krawędzi zawiasowej, 100 mm od
-góry i od dołu. To celowe — przełożenie zawiasów na drugą stronę to zmiana
-**wiercenia**, nie kształtu, więc nie rusza nestingu ani cut-listy.
+Bez zmian względem rundy 7: **płyta drzwi jest identyczna w obu wariantach.**
+Strona zawiasów zmienia wyłącznie pozycję puszek Ø35: oś 22,5 mm od krawędzi
+zawiasowej, 100 mm od góry i od dołu. Sprawdzane automatycznie.
 
-Sprawdzane automatycznie: test pilnuje, że puszki są przy krawędzi zgodnej
-z `DOOR_CELLS`, i że żadna komora nie dostała jednocześnie szuflady i drzwi.
+### Materiał — przeliczone (runda 9)
 
----
+„Takie same elementy × ilość", z pełnego wydruku `checks.py`:
+
+| Grupa | Szt. | Materiał |
+|---|---|---|
+| `drawer-front` | 6 | sklejka 18 |
+| `drawer-side` | 12 | sklejka **16** |
+| `drawer-back` | 6 | sklejka **16** |
+| `drawer-bottom` | 6 | sklejka 4 |
+| `door` | 2 | sklejka 18 |
+
+Masa netto całego mebla: **135,5 kg** (było 127,6 kg z 3 szufladami — wzrost
+o ~8 kg za trzy dodatkowe komplety okucia i materiału).
+
+## 4. Nos zaoblony
 
 ## 4. Nos zaoblony
 
@@ -208,18 +256,27 @@ Sprawdzane automatycznie dla każdego elementu.
 
 ## 7. Do rozstrzygnięcia
 
-Jeden punkt, decyzja klienta, nie problem techniczny:
+Dwa punkty, oba decyzje klienta/biznesowe, nie problemy techniczne:
 
-1. **Ile komór finalnie dostaje szuflady/drzwiczki.** Model przyjmuje
-   dowolną kombinację; podgląd pokazuje wariant demonstracyjny (3 szuflady +
-   2 drzwiczki). Masa netto rośnie wyraźnie przy pełnym wyposażeniu.
+1. **Czy masa 135,5 kg z sześcioma szufladami jest akceptowalna** przy
+   transporcie i montażu w dwie osoby. Model przyjmuje dowolną kombinację
+   `DRAWER_CELLS`/`DOOR_CELLS`, więc zakres wyposażenia można jeszcze zmienić.
+2. **Kiedy zrobić szablon DXF do cięcia CNC.** Model ma teraz realne wymiary
+   handlowe (grubość boków szuflady, rozstaw wkrętów Blum), więc jest gotowy
+   pod eksport — ale sam generator DXF z warstwami (wg CLAUDE.md) jeszcze nie
+   istnieje. To jawnie osobna runda pracy (patrz `brief.md` §6, „poza
+   zakresem"), nie coś pominiętego przez przeoczenie.
 
-**Zamknięte w rundzie 7:** wręby (usunięte całkowicie), dostęp dla łba śruby,
-reguła 1/3 grubości, mocowanie plecków, konstrukcja półek środkowych.
-**Zamknięte wcześniej:** wymiary okucia, konstrukcja ramy cokołu, kotwienie
-korpus ↔ cokół, nawis prawego boku (§ 5).
+**Zamknięte w rundzie 9:** prowadnice szuflad (Blum TANDEM 562H, realne
+wymiary), grubość boków szuflady (16 mm — limit systemu, nie mój dobór),
+rozmieszczenie dwóch rzędów szuflad. **Zamknięte wcześniej:** wręby (usunięte
+całkowicie), dostęp dla łba śruby, reguła 1/3 grubości, mocowanie plecków,
+konstrukcja półek środkowych, wymiary okucia pion↔płyta, konstrukcja ramy
+cokołu, kotwienie korpus ↔ cokół, nawis prawego boku (§ 5), półeczki
+narożnika nosa (§ 4).
 
-**Do zapisania w instrukcji montażu:** masa netto **127,6 kg** z pełnym
-wyposażeniem (same płyty, bez okuć). Montaż w dwie osoby, na miejscu
-ustawienia — kolejność: dolna płyta → piony → plecki → górna płyta →
-półeczki narożnika → półki/szuflady/drzwiczki → cokół.
+**Do zapisania w instrukcji montażu:** masa netto **135,5 kg** z pełnym
+wyposażeniem — sześć szuflad, dwoje drzwiczek (same płyty i okucie,
+bez lakieru). Montaż w dwie osoby, na miejscu ustawienia — kolejność:
+dolna płyta → piony → plecki → górna płyta → półeczki narożnika →
+półki/szuflady/drzwiczki → cokół.

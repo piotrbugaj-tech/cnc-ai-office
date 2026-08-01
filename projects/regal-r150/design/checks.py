@@ -269,6 +269,29 @@ def run():
             "%d poleczek, %d srub na x=%.0f" % (len(corners), len(cbolts), p["R"])
             if not bad_cb else str(bad_cb[:3]))
 
+    # --- 6g. boki/tyl szuflady miesza sie w limicie systemu Blum TANDEM
+    # 562H (max grubosc boku 16 mm - runda 9) -----------------------------
+    over_spec = [q for q in parts
+                 if q.qty_group in ("drawer-side", "drawer-back")
+                 and q.thickness > p["DRAWER_SIDE_T"] + TOL]
+    r.check("boki/tyl szuflad <= %.0f mm (limit Blum TANDEM 562H)" % p["DRAWER_SIDE_T"],
+            not over_spec,
+            "wszystkie %d elementow w limicie" % sum(
+                1 for q in parts if q.qty_group in ("drawer-side", "drawer-back"))
+            if not over_spec else str([q.name for q in over_spec][:3]))
+
+    # --- 6h. otwory pod prowadnice trafiaja w lico pionu / boku szuflady -
+    runs = m.runner_positions(p, d)
+    faces = {round(v, 3) for v in xs} | {round(v + p["T"], 3) for v in xs}
+    run_bad = []
+    for x, y, z, side in runs:
+        if side == "corpus" and round(x, 3) not in faces:
+            run_bad.append((x, y, z, side))
+    r.check("%d wkretow prowadnic Blum na %d parach szuflad"
+            % (len(runs), len(p["DRAWER_CELLS"])),
+            not run_bad,
+            "wszystkie na licach pionow" if not run_bad else str(run_bad[:3]))
+
     # --- 6c. kotwy korpus <-> cokol trafiaja w szyny/zebra ramy ----------
     anchors = m.plinth_bolt_positions(p, d)
     plinth_fp = [q.footprint() for q in parts if q.kind == "plinth"]
@@ -388,7 +411,19 @@ def run():
 if __name__ == "__main__":
     res = run()
     s = m.summary()
+    runners = m.runner_positions()
+    n_runner_pairs = len(m.PARAMS["DRAWER_CELLS"])
+    n_screws = len(runners)
     print()
     print("masa netto (bez okuc): %.1f kg" % s["mass_kg"])
-    print("elementow: %d, srub M6: %d" % (len(s["parts"]), s["n_bolts"]))
+    print("elementow: %d, srub M6: %d, prowadnice Blum TANDEM 562H: %d par (%d wkretow)"
+          % (len(s["parts"]), s["n_bolts"], n_runner_pairs, n_screws))
+    print()
+    print("BOM - takie same elementy x ilosc:")
+    groups = {}
+    for pt in s["parts"]:
+        e = groups.setdefault(pt.qty_group, {"n": 0, "mat": pt.material})
+        e["n"] += 1
+    for name, e in sorted(groups.items()):
+        print("  %-16s %2d szt.  (%s)" % (name, e["n"], e["mat"]))
     sys.exit(1 if res.report() else 0)

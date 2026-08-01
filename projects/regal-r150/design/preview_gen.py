@@ -695,6 +695,7 @@ def build_html(n_tests):
         ("Rozpietosc", "526", "mm / przeslo"),
         ("Elementow", str(len(parts)), "szt."),
         ("Srub M6", str(s["n_bolts"]), "+ %d kotew" % len(m.plinth_bolt_positions())),
+        ("Prowadnice", str(len(P["DRAWER_CELLS"])), "par Blum TANDEM 562H"),
         ("Masa netto", "%.0f" % s["mass_kg"], "kg"),
     ]
     stat_html = "".join(
@@ -764,44 +765,38 @@ def build_html(n_tests):
 
     n_dr = len(P["DRAWER_CELLS"])
     n_do = len(P["DOOR_CELLS"])
+    n_runners = len(P["DRAWER_CELLS"])
     notes = [
-        ("i", "Male zaokraglone poleczki w rogu nosa - przywrocone.",
-         "Runda 7 usunela wreby, wiec strefa zaokraglonego naroznika (0-150 mm) "
-         "zrobila sie pusta na 4 srodkowych poziomach - zauwazyles to od razu. "
-         "Wracaja jako osobne czesci, wspornikowo skrecone do lica lewego boku "
-         "(2 sruby M6 kazda, poziomo) - lico jest teraz plaskie i odslonieta, "
-         "bo nie ma juz grzebienia/wrebu, wiec montaz jest prosty."),
-        ("i", "Zero wrebow w calym meblu.",
-         "Piony stoja miedzy dolna a gorna plyta, wiec nic przez nie nie przechodzi. "
-         "Znika i wrab przelotowy, i wrab oporowy - a razem z nimi caly problem "
-         "z lbem sruby i z regula 1/3 grubosci. Sruby ida teraz pionowo przez "
-         "czolo plyty w mimosrod w czole pionu: lico plyty jest wolne z gory "
-         "i od spodu, wiec leb zawsze ma na czym usiasc."),
-        ("i", "Polki srodkowe na kolkach Ø5 - przestawialne i wyjmowalne.",
-         "Cztery srodkowe poziomy nie sa juz niczym skrecone ani osadzone. "
-         "48 otworow Ø5 w licach pionow, polka po prostu na nich lezy. Dzieki temu "
-         "przeslo z szuflada lub drzwiczkami mozna zostawic puste bez zadnej "
-         "zmiany w konstrukcji."),
-        ("i", "Szuflady i drzwiczki jako parametr modelu.",
-         "DRAWER_CELLS i DOOR_CELLS przyjmuja pary (poziom, przeslo); DOOR_CELLS "
-         "dodatkowo strone zawiasow. Podglad: %d szuflady w dolnym rzedzie, %d drzwiczek "
-         "wyzej (jedne L, jedne R). Plyta drzwi jest w obu wariantach identyczna - "
-         "strona zawiasow zmienia wylacznie pozycje puszek Ø35, wiec nie rusza "
-         "listy ciec." % (n_dr, n_do)),
-        ("i", "Plecki wsuwane we wpust 4 x 8 mm, bez okuc.",
-         "Wpust w tylnych krawedziach pionow i plyt; plecki wsuwa sie przy montazu "
-         "i trzymaja sie same. Zero wkretow w plyte, a ciagly wpust na calym obwodzie "
-         "usztywnia na skrecanie lepiej niz punktowe mocowanie - to wazne teraz, "
-         "gdy piony tylko staja miedzy plytami."),
-        ("q", "Masa netto %.0f kg - wzrosla przez wyposazenie." % s["mass_kg"],
-         "Sam korpus wazy mniej niz w rundzie 6 (znikly grzebienie), ale doliczone "
-         "sa teraz szuflady i drzwiczki. Bez nich regal jest wyraznie lzejszy - "
-         "to argument, zeby nie wlaczac szuflad we wszystkich przeslach naraz."),
-        ("q", "Nos (zaoblony naroznik) jest teraz otwarta wneka na cala wysokosc.",
-         "Skoro nie ma wrebow, plyta poziomu nie moze przejsc przez lewy bok - "
-         "wiec strefa 150 mm na lewo od niego zostaje pusta miedzy dolna a gorna "
-         "plyta. Jesli chcesz tam polki, trzeba je wspornikowo przykrecic do lewego "
-         "boku (lico od strony wneki jest dostepne) - powiedz, czy dodac."),
+        ("i", "Dwa dolne rzedy - szesc szuflad na prowadnicach Blum TANDEM 562H.",
+         "Wariant ekonomiczny (bez BLUMOTION), pelny wysuw, nosnosc statyczna "
+         "~45 kg/pare, dlugosc nominalna 350 mm dobrana do glebokosci szuflady. "
+         "Drzwiczki przesunely sie na poziom wyzej (byl na poziomie 1, teraz na "
+         "poziomie 2), zeby zwolnic miejsce."),
+        ("q", "Boki i tyl korpusu szuflady scienione z 18 do 16 mm.",
+         "System Blum TANDEM 562H ma limit grubosci boku 16 mm - przy 18 mm "
+         "(standard reszty mebla) prowadnica by nie weszla. Front zostaje 18 mm "
+         "(jak drzwiczki, nie jest czescia zlacza z prowadnica). To realna zmiana "
+         "materialu tylko dla 18 elementow (6 tylow + 12 bokow) - reszta mebla "
+         "bez zmian. Sprawdzane automatycznie."),
+        ("i", "72 wkrety mocujace prowadnice, osobno od 24 srub M6 konstrukcji.",
+         "Prowadnica to kupowane okucie, nie plyta - model generuje tylko punkty "
+         "pod wiercenie (jak dla zawiasow), nie geometrie samej szyny. Po 6 "
+         "wkretow na pare (3 w lico pionu, 3 w bok szuflady)."),
+        ("i", "Male zaokraglone poleczki w rogu nosa (runda 8), bez zmian.",
+         "Wspornikowo skrecone do lica lewego boku, 2 sruby M6 kazda. Niezalezne "
+         "od zmian w szufladach."),
+        ("i", "Zero wrebow w calym meblu (runda 7), bez zmian.",
+         "Piony stoja miedzy dolna a gorna plyta. Sruby ida pionowo przez czolo "
+         "plyty w mimosrod w czole pionu - leb zawsze ma na czym usiasc."),
+        ("w", "Masa netto %.0f kg - wyraznie wiecej niz z 3 szufladami." % s["mass_kg"],
+         "Dwa pelne rzedy szuflad to 6 kompletow okucia i materialu zamiast 3. "
+         "Do potwierdzenia z klientem, czy to akceptowalne przy transporcie "
+         "i montazu w dwie osoby."),
+        ("w", "Szablon DXF do ciecia CNC - poza zakresem tej rundy.",
+         "Model ma teraz realne wymiary Blum (grubosc bokow, rozstaw wkretow), "
+         "wiec jest gotowy pod przyszly eksport DXF z warstwami wg CLAUDE.md - "
+         "ale sam generator DXF jeszcze nie istnieje (patrz brief.md, sekcja "
+         "„poza zakresem”). To osobna runda pracy."),
     ]
     notes_html = "".join(
         '<div class="note"><span class="tag %s">%s</span>'
@@ -818,12 +813,14 @@ def build_html(n_tests):
   <h1>Regal R150</h1>
   <p class="lede">Sklejka brzozowa 18 mm, ciecie CNC na gotowo, montaz rozbieralny.
   Dolna i gorna plyta to jeden kawalek na pelne 1800 mm; cztery piony stoja
-  <b>miedzy</b> nimi, skrecane pionowo przez czolo plyty. <b>W calym meblu nie ma
-  ani jednego wrebu.</b> Polki srodkowe leza na kolkach, wiec sa przestawialne i
-  wyjmowalne. Szuflady i drzwiczki (zawiasy z lewej albo z prawej) sa opcja
-  wlaczana parametrem &mdash; podglad pokazuje trzy szuflady w dolnym rzedzie
-  i dwoje drzwiczek wyzej. Stoi na cokole 100 mm z plyt 18 mm na rab, cofnietym
-  22 mm ze wszystkich stron. Przedni lewy narozik zaobolony promieniem 150 mm.</p>
+  <b>miedzy</b> nimi, skrecane pionowo przez czolo plyty. W calym meblu nie ma
+  ani jednego wrebu. Dwa dolne rzedy maja szuflady na prowadnicach kulkowych
+  <b>Blum TANDEM 562H</b> (bez BLUMOTION - wariant ekonomiczny), boki i tyl
+  korpusu szuflady w 16 mm sklejce zgodnie z limitem systemu. Wyzej dwoje
+  drzwiczek (zawiasy z lewej albo z prawej - opcja parametryczna, plyta
+  identyczna w obu wariantach). Stoi na cokole 100 mm, cofnietym 22 mm ze
+  wszystkich stron. Przedni lewy narozik zaobolony promieniem 150 mm, z
+  wlasnymi malymi poleczkami skreconymi do lica lewego boku.</p>
 </header>
 
 <section>
@@ -878,18 +875,16 @@ def build_html(n_tests):
 
 <section>
   <div class="hdr"><h2><span class="num">03</span>Elementy</h2>
-  <p class="sub">Wymiar blanku wliczajac wejscie we wrab. Pion to w tej tabeli kilka
-  bryl weryfikacyjnych (pasma miedzy wrebami + pasma progu) — fizycznie jedna deska;
-  runda DXF polaczy je w jeden flat pattern. Pelna lista ciec, nesting i BOM
-  wchodza w kolejnej rundzie.</p></div>
+  <p class="sub">Wymiar blanku gotowy do ciecia (bez wrebow od rundy 7). Boki i tyl
+  szuflad w 16 mm sklejce (limit Blum TANDEM 562H), reszta w 18 mm. Pelny szablon
+  DXF z warstwami, nesting i BOM z cenami wchodza w kolejnej rundzie.</p></div>
   %s
 </section>
 
 <section>
   <div class="hdr"><h2><span class="num">04</span>Do rozstrzygniecia</h2>
-  <p class="sub">Runda 6 zamknela wszystkie punkty poza jednym. Blokada z lbami
-  srub zniknela razem z wrebem dwustronnym; cokol dostal realna konstrukcje.
-  Do potwierdzenia zostaje proporcja wrebu przelotowego.</p></div>
+  <p class="sub">Runda 9 dodala szuflady na realnym okuciu Blum. Otwarte: czy masa
+  z dwoma pelnymi rzedami szuflad jest akceptowalna, i kiedy zrobic szablon DXF.</p></div>
   <div class="notes">%s</div>
 </section>
 

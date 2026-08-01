@@ -52,13 +52,24 @@ PARAMS = {
     "BACK_GROOVE_D": 8.0,
     # --- wyposazenie komor: opcje wlaczane parametrem (runda 7) ---
     # klucz to (poziom, przeslo). Poziom 0 = komora tuz nad dolna plyta.
-    "DRAWER_CELLS": ((0, 0), (0, 1), (0, 2)),
-    "DOOR_CELLS": {(1, 0): "L", (1, 2): "R"},
+    "DRAWER_CELLS": ((0, 0), (0, 1), (0, 2), (1, 0), (1, 1), (1, 2)),
+    "DOOR_CELLS": {(2, 0): "L", (2, 2): "R"},
     "DRAWER_GAP": 3.0,      # szczelina wokol frontu
-    "RUNNER_CLEAR": 13.0,   # luz na prowadnice kulkowa, na strone
     "DRAWER_DEPTH": 350.0,
     "DRAWER_BOX_H": 220.0,
     "DRAWER_BOX_Z": 30.0,   # dol korpusu szuflady nad plyta
+    # runda 9 - prowadnice Blum TANDEM 562H (bez BLUMOTION, wariant
+    # ekonomiczny wg klienta - patrz joinery-notes.md sekcja 6):
+    #   system 16 mm - max grubosc boku szuflady 16 mm (stad DRAWER_SIDE_T
+    #   nizsza od T=18 uzywanego wszedzie indziej), luz systemowy 13 mm na
+    #   strone (RUNNER_CLEAR - to jest oficjalna wartosc Blum, nie zmieniona
+    #   z rundy 7, tam bylo to juz zgadniete poprawnie), NL 350 mm dobrane
+    #   do DRAWER_DEPTH, nosnosc statyczna ~45 kg na pare.
+    "DRAWER_SIDE_T": 16.0,
+    "RUNNER_CLEAR": 13.0,   # luz na prowadnice kulkowa (Blum TANDEM), na strone
+    "RUNNER_NL": 350.0,     # dlugosc nominalna prowadnicy (Blum TANDEM 562H)
+    "RUNNER_LOAD_KG": 45.0,  # nosnosc statyczna na pare (Blum TANDEM 562H)
+    "RUNNER_SCREW_Y": (18.0, 280.0, 342.0),  # osie wkretow mocujacych, w glab
     # cokol - runda 4: tyl i prawy bok przylegaja do sciany, listwa
     # przypodlogowa 85 mm wys. x 20 mm gl. (odstaje od sciany)
     "PLINTH_H": 100.0,      # 85 mm listwa + 15 mm przeswitu na nierownosci
@@ -499,38 +510,65 @@ def _cell_opening(li, b, p, d):
 
 
 def _build_drawers(p=PARAMS, d=DERIVED):
-    """Szuflady - opcja wlaczana przez PARAMS['DRAWER_CELLS'] (runda 7).
+    """Szuflady - opcja wlaczana przez PARAMS['DRAWER_CELLS'] (runda 7),
+    dopasowane do prowadnic Blum TANDEM 562H (runda 9).
 
-    Kazda szuflada to 5 elementow: front nakladany w swietle komory + korpus
-    (2 boki, tyl, dno 4 mm). Prowadnice kulkowe boczne 350 mm, po 13 mm luzu
-    na strone - stad korpus wezszy o 26 mm od swiatla przesla.
+    Kazda szuflada to 5 elementow: front nakladany w swietle komory (18 mm,
+    jak drzwiczki) + korpus (2 boki, tyl, dno 4 mm). Boki/tyl korpusu maja
+    DRAWER_SIDE_T = 16 mm, nie T = 18 mm jak reszta mebla - to maksymalna
+    grubosc boku dla systemu Blum TANDEM 562H (16 mm). Prowadnice kulkowe
+    boczne, NL 350 mm, po RUNNER_CLEAR mm luzu na strone.
     """
-    T, B = p["T"], p["BACK"]
+    T, ST, B = p["T"], p["DRAWER_SIDE_T"], p["BACK"]
     g, run = p["DRAWER_GAP"], p["RUNNER_CLEAR"]
     out = []
     for li, b in sorted(p["DRAWER_CELLS"]):
         x0, x1, z0, z1 = _cell_opening(li, b, p, d)
-        # front nakladany w swietle, z rowna szczelina dookola
+        # front nakladany w swietle, z rowna szczelina dookola - grubosc T,
+        # zgodnie z drzwiczkami (nie jest czescia zlacza z prowadnica)
         out.append(Part("drawer-%d%d-front" % (li, b), "drawer",
                         {"type": "box", "bounds": (x0 + g, 0.0, z0 + g, x1 - g, T, z1 - g)},
                         T, "sklejka brzozowa 18", "longitudinal", "drawer-front"))
-        # korpus szuflady
+        # korpus szuflady - grubosc ST (16 mm, limit systemu Blum)
         bx0, bx1 = x0 + run, x1 - run
         by0, by1 = T, T + p["DRAWER_DEPTH"]
         bz0 = z0 + p["DRAWER_BOX_Z"]
         bz1 = bz0 + p["DRAWER_BOX_H"]
         out.append(Part("drawer-%d%d-side-L" % (li, b), "drawer",
-                        {"type": "box", "bounds": (bx0, by0, bz0, bx0 + T, by1, bz1)},
-                        T, "sklejka brzozowa 18", "longitudinal", "drawer-side"))
+                        {"type": "box", "bounds": (bx0, by0, bz0, bx0 + ST, by1, bz1)},
+                        ST, "sklejka brzozowa 16", "longitudinal", "drawer-side"))
         out.append(Part("drawer-%d%d-side-R" % (li, b), "drawer",
-                        {"type": "box", "bounds": (bx1 - T, by0, bz0, bx1, by1, bz1)},
-                        T, "sklejka brzozowa 18", "longitudinal", "drawer-side"))
+                        {"type": "box", "bounds": (bx1 - ST, by0, bz0, bx1, by1, bz1)},
+                        ST, "sklejka brzozowa 16", "longitudinal", "drawer-side"))
         out.append(Part("drawer-%d%d-back" % (li, b), "drawer",
-                        {"type": "box", "bounds": (bx0 + T, by1 - T, bz0, bx1 - T, by1, bz1)},
-                        T, "sklejka brzozowa 18", "longitudinal", "drawer-back"))
+                        {"type": "box", "bounds": (bx0 + ST, by1 - ST, bz0, bx1 - ST, by1, bz1)},
+                        ST, "sklejka brzozowa 16", "longitudinal", "drawer-back"))
         out.append(Part("drawer-%d%d-bottom" % (li, b), "drawer",
-                        {"type": "box", "bounds": (bx0 + T, by0, bz0, bx1 - T, by1 - T, bz0 + B)},
+                        {"type": "box", "bounds": (bx0 + ST, by0, bz0, bx1 - ST, by1 - ST, bz0 + B)},
                         B, "sklejka brzozowa 4", "free", "drawer-bottom"))
+    return out
+
+
+def runner_positions(p=PARAMS, d=DERIVED):
+    """Osie wkretow mocujacych prowadnice Blum TANDEM 562H (runda 9) -
+    po jednej lisciwe na kazdym boku komory z szuflada: do lica pionu
+    (strona korpusu) i do lica boku szuflady (strona ruchoma). Nie
+    generuje geometrii samej prowadnicy (kupowane okucie, nie plyta) -
+    tylko punkty pod wiercenie, jak bolt_positions()/hinge_positions().
+
+    Zwraca (x, y, z, strona) w globalnym Z; strona = 'corpus' albo 'drawer'.
+    """
+    T, ST = p["T"], p["DRAWER_SIDE_T"]
+    z_off = p["PLINTH_H"]
+    out = []
+    for li, b in sorted(p["DRAWER_CELLS"]):
+        x0, x1, z0, z1 = _cell_opening(li, b, p, d)
+        zc = z0 + p["DRAWER_BOX_Z"] + p["DRAWER_BOX_H"] / 2.0 + z_off
+        for y in p["RUNNER_SCREW_Y"]:
+            out.append((x0, y, zc, "corpus"))          # lico prawe lewego pionu
+            out.append((x1, y, zc, "corpus"))           # lico lewe prawego pionu
+            out.append((x0 + p["RUNNER_CLEAR"], y, zc, "drawer"))
+            out.append((x1 - p["RUNNER_CLEAR"], y, zc, "drawer"))
     return out
 
 
