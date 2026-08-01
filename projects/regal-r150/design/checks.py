@@ -320,6 +320,53 @@ def run():
             not run_bad,
             "wszystkie na licach pionow" if not run_bad else str(run_bad[:3]))
 
+    # --- 6m. runda 9.2 (klient: "nie widze zadnego rowka ani polaczen dla
+    # spodu szuflady") - rowek pod dno musi zostawic sensowna sciankie w
+    # bokach/tyle, a kolki naroznikowe musza trafiac w realny material ----
+    core_wall = p["T"] - p["DRAWER_GROOVE_DEPTH"]
+    r.check("rowek dna szuflady zostawia scianke >= 10 mm w boku/tyle",
+            core_wall >= 10.0,
+            "T=%.0f - DRAWER_GROOVE_DEPTH=%.0f = %.0f mm" %
+            (p["T"], p["DRAWER_GROOVE_DEPTH"], core_wall))
+
+    # boki/tyl szuflady sa poklejone na 3 pasma (rowek) - Part.area_m2()
+    # domyslnie zaklada, ze najmniejszy z 3 wymiarow to grubosc, co dla
+    # waskich pasm (wysokosc pasma < T) jest falszywe (ta sama kategoria
+    # bledu co NC-16 z audytu) - kazdy bok/tyl ma jawny area_override;
+    # sprawdzamy, ze suma pasm nadal daje pole calego, niescienionego panelu
+    box_h = p["DRAWER_BOX_H"]
+    depth = p["DRAWER_DEPTH"]
+    x0_00, x1_00, _, _ = m._cell_opening(0, 0, p, d)
+    width_00 = (x1_00 - p["RUNNER_CLEAR"]) - (x0_00 + p["RUNNER_CLEAR"]) - 2 * T
+    by_group = {}
+    for q in parts:
+        if q.qty_group in ("drawer-side", "drawer-back") and q.name.startswith("drawer-00-"):
+            key = q.name.rsplit("-", 1)[0]
+            by_group[key] = by_group.get(key, 0.0) + q.area_m2()
+    bad_area = []
+    for k, v in by_group.items():
+        exp = (depth if "side" in k else width_00) * box_h / 1e6
+        if abs(v - exp) > 1e-4:
+            bad_area.append((k, round(v, 4), round(exp, 4)))
+    r.check("pasma boku/tylu szuflady sumuja sie do pola pelnego panelu",
+            not bad_area,
+            "wszystkie %d grup zgodne" % len(by_group) if not bad_area
+            else str(bad_area[:3]))
+
+    drawer_bb = [q.bbox() for q in parts if q.kind == "drawer"]
+    corner_dowels = m.drawer_corner_dowel_positions(p, d)
+    front_dowels = m.drawer_front_dowel_positions(p, d)
+    miss_corner = [(round(x), round(y), round(z)) for x, y, z, side in corner_dowels
+                   if not any(point_in_bbox((x, y, z), bb, margin=1.0) for bb in drawer_bb)]
+    miss_front = [(round(x), round(y), round(z)) for x, y, z, side in front_dowels
+                  if not any(point_in_bbox((x, y, z), bb, margin=1.0) for bb in drawer_bb)]
+    r.check("%d kolkow naroznika bok<->tyl trafia w material szuflady" % len(corner_dowels),
+            not miss_corner, "wszystkie trafiaja" if not miss_corner
+            else "%d chybia: %s" % (len(miss_corner), miss_corner[:3]))
+    r.check("%d kolkow front<->bok trafia w material szuflady" % len(front_dowels),
+            not miss_front, "wszystkie trafiaja" if not miss_front
+            else "%d chybia: %s" % (len(miss_front), miss_front[:3]))
+
     # --- 6c. kotwy korpus <-> cokol trafiaja w szyny/zebra ramy ----------
     anchors = m.plinth_bolt_positions(p, d)
     plinth_fp = [q.footprint() for q in parts if q.kind == "plinth"]

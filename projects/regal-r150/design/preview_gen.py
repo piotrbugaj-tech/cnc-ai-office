@@ -815,6 +815,14 @@ def build_html(n_tests):
          "- model zaklada mocowanie boczne. Nie zgadujemy trzeci raz (po bledzie "
          "16 mm i znikniety dzielniku) - wymaga karty katalogowej przed wierceniem. "
          "Patrz joinery-notes.md sekcja 3."),
+        ("q", "Zlacze korpusu szuflady: realny rowek na dno + kolki naroznikowe.",
+         "Klient: 'nie widze zadnego rowka ani polaczen dla spodu szuflady' - "
+         "runda 9.1 tylko opisala propozycje tekstem, nie zamodelowala jej. "
+         "Naprawione: dno wsuniete w rowek (3 strony, 6 mm gleboko), naroza "
+         "klej + kolki Ø8. Osobny podglad: design/drawer-detail.html, sekcja "
+         "'Zlacze korpusu'. Po drodze zlapany i naprawiony ten sam typ bledu "
+         "co przy naprawie masy naroznika cokolu (area_m2 zle liczylo wazkie "
+         "pasma) - 32 -> 36 testow."),
     ]
     notes_html = "".join(
         '<div class="note"><span class="tag %s">%s</span>'
@@ -827,7 +835,7 @@ def build_html(n_tests):
 <div class="wrap">
 
 <header>
-  <p class="eyebrow">CNC Furniture Studio &middot; runda 9.1 &middot; audyt qa-inspector + poprawki</p>
+  <p class="eyebrow">CNC Furniture Studio &middot; runda 9.2 &middot; realne zlacze szuflady</p>
   <h1>Regal R150</h1>
   <p class="lede">Sklejka brzozowa 18 mm (jeden material w calym meblu), ciecie CNC
   na gotowo, montaz rozbieralny. Dolna i gorna plyta to jeden kawalek na pelne

@@ -18,15 +18,23 @@ rzędu (16 mm, teraz to) już raz kosztowały przeróbkę, trzeci byłby
 kosztowniejszy na etapie CAM niż na etapie projektu. Patrz § 3, „Otwarte:
 sposób mocowania prowadnicy".
 
+**Runda 9.2:** klient obejrzał bryłę po audycie i zauważył, że mimo
+naprawy 7 usterek blokujących nikt nie zamodelował, **czym** jest
+w ogóle złożona szuflada — dno bez rowka, brak złącza narożnego. Trafna
+uwaga: runda 9.1 (NC-03) tylko opisała propozycję tekstem w tym pliku, nie
+przełożyła jej na geometrię. Naprawione — patrz § 3, „Łączenie korpusu
+szuflady".
+
 ## Status
 
-**31/31 testów** w `checks.py` (było 26 przed audytem — 5 nowych testów
-domyka klasę, której brakowało: łeb śruby vs materiał, nie tylko
-płyta-płyta), zero kolizji na 84 elementach. `qa-inspector` (opus)
-wykonał pełny audyt rundy 9 — werdykt **NOT READY**, 7 usterek
-blokujących + 11 „do poprawy" + drobne. Usterki niezależne od
-niezweryfikowanych danych Blum zostały naprawione w tej samej rundzie
-(9.1). `safety-officer` jeszcze nie widział projektu.
+**36/36 testów** w `checks.py` (było 26 przed audytem, 31 po pierwszej
+turze poprawek — kolejne 5 domyka rowek/kołki szuflady z rundy 9.2), zero
+kolizji na 120 elementach. `qa-inspector` (opus) wykonał pełny audyt
+rundy 9 — werdykt **NOT READY**, 7 usterek blokujących + 11 „do poprawy" +
+drobne. Usterki niezależne od niezweryfikowanych danych Blum zostały
+naprawione (9.1), a złącze korpusu szuflady — wtedy tylko propozycja
+tekstowa — zostało w rundzie 9.2 rzeczywiście zamodelowane po uwadze
+klienta. `safety-officer` jeszcze nie widział projektu.
 
 Konstrukcja jest zamknięta technicznie poza jednym punktem (sposób
 mocowania prowadnicy Blum, § 3). Otwarte pozostają dwa punkty biznesowe
@@ -274,21 +282,46 @@ Prowadnice kulkowe boczne NL 350, luz **13 mm na stronę** (Blum,
 niepotwierdzone — patrz „Otwarte: sposób mocowania prowadnicy" wyżej) —
 stąd korpus szuflady jest o 26 mm węższy od światła przęsła (526 → 500 mm).
 
-### Otwarte: łączenie korpusu szuflady (NC-03, audyt qa-inspector)
+### Łączenie korpusu szuflady — runda 9.2: zaprojektowane i zamodelowane
 
-Ten dokument nigdy nie określił, **czym** boki/tył/dno szuflady są ze sobą
-połączone — audyt to złapał jako lukę blokującą (bez tego nie da się
-wygenerować warstwy WIERCENIE/CIĘCIE dla tych 30 elementów). Propozycja:
-w odróżnieniu od korpusu głównego (który klient wprost chce **wielokrotnie
-rozbieralny**), pojedyncza szuflada nie jest czymś, co użytkownik
-kiedykolwiek rozkłada — to zamknięta podzespołowa całość, złożona raz w
-fabryce/warsztacie. Nie musi więc trzymać się zasady „żadnych wkrętów w
-płytę" tej samej wagi co reszta mebla. Proponowane złącze: **klej +
-kołki/dowele** w narożach boki↔tył (analogicznie do zasady „bez wkrętów",
-ale trwałe, nie rozbieralne), dno wsunięte we wpust 4 mm w bokach/tyle
-(ten sam mechanizm co plecy korpusu, § 2). **To propozycja do
-zatwierdzenia, nie zamknięta decyzja** — wymaga Twojej akceptacji przed
-wejściem do modelu geometrycznego i do DXF.
+Klient (po obejrzeniu bryły): *„nie widzę żadnego rowka ani połączeń dla
+spodu szuflady. przemyślałeś to jak ma być złożona cała szuflada?"* —
+słuszna uwaga: runda 9.1 (NC-03) tylko **opisała** propozycję złącza w tym
+dokumencie, nie przełożyła jej na geometrię. Dno po prostu „leżało" w
+bryle bez żadnego wcięcia, boki/tył/front nie miały modelowanego
+połączenia w ogóle. Naprawione — teraz to prawdziwa geometria, nie tylko
+tekst:
+
+**Dno — rowek na 3 stronach (oba boki + tył), bez rowka z przodu.**
+Każdy bok i tył to w modelu 3 sklejone pasma w pionie — pełne / rowek /
+pełne (`DRAWER_GROOVE_MARGIN` = 10 mm od dołu do rowka, głębokość rowka
+`DRAWER_GROOVE_DEPTH` = 6 mm, zostawia ściankę 12 mm) — fizycznie jedna
+deska, frezowana jednym przejściem wraz z resztą konturu, tak jak wpust
+plecków korpusu głównego (§ 2). Dno wsuwa się w ten rowek z luzem
+`DRAWER_GROOVE_CLEAR` = 0,5 mm. Przód nie ma rowka — dno kończy się
+dokładnie w licu frontu (y = T), tam trzymają je kołki poniżej.
+
+**Naroża — klej + kołki Ø8 mm** (`DRAWER_DOWEL_D`), nie wkręty ani
+mimośrody: w odróżnieniu od korpusu głównego (który klient wprost chce
+**wielokrotnie rozbieralny**), pojedyncza szuflada nie jest czymś, co
+użytkownik kiedykolwiek rozkłada — to zamknięta podzespołowa całość,
+złożona raz w warsztacie, więc nie musi trzymać się zasady „żadnych
+wkrętów w płytę" tej samej wagi co reszta mebla.
+
+- **Bok↔tył** (`drawer_corner_dowel_positions()`): 2 kołki na naroże × 2
+  naroża = 4 na szufladę, otwór ślepy 15 mm (`DRAWER_DOWEL_DEPTH`),
+  wiercone poziomo od zewnętrznego lica boku w materiał tyłu.
+- **Front↔bok** (`drawer_front_dowel_positions()`): 2 kołki na bok × 2 =
+  4 na szufladę, wiercone od tylnego (niewidocznego) lica frontu w
+  materiał boku — nie przechodzą na wylot, bez śladu na licu widocznym.
+
+Sprawdzane automatycznie: rowek zostawia ściankę ≥ 10 mm; wszystkie 24+24
+kołki (po 4 na 6 szuflad) trafiają w rzeczywisty materiał; pasma
+boku/tyłu sumują się z powrotem do pola pełnego, niescienionego panelu
+(bez tego `Part.area_m2()` liczyłby błędną masę dla wąskich pasm rowka —
+ta sama kategoria błędu co NC-16, złapana i naprawiona przy tej samej
+okazji). Osobny podgląd 3D: `design/drawer-detail.html`, sekcja „Złącze
+korpusu".
 
 ### Drzwiczki — strona zawiasów nie zmienia listy cięć
 
@@ -313,12 +346,12 @@ odciążające pod łby śrub (NC-01/NC-02), fizycznie nadal 3 żebra i 12 pół
 | `shelf-bay` | 24 (12 fizycznych) | sklejka 18 |
 | `plinth-rib` | 9 (3 fizyczne) | sklejka 18 |
 
-Masa netto całego mebla: **148,7 kg** (było 127,6 kg z 3 szufladami przed
+Masa netto całego mebla: **148,9 kg** (było 127,6 kg z 3 szufladami przed
 rundą 9; runda 9 „pierwsza wersja" pokazywała błędnie 135,5 kg — brakowało
 jej 3 dzielników i miała cieńsze, nierealne boki szuflad; runda 9.1
 „naprawiona, przed audytem" pokazywała 145,5 kg; audyt doliczył grubsze
 dno szuflady (+9 mm zamiast 4 mm) i poprawił błąd w liczeniu masy
-zakrzywionego pasa narożnika cokołu (NC-16) do dzisiejszych 148,7 kg).
+zakrzywionego pasa narożnika cokołu (NC-16) do dzisiejszych 148,9 kg).
 
 ## 4. Nos zaoblony
 
@@ -413,39 +446,44 @@ w kodzie poziomy są zawsze liczone **od 0** — poziom 0 = komora tuż nad
 dolną płytą. `brief.md` w jednym miejscu (tabela specyfikacji, §1) liczyła
 od 1 („poziom 3" dla drzwiczek) — poprawione tam na tę samą konwencję.
 
-Dwa punkty biznesowe, nie techniczne:
+Jeden punkt techniczny (czeka na Twoje potwierdzenie, ale nie blokuje
+niczego innego) i dwa punkty biznesowe:
 
-1. **Czy masa 148,7 kg z sześcioma szufladami jest akceptowalna** przy
+1. **[TECHNICZNE, do potwierdzenia]** Złącze korpusu szuflady — klej +
+   kołki Ø8 (§ 3) — zaprojektowane i zamodelowane w rundzie 9.2, ale to
+   nadal moja rekomendacja inżynierska, nie coś klient wprost zamówił.
+   Jeśli wolisz inne złącze (np. wkręty zamiast kołków), to zmiana
+   parametryczna, nie przebudowa.
+2. **Czy masa 148,9 kg z sześcioma szufladami jest akceptowalna** przy
    transporcie i montażu w dwie osoby. Model przyjmuje dowolną kombinację
    `DRAWER_CELLS`/`DOOR_CELLS`, więc zakres wyposażenia można jeszcze zmienić.
-2. **Kiedy zrobić szablon DXF do cięcia CNC.** Większość modelu ma teraz
+3. **Kiedy zrobić szablon DXF do cięcia CNC.** Większość modelu ma teraz
    realne, poprawione wymiary — ale **nie cały**: sposób mocowania
-   prowadnicy Blum (§ 3) i sposób łączenia korpusu szuflady (§ 3, NC-03)
-   pozostają otwarte i muszą się zamknąć przed DXF, inaczej warstwa
-   wiercenia dla 30+ elementów byłaby zgadywanką. To jawnie osobna runda
-   pracy (patrz `brief.md` §6, „poza zakresem"), nie coś pominiętego przez
-   przeoczenie.
-
-**Jeden punkt techniczny wymaga Twojej decyzji, nie tylko biznesowej:**
-propozycja złącza korpusu szuflady (klej + kołki, § 3, NC-03) — techniczna
-rekomendacja, nie coś klient wprost zamówił, więc czeka na akceptację
-zanim wejdzie do modelu.
+   prowadnicy Blum (§ 3) pozostaje otwarty i musi się zamknąć przed DXF,
+   inaczej warstwa wiercenia dla 72 wkrętów byłaby zgadywanką. To jawnie
+   osobna runda pracy (patrz `brief.md` §6, „poza zakresem"), nie coś
+   pominiętego przez przeoczenie.
 
 **Zamknięte w rundzie 9.1 (audyt qa-inspector, 7 usterek blokujących):**
 łeb śruby dno↔pion vs żebro cokołu (NC-01), łeb śruby półeczki narożnika
 vs półka przęsła 0 (NC-02), grubość dna szuflady vs ugięcie (NC-04),
-głębokość otworów kołków w pionach środkowych (NC-07 — kołki), luz kotwy
-cokołu od krawędzi ramy (NC-08), błąd liczenia masy pasa narożnika cokołu
-(NC-16), martwe parametry i błędne cytowania (NC-17 częściowo). Dodana
-nowa klasa testów (NC-19) sprawdzająca łby śrub/kotew wprost przeciwko
-materiałowi — to jej brak pozwolił powyższym przejść niezauważenie mimo
-26/26 w rundzie 9.
+głębokość otworów kołków w pionach środkowych (NC-07 — kołki półkowe),
+luz kotwy cokołu od krawędzi ramy (NC-08), błąd liczenia masy pasa
+narożnika cokołu (NC-16), martwe parametry i błędne cytowania (NC-17
+częściowo). Dodana nowa klasa testów (NC-19) sprawdzająca łby śrub/kotew
+wprost przeciwko materiałowi — to jej brak pozwolił powyższym przejść
+niezauważenie mimo 26/26 w rundzie 9.
+
+**Zamknięte w rundzie 9.2 (uwaga klienta po obejrzeniu bryły):** złącze
+korpusu szuflady (NC-03) — rowek pod dno na 3 stronach + kołki naroży,
+rzeczywiście zamodelowane (nie tylko opisane tekstem jak w rundzie 9.1).
+Po drodze złapany i naprawiony ten sam typ błędu co NC-16 (`area_m2()` źle
+liczyło masę wąskich pasm rowka) — regresja zablokowana nowym testem.
 
 **Świadomie NIE zamknięte (wymaga zweryfikowanych danych producenta, nie
 kolejnego domysłu):** sposób mocowania prowadnicy Blum — bok czy spód
 (NC-05), datum wkrętów prowadnicy (NC-06, powiązane z NC-05), głębokość
 otworów wkrętów prowadnicy (NC-07 — wkręty, ta sama przyczyna). **Wymaga
-Twojej decyzji technicznej:** złącze korpusu szuflady (NC-03). **Wymaga
 decyzji joinery-specialist:** wpust plecków nieobecny w geometrii (NC-15).
 **Poza zakresem tej rundy, do DXF:** klasy tolerancji IT6/IT8 z CLAUDE.md
 §6 nie mają jeszcze jawnych testów (NC-18); dog-bone'y nieaktualne (zero
@@ -462,7 +500,7 @@ model i liczba (Blum TANDEM 562H, 6 par), grubość boków szuflady (18 mm —
 mieści się w oficjalnym zakresie Blum 12,7–19,0 mm), rozmieszczenie dwóch
 rzędów szuflad, dzielnik między rzędami szuflad.
 
-**Do zapisania w instrukcji montażu:** masa netto **148,7 kg** z pełnym
+**Do zapisania w instrukcji montażu:** masa netto **148,9 kg** z pełnym
 wyposażeniem — sześć szuflad, dwoje drzwiczek (same płyty i okucie,
 bez lakieru). Montaż w dwie osoby, na miejscu ustawienia — kolejność:
 dolna płyta → piony → plecki → górna płyta → półeczki narożnika →

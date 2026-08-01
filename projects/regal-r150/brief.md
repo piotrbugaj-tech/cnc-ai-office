@@ -1,9 +1,9 @@
 # Regał R150 — brief
 
 **Klient:** wewnętrzny / własny
-**Runda:** 9.1 — szuflady na prowadnicach Blum + audyt qa-inspector i poprawki
+**Runda:** 9.2 — szuflady na prowadnicach Blum + audyt qa-inspector + realne złącze korpusu szuflady
 **Data:** 2026-08-01
-**Status:** audyt `qa-inspector` (opus) na życzenie klienta znalazł 7 usterek blokujących handoff do produkcji — wszystkie niezależne od niezweryfikowanych danych producenta zostały naprawione w tej rundzie (§16). Jeden techniczny punkt pozostaje świadomie otwarty (sposób mocowania prowadnicy Blum — wymaga karty katalogowej, nie kolejnego domysłu), plus dwie decyzje biznesowe (masa z pełnym wyposażeniem, termin szablonu DXF) — patrz §5, §16.
+**Status:** audyt `qa-inspector` (opus) na życzenie klienta znalazł 7 usterek blokujących handoff do produkcji — wszystkie niezależne od niezweryfikowanych danych producenta zostały naprawione (§16). Klient obejrzał bryłę po audycie i zauważył, że złącze korpusu szuflady (rowek pod dno, kołki narożne) było wtedy tylko opisane tekstem, nie zamodelowane — naprawione w rundzie 9.2 (§17). Jeden techniczny punkt pozostaje świadomie otwarty (sposób mocowania prowadnicy Blum — wymaga karty katalogowej, nie kolejnego domysłu), plus dwie decyzje biznesowe (masa z pełnym wyposażeniem, termin szablonu DXF) — patrz §5.
 
 ## 1. Zakres
 
@@ -78,17 +78,20 @@ Szczegóły stolarki: `design/joinery-notes.md`.
 
 ## 5. Otwarte kwestie
 
-Jeden punkt techniczny (wymaga akceptacji, nie tylko informacji) i dwie
-decyzje biznesowe — patrz §16 dla pełnego kontekstu audytu:
+Jeden punkt techniczny (do potwierdzenia, ale nie blokuje niczego) i dwie
+decyzje biznesowe — patrz §16/§17 dla pełnego kontekstu:
 
-1. **[TECHNICZNE]** Propozycja złącza korpusu szuflady (klej + kołki,
-   `design/joinery-notes.md` §3, NC-03) — czeka na Twoją akceptację.
-2. Czy masa 148,7 kg z sześcioma szufladami jest akceptowalna przy
+1. **[TECHNICZNE, do potwierdzenia]** Złącze korpusu szuflady — rowek pod
+   dno + kołki Ø8 w narożach (`design/joinery-notes.md` §3, §17) —
+   zaprojektowane i zamodelowane w rundzie 9.2, ale to moja rekomendacja
+   inżynierska, nie coś wprost zamówione. Zmiana (np. na wkręty) to
+   parametr, nie przebudowa.
+2. Czy masa 148,9 kg z sześcioma szufladami jest akceptowalna przy
    transporcie i montażu w dwie osoby.
 3. Kiedy zrobić szablon DXF do cięcia CNC — większość modelu jest gotowa
-   pod eksport (realne wymiary Blum), ale generator DXF jeszcze nie
-   istnieje (§6) i dwa punkty muszą się zamknąć najpierw (§16: sposób
-   mocowania prowadnicy, złącze szuflady).
+   pod eksport (realne wymiary Blum, realna geometria szuflady), ale
+   generator DXF jeszcze nie istnieje (§6) i sposób mocowania prowadnicy
+   Blum musi się zamknąć najpierw (§16).
 
 ## 6. Poza zakresem rundy 1–9
 
@@ -578,3 +581,46 @@ odciążające pod śruby, patrz `design/joinery-notes.md` §3/§5), 24 śruby M
 masę narożnika cokołu). **32/32 testów** geometrii (było 26), w tym 5
 nowych z klasy „łeb śruby vs materiał", której brak pozwolił poprzednim
 usterkom przejść niezauważonym.
+
+## 17. Runda 9.2 — realne złącze korpusu szuflady
+
+Klient obejrzał bryłę po rundzie 9.1 i zapytał wprost: *„nie widzę żadnego
+rowka ani połączeń dla spodu szuflady. przemyślałeś to jak ma być złożona
+cała szuflada?"* — trafna uwaga. Runda 9.1 (NC-03) tylko **opisała**
+propozycję złącza w `joinery-notes.md`, nigdy nie przełożyła jej na
+geometrię — dno po prostu „leżało" w bryle bez wcięcia, boki/tył/front nie
+miały żadnego modelowanego połączenia.
+
+### Co zaprojektowano i zamodelowano
+
+**Dno — realny rowek na 3 stronach** (oba boki + tył, bez rowka z przodu):
+każdy bok i tył to teraz w modelu 3 sklejone pasma w pionie — pełne / rowek
+6 mm głęboki / pełne, zostawiające ściankę 12 mm materiału — fizycznie
+jedna deska, frezowana jednym przejściem, tym samym pomysłem co wpust
+plecków korpusu głównego. Dno wsuwa się w rowek z luzem 0,5 mm. Przód bez
+rowka — dno kończy się dokładnie w licu frontu, tam trzymają je kołki.
+
+**Naroża — klej + kołki Ø8 mm** (nie wkręty/mimośrody jak w korpusie
+głównym): szuflada, w odróżnieniu od korpusu, nie jest rozkładana
+wielokrotnie przez użytkownika, więc prostsze trwałe złącze wystarcza.
+4 kołki bok↔tył (otwór ślepy 15 mm, wiercony od zewnętrznego lica boku) +
+4 kołki front↔bok (wiercone od tylnego, niewidocznego lica frontu — bez
+śladu na licu widocznym) na każdą szufladę.
+
+### Błąd złapany po drodze — ta sama kategoria co NC-16
+
+Rozbicie boków/tyłu na wąskie pasma (rowek) ujawniło, że `Part.area_m2()`
+domyślnie zakłada, iż najmniejszy z 3 wymiarów bryły to grubość materiału —
+założenie, które pęka dla pasm cieńszych niż grubość samej sklejki (10 mm
+margines rowka < 18 mm grubości boku). Bez poprawki masa liczyłaby się
+źle dla tych elementów — dokładnie ten sam typ błędu, co znaleziony przez
+audyt w pasie narożnika cokołu (NC-16). Naprawione jawnym `area_override`
+na każdym paśmie; zablokowane regresją nowym testem sumującym pola pasm
+z powrotem do pola pełnego, niescienionego panelu.
+
+**Wynik:** 120 elementów CNC (było 84 — różnica to pasma rowka, fizycznie
+nadal 5 elementów na szufladę: front, 2 boki, tył, dno), masa netto
+**148,9 kg** (było 148,7 kg). **36/36 testów** geometrii (było 32), w tym
+5 nowych: rowek zostawia ściankę ≥ 10 mm, oba komplety kołków (bok↔tył,
+front↔bok) trafiają w realny materiał, pasma boku/tyłu sumują się do
+prawidłowego pola.

@@ -87,6 +87,17 @@ PARAMS = {
     "RUNNER_NL": 350.0,     # dlugosc nominalna prowadnicy (Blum TANDEM 562H)
     "RUNNER_LOAD_KG": 45.0,  # nosnosc statyczna na pare (Blum TANDEM 562H)
     "RUNNER_SCREW_Y": (18.0, 280.0, 342.0),  # osie wkretow mocujacych, w glab
+    # runda 9.2 - klient zauwazyl, ze korpus szuflady w ogole nie mial
+    # zamodelowanego zlacza (dno "lezalo" bez rowka, boki/tyl/front nie byly
+    # niczym polaczone). Realny rowek pod dno (3 strony: oba boki + tyl,
+    # przod bez rowka - tam dno jest przykryte przez naklejany front) +
+    # kolki na naroznikach boki<->tyl i front<->boki - patrz _build_drawers,
+    # joinery-notes.md sekcja 3.
+    "DRAWER_GROOVE_MARGIN": 10.0,  # od dolu boku/tylu do dolu rowka
+    "DRAWER_GROOVE_DEPTH": 6.0,    # gleb. rowka w materiale (z 18 mm zostaje 12 mm)
+    "DRAWER_GROOVE_CLEAR": 0.5,    # luz w wysokosci rowka ponad grubosc dna
+    "DRAWER_DOWEL_D": 8.0,         # kolek drewniany, zlacza naroznikowe korpusu
+    "DRAWER_DOWEL_DEPTH": 15.0,    # glebokosc slepego otworu na kolek
     # cokol - runda 4: tyl i prawy bok przylegaja do sciany, listwa
     # przypodlogowa 85 mm wys. x 20 mm gl. (odstaje od sciany)
     "PLINTH_H": 100.0,      # 85 mm listwa + 15 mm przeswitu na nierownosci
@@ -598,16 +609,32 @@ def _build_drawers(p=PARAMS, d=DERIVED):
     """Szuflady - opcja wlaczana przez PARAMS['DRAWER_CELLS'] (runda 7),
     dopasowane do prowadnic Blum TANDEM 562H (runda 9).
 
-    Kazda szuflada to 5 elementow: front nakladany w swietle komory + korpus
-    (2 boki, tyl, dno DRAWER_BOTTOM_T). Boki/tyl korpusu w T = 18 mm - tak
-    jak reszta mebla, w oficjalnym zakresie Blum TANDEM (1/2"-3/4" /
-    12.7-19 mm), wiec nie trzeba osobnego arkusza sklejki tylko pod
-    szuflady. Dno w DRAWER_BOTTOM_T (9 mm, nie BACK=4 mm jak plecy - runda
-    9.1, NC-04: dno pod obciazeniem uginaloby sie ponad limit L/300 w 4 mm).
+    Kazda szuflada to front nakladany w swietle komory + korpus (2 boki,
+    tyl, dno). Boki/tyl korpusu w T = 18 mm - tak jak reszta mebla, w
+    oficjalnym zakresie Blum TANDEM (1/2"-3/4" / 12.7-19 mm). Dno w
+    DRAWER_BOTTOM_T (9 mm, nie BACK=4 mm jak plecy - runda 9.1, NC-04: dno
+    pod obciazeniem uginaloby sie ponad limit L/300 w 4 mm).
+
+    Runda 9.2 (klient: "nie widze zadnego rowka ani polaczen dla spodu
+    szuflady") - korpus wczesniej nie mial ZADNEGO zamodelowanego zlacza,
+    dno po prostu "lezalo" bez rowka. Teraz realny rowek na 3 stronach (oba
+    boki + tyl - kazdy panel to 3 sklejone pasma: pelna grubosc / rowek
+    (waska szczelina) / pelna grubosc, patrz nizej), dno wsuwa sie w rowek
+    jak plecy korpusu (ten sam pomysl co _build_corpus, § 2 joinery-notes).
+    Przod BEZ rowka - dno konczy sie dokladnie w licu frontu (y = T), tam
+    trzyma je nakladany front + kolki (drawer_front_dowel_positions()).
+    Naroznik boki<->tyl i front<->boki: kolki + klej (drawer_corner_dowel_
+    positions(), drawer_front_dowel_positions()) - korpus szuflady, w
+    odroznieniu od korpusu glownego, NIE jest rozkladany przez uzytkownika
+    wielokrotnie, wiec nie musi trzymac sie zasady "zero wkretow/kleju w
+    plyte" tej samej wagi (patrz joinery-notes.md § 3).
+
     Prowadnice kulkowe boczne, NL 350 mm, po RUNNER_CLEAR mm luzu na strone.
     """
     T, B = p["T"], p["DRAWER_BOTTOM_T"]
     g, run = p["DRAWER_GAP"], p["RUNNER_CLEAR"]
+    gm, gdep, gclr = p["DRAWER_GROOVE_MARGIN"], p["DRAWER_GROOVE_DEPTH"], p["DRAWER_GROOVE_CLEAR"]
+    gh = B + gclr
     out = []
     for li, b in sorted(p["DRAWER_CELLS"]):
         x0, x1, z0, z1 = _cell_opening(li, b, p, d)
@@ -621,18 +648,98 @@ def _build_drawers(p=PARAMS, d=DERIVED):
         by0, by1 = T, T + p["DRAWER_DEPTH"]
         bz0 = z0 + p["DRAWER_BOX_Z"]
         bz1 = bz0 + p["DRAWER_BOX_H"]
-        out.append(Part("drawer-%d%d-side-L" % (li, b), "drawer",
-                        {"type": "box", "bounds": (bx0, by0, bz0, bx0 + T, by1, bz1)},
-                        T, "sklejka brzozowa 18", "longitudinal", "drawer-side"))
-        out.append(Part("drawer-%d%d-side-R" % (li, b), "drawer",
-                        {"type": "box", "bounds": (bx1 - T, by0, bz0, bx1, by1, bz1)},
-                        T, "sklejka brzozowa 18", "longitudinal", "drawer-side"))
-        out.append(Part("drawer-%d%d-back" % (li, b), "drawer",
-                        {"type": "box", "bounds": (bx0 + T, by1 - T, bz0, bx1 - T, by1, bz1)},
-                        T, "sklejka brzozowa 18", "longitudinal", "drawer-back"))
+        gz0, gz1 = bz0 + gm, bz0 + gm + gh    # pasmo wysokosci rowka we wszystkich 3 panelach
+
+        # boki - kazdy to 3 sklejone pasma w Z: pelne / rowek (cofniete od
+        # lica wewnetrznego o DRAWER_GROOVE_DEPTH) / pelne. area_override
+        # jawnie podane: Part.area_m2() domyslnie zaklada, ze najmniejszy z
+        # 3 wymiarow to grubosc materialu - dla waskich pasm (gm/gh < T) to
+        # zalozenie pęka (ten sam blad kategorii co NC-16 z audytu), wiec
+        # licze pole jawnie jako (glebokosc Y) x (wysokosc pasma), thickness
+        # zawsze T - jedna deska z frezowanym rowkiem, nie 3 rozne grubosci
+        for side_name, sx0, sx1, inner in (
+                ("side-L", bx0, bx0 + T, bx0 + T), ("side-R", bx1 - T, bx1, bx1 - T)):
+            depth = by1 - by0
+            out.append(Part("drawer-%d%d-%s-lo" % (li, b, side_name), "drawer",
+                            {"type": "box", "bounds": (sx0, by0, bz0, sx1, by1, gz0)},
+                            T, "sklejka brzozowa 18", "longitudinal", "drawer-side",
+                            area_override=depth * (gz0 - bz0) / 1e6))
+            gx0 = sx0 if inner > sx0 else sx0 + gdep       # zdejmij material przy licu wewn.
+            gx1 = sx1 if inner < sx1 else sx1 - gdep
+            out.append(Part("drawer-%d%d-%s-gv" % (li, b, side_name), "drawer",
+                            {"type": "box", "bounds": (gx0, by0, gz0, gx1, by1, gz1)},
+                            T, "sklejka brzozowa 18", "longitudinal", "drawer-side",
+                            area_override=depth * (gz1 - gz0) / 1e6))
+            out.append(Part("drawer-%d%d-%s-hi" % (li, b, side_name), "drawer",
+                            {"type": "box", "bounds": (sx0, by0, gz1, sx1, by1, bz1)},
+                            T, "sklejka brzozowa 18", "longitudinal", "drawer-side",
+                            area_override=depth * (bz1 - gz1) / 1e6))
+
+        # tyl - to samo w osi Y (lico wewnetrzne od strony frontu, y = by1-T)
+        width = bx1 - T - (bx0 + T)
+        out.append(Part("drawer-%d%d-back-lo" % (li, b), "drawer",
+                        {"type": "box", "bounds": (bx0 + T, by1 - T, bz0, bx1 - T, by1, gz0)},
+                        T, "sklejka brzozowa 18", "longitudinal", "drawer-back",
+                        area_override=width * (gz0 - bz0) / 1e6))
+        out.append(Part("drawer-%d%d-back-gv" % (li, b), "drawer",
+                        {"type": "box", "bounds": (bx0 + T, by1 - T + gdep, gz0, bx1 - T, by1, gz1)},
+                        T, "sklejka brzozowa 18", "longitudinal", "drawer-back",
+                        area_override=width * (gz1 - gz0) / 1e6))
+        out.append(Part("drawer-%d%d-back-hi" % (li, b), "drawer",
+                        {"type": "box", "bounds": (bx0 + T, by1 - T, gz1, bx1 - T, by1, bz1)},
+                        T, "sklejka brzozowa 18", "longitudinal", "drawer-back",
+                        area_override=width * (bz1 - gz1) / 1e6))
+
+        # dno - wsuniete w rowek po 3 stronach (boki + tyl), przod bez
+        # rowka (konczy sie w licu frontu, y = by0 = T)
         out.append(Part("drawer-%d%d-bottom" % (li, b), "drawer",
-                        {"type": "box", "bounds": (bx0 + T, by0, bz0, bx1 - T, by1 - T, bz0 + B)},
+                        {"type": "box",
+                         "bounds": (bx0 + T - gdep, by0, gz0, bx1 - T + gdep, by1 - T + gdep, gz0 + B)},
                         B, "sklejka brzozowa 9", "free", "drawer-bottom"))
+    return out
+
+
+def drawer_corner_dowel_positions(p=PARAMS, d=DERIVED):
+    """Kolki + klej, naroznik bok<->tyl kazdej szuflady (runda 9.2 - klient
+    zauwazyl brak zamodelowanego zlacza korpusu). Otwor slepy Ø8, poziomo w
+    osi X, wiercony od zewnetrznego lica boku w material tylu. 2 kolki na
+    naroznik x 2 naroznik = 4 na szuflade. Korpus szuflady nie jest
+    rozkladany wielokrotnie jak korpus glowny, wiec klej + kolek (nie
+    mimosrod/sruba) to wystarczajace, prostsze zlacze - patrz
+    joinery-notes.md § 3.
+    """
+    T = p["T"]
+    z_off = p["PLINTH_H"]
+    dowel_z = (60.0, 160.0)
+    out = []
+    for li, b in sorted(p["DRAWER_CELLS"]):
+        x0, x1, z0, _ = _cell_opening(li, b, p, d)
+        bx0, bx1 = x0 + p["RUNNER_CLEAR"], x1 - p["RUNNER_CLEAR"]
+        bz0 = z0 + p["DRAWER_BOX_Z"] + z_off
+        for dz in dowel_z:
+            out.append((bx0, p["T"] + p["DRAWER_DEPTH"] - T / 2.0, bz0 + dz, "+x"))
+            out.append((bx1, p["T"] + p["DRAWER_DEPTH"] - T / 2.0, bz0 + dz, "-x"))
+    return out
+
+
+def drawer_front_dowel_positions(p=PARAMS, d=DERIVED):
+    """Kolki + klej, naroznik front<->boki kazdej szuflady (runda 9.2).
+    Otwor slepy Ø8, poziomo w osi Y, wiercony od tylnego (niewidocznego)
+    lica frontu w material boku. 2 kolki na bok x 2 boki = 4 na szuflade -
+    nie przechodza przez material frontu na wylot, wiec bez sladu na licu
+    widocznym.
+    """
+    T = p["T"]
+    z_off = p["PLINTH_H"]
+    dowel_z = (60.0, 160.0)
+    out = []
+    for li, b in sorted(p["DRAWER_CELLS"]):
+        x0, x1, z0, _ = _cell_opening(li, b, p, d)
+        bx0, bx1 = x0 + p["RUNNER_CLEAR"], x1 - p["RUNNER_CLEAR"]
+        bz0 = z0 + p["DRAWER_BOX_Z"] + z_off
+        for dz in dowel_z:
+            out.append((bx0 + T / 2.0, T, bz0 + dz, "+y"))
+            out.append((bx1 - T / 2.0, T, bz0 + dz, "+y"))
     return out
 
 
