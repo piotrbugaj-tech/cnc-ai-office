@@ -1,0 +1,362 @@
+<title>Regal R150 &mdash; szuflada, szczegol</title>
+<style>
+*,*::before,*::after{box-sizing:border-box}
+:root{
+  --paper:#e9ecef; --surface:#f4f6f7; --ink:#12171b; --ink-2:#4a555e;
+  --rule:#9aa5ad; --dim:#5d6a73; --edge:#c9d1d6;
+  --accent:#c62f24; --drill:#2c8154; --grain:#a8781a;
+  --viewer:#101519; --viewer-2:#1a2126; --viewer-rule:#2c363d;
+  --ply:#d9bd8e; --ply-dark:#b8965f; --cavity:#7d6844;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --paper:#0e1216; --surface:#161c21; --ink:#e6ebee; --ink-2:#9aa7b0;
+    --rule:#5a666e; --dim:#8b98a1; --edge:#2a333a;
+    --accent:#f26355; --drill:#4fb87f; --grain:#d6a63c;
+    --viewer:#080b0d; --viewer-2:#12181c;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0e1216; --surface:#161c21; --ink:#e6ebee; --ink-2:#9aa7b0;
+  --rule:#5a666e; --dim:#8b98a1; --edge:#2a333a;
+  --accent:#f26355; --drill:#4fb87f; --grain:#d6a63c;
+  --viewer:#080b0d; --viewer-2:#12181c;
+}
+:root[data-theme="light"]{
+  --paper:#e9ecef; --surface:#f4f6f7; --ink:#12171b; --ink-2:#4a555e;
+  --rule:#9aa5ad; --dim:#5d6a73; --edge:#c9d1d6;
+  --accent:#c62f24; --drill:#2c8154; --grain:#a8781a;
+  --viewer:#101519; --viewer-2:#1a2126;
+}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);
+     line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1140px;margin:0 auto;padding:40px 24px 96px;
+      display:flex;flex-direction:column;gap:48px}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.16em;
+         text-transform:uppercase;color:var(--accent);margin:0 0 10px}
+h1{font-size:clamp(30px,5vw,46px);line-height:1.05;letter-spacing:-.025em;
+   font-weight:660;margin:0 0 14px;text-wrap:balance}
+h2{font-size:20px;letter-spacing:-.01em;font-weight:640;margin:0 0 4px}
+h2 .num{font-family:var(--mono);font-size:12px;color:var(--accent);
+        margin-right:10px;letter-spacing:.08em}
+.lede{font-size:17px;color:var(--ink-2);margin:0;max-width:64ch}
+.sub{font-size:14px;color:var(--ink-2);margin:0 0 18px;max-width:70ch}
+section{display:flex;flex-direction:column}
+.hdr{border-top:1px solid var(--edge);padding-top:14px;margin-bottom:20px}
+
+/* --- pasek kluczowych liczb --- */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));
+       gap:1px;background:var(--edge);border:1px solid var(--edge)}
+.stat{background:var(--surface);padding:14px 16px}
+.stat .k{font-family:var(--mono);font-size:10px;letter-spacing:.14em;
+         text-transform:uppercase;color:var(--ink-2)}
+.stat .v{font-family:var(--mono);font-size:21px;font-weight:600;
+         font-variant-numeric:tabular-nums;margin-top:3px}
+.stat .u{font-size:12px;color:var(--ink-2);font-weight:400}
+
+/* --- podglad 3D --- */
+.viewer{background:var(--viewer);border:1px solid var(--edge);position:relative}
+canvas{display:block;width:100%;height:clamp(420px,62vh,660px);
+       touch-action:none;cursor:grab}
+canvas.drag{cursor:grabbing}
+.hud{position:absolute;left:14px;top:14px;font-family:var(--mono);font-size:10px;
+     letter-spacing:.1em;text-transform:uppercase;color:#7d8f9b;pointer-events:none}
+.readout{position:absolute;right:14px;top:14px;font-family:var(--mono);font-size:11px;
+         color:#7d8f9b;font-variant-numeric:tabular-nums;pointer-events:none}
+.nogl{position:absolute;inset:0;display:grid;place-content:center;margin:0;padding:0 32px;
+      text-align:center;color:#93a3ad;font-size:14px;max-width:44ch;
+      margin-inline:auto}
+.bar{display:flex;flex-wrap:wrap;gap:6px;padding:12px;background:var(--viewer-2);
+     border-top:1px solid var(--viewer-rule)}
+.bar .sep{width:1px;background:var(--viewer-rule);margin:2px 6px}
+button{font-family:var(--mono);font-size:11px;letter-spacing:.08em;
+       text-transform:uppercase;padding:7px 11px;background:transparent;
+       color:#93a3ad;border:1px solid var(--viewer-rule);cursor:pointer;
+       transition:color .15s,border-color .15s,background .15s}
+button:hover{color:#e2e9ed;border-color:#4a5860}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button[aria-pressed="true"]{color:#0e1216;background:#c9d4db;border-color:#c9d4db}
+.swatch{display:inline-block;width:8px;height:8px;margin-right:7px;
+        vertical-align:baseline;border:1px solid rgba(0,0,0,.3)}
+
+/* --- rysunki --- */
+.draw{display:grid;grid-template-columns:1fr;gap:1px;background:var(--edge);
+      border:1px solid var(--edge)}
+@media(min-width:820px){.draw{grid-template-columns:1.35fr 1fr}
+  .plan,.wide{grid-column:1/-1}}
+.sheet{background:var(--surface);padding:20px}
+.sheet h3{font-family:var(--mono);font-size:10px;letter-spacing:.16em;
+          text-transform:uppercase;color:var(--ink-2);margin:0 0 14px;font-weight:500}
+.sheet svg{width:100%;height:auto;max-height:520px;display:block}
+.figcap{font-size:12px;color:var(--ink-2);margin:-6px 0 14px;max-width:70ch}
+.plan .sheet svg{max-height:300px}
+.wide .sheet svg{max-height:640px;width:auto;max-width:100%;margin:0 auto;display:block}
+
+/* --- tabele --- */
+.tw{overflow-x:auto;border:1px solid var(--edge)}
+table{border-collapse:collapse;width:100%;font-size:14px;background:var(--surface)}
+th,td{text-align:left;padding:9px 14px;border-bottom:1px solid var(--edge)}
+th{font-family:var(--mono);font-size:10px;letter-spacing:.13em;
+   text-transform:uppercase;color:var(--ink-2);font-weight:500}
+tbody tr:last-child td{border-bottom:none}
+td.n{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+td.d{color:var(--ink-2);font-size:13px}
+
+/* --- listy uwag --- */
+.notes{display:grid;gap:1px;background:var(--edge);border:1px solid var(--edge)}
+.note{background:var(--surface);padding:16px 18px;display:grid;
+      grid-template-columns:auto 1fr;gap:14px;align-items:start}
+.tag{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+     padding:3px 8px;border:1px solid currentColor;white-space:nowrap;margin-top:2px}
+.tag.q{color:var(--accent)}
+.tag.i{color:var(--drill)}
+.tag.w{color:var(--grain)}
+.note p{margin:0;font-size:14px}
+.note p b{font-weight:620}
+.note p .why{display:block;color:var(--ink-2);margin-top:4px;font-size:13px}
+.foot{font-size:12px;color:var(--ink-2);font-family:var(--mono);
+      border-top:1px solid var(--edge);padding-top:16px}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+<div class="wrap">
+
+<header>
+  <p class="eyebrow">CNC Furniture Studio &middot; runda 9.1 &middot; szczegol szuflady</p>
+  <h1>Szuflada &mdash; konstrukcja i wiercenie pod Blum TANDEM 562H</h1>
+  <p class="lede">Jedna reprezentatywna szuflada (poziom 0, przeslo 0) - wszystkie
+  szesc szuflad w regale ma identyczna geometrie, rozni je tylko polozenie w bryle.
+  5 elementow w sklejce 18/4 mm, plus 12 punktow wiercenia pod wkrety mocujace
+  prowadnice: 6 w lico sasiadujacych pionow ("corpus"), 6 w bok korpusu szuflady
+  ("drawer"). Szare plyty w podgladzie 3D to fragment lica pionow - odniesienie,
+  nie czesc szuflady.</p>
+</header>
+
+<section>
+  <div class="hdr"><h2><span class="num">01</span>Bryla</h2>
+  <p class="sub">Przeciagnij, zeby obrocic. Kolko myszy przybliza. Wylacz „Lico pionow",
+  zeby zobaczyc sama szuflade bez odniesienia.</p></div>
+  <div class="viewer">
+    <canvas id="cv"></canvas>
+    <div class="hud">Szuflada &middot; 1:2</div>
+    <div class="readout" id="ro"></div>
+  </div>
+  <div class="bar">
+    <button type="button" data-view="-32,14">Aksonometria</button>
+    <button type="button" data-view="0,0">Przod</button>
+    <button type="button" data-view="90,0">Bok</button>
+    <button type="button" data-view="0,88">Gora</button>
+    <span class="sep"></span>
+    <button type="button" data-kind="front" aria-pressed="true"><span class="swatch" style="background:rgb(198,156,104)"></span>Front</button><button type="button" data-kind="side" aria-pressed="true"><span class="swatch" style="background:rgb(216,186,138)"></span>Boki</button><button type="button" data-kind="back" aria-pressed="true"><span class="swatch" style="background:rgb(176,140,96)"></span>Tyl</button><button type="button" data-kind="bottom" aria-pressed="true"><span class="swatch" style="background:rgb(150,121,80)"></span>Dno</button><button type="button" data-kind="gable-ref" aria-pressed="true"><span class="swatch" style="background:rgb(90,100,108)"></span>Lico pionow (odniesienie)</button><button type="button" data-kind="drill-corpus" aria-pressed="true"><span class="swatch" style="background:rgb(44,129,84)"></span>Wiercenie - lico pionu</button><button type="button" data-kind="drill-drawer" aria-pressed="true"><span class="swatch" style="background:rgb(198,76,56)"></span>Wiercenie - bok szuflady</button>
+  </div>
+</section>
+
+<section>
+  <div class="hdr"><h2><span class="num">02</span>Rozstaw wiercenia</h2>
+  <p class="sub">Widok z boku (glab &times; wysokosc komory). Ten sam rozstaw trzech
+  wkretow powtarza sie identycznie na licu pionu i na boku szuflady - rozni je tylko
+  wspolrzedna X (ktore lico), niewidoczna w tym rzucie.</p></div>
+  <div class="draw"><div class="wide"><div class="sheet"><h3>3 wkrety na strone, na pare szuflady</h3>
+  <svg viewBox="-90 -40 560 380" role="img" aria-label="Rozstaw wiercenia" preserveAspectRatio="xMidYMid meet"><polygon points="0.00,0.00 400.00,0.00 400.00,220.00 0.00,220.00" fill="var(--ply)" stroke="var(--rule)" stroke-width="1.4" vector-effect="non-scaling-stroke" /><line x1="18.00" y1="0.00" x2="18.00" y2="220.00" stroke="var(--accent)" stroke-width="1.0" vector-effect="non-scaling-stroke" stroke-dasharray="8 6"/><circle cx="18.00" cy="110.00" r="7" fill="var(--drill)" stroke="none"/><line x1="280.00" y1="0.00" x2="280.00" y2="220.00" stroke="var(--accent)" stroke-width="1.0" vector-effect="non-scaling-stroke" stroke-dasharray="8 6"/><circle cx="280.00" cy="110.00" r="7" fill="var(--drill)" stroke="none"/><line x1="342.00" y1="0.00" x2="342.00" y2="220.00" stroke="var(--accent)" stroke-width="1.0" vector-effect="non-scaling-stroke" stroke-dasharray="8 6"/><circle cx="342.00" cy="110.00" r="7" fill="var(--drill)" stroke="none"/><line x1="0.00" y1="30.00" x2="18.00" y2="30.00" stroke="var(--dim)" stroke-width="1.2" vector-effect="non-scaling-stroke"/><line x1="0.00" y1="18.00" x2="0.00" y2="42.00" stroke="var(--dim)" stroke-width="1.2" vector-effect="non-scaling-stroke"/><line x1="18.00" y1="18.00" x2="18.00" y2="42.00" stroke="var(--dim)" stroke-width="1.2" vector-effect="non-scaling-stroke"/><text x="9.00" y="16.00" font-size="34.0" fill="var(--dim)" text-anchor="middle" font-weight="500" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">18</text><line x1="18.00" y1="30.00" x2="280.00" y2="30.00" stroke="var(--dim)" stroke-width="1.2" vector-effect="non-scaling-stroke"/><line x1="18.00" y1="18.00" x2="18.00" y2="42.00" stroke="var(--dim)" stroke-width="1.2" vector-effect="non-scaling-stroke"/><line x1="280.00" y1="18.00" x2="280.00" y2="42.00" stroke="var(--dim)" stroke-width="1.2" vector-effect="non-scaling-stroke"/><text x="149.00" y="16.00" font-size="34.0" fill="var(--dim)" text-anchor="middle" font-weight="500" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">262</text><line x1="280.00" y1="30.00" x2="342.00" y2="30.00" stroke="var(--dim)" stroke-width="1.2" vector-effect="non-scaling-stroke"/><line x1="280.00" y1="18.00" x2="280.00" y2="42.00" stroke="var(--dim)" stroke-width="1.2" vector-effect="non-scaling-stroke"/><line x1="342.00" y1="18.00" x2="342.00" y2="42.00" stroke="var(--dim)" stroke-width="1.2" vector-effect="non-scaling-stroke"/><text x="311.00" y="16.00" font-size="34.0" fill="var(--dim)" text-anchor="middle" font-weight="500" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">62</text><line x1="0.00" y1="80.00" x2="400.00" y2="80.00" stroke="var(--dim)" stroke-width="1.2" vector-effect="non-scaling-stroke"/><line x1="0.00" y1="68.00" x2="0.00" y2="92.00" stroke="var(--dim)" stroke-width="1.2" vector-effect="non-scaling-stroke"/><line x1="400.00" y1="68.00" x2="400.00" y2="92.00" stroke="var(--dim)" stroke-width="1.2" vector-effect="non-scaling-stroke"/><text x="200.00" y="66.00" font-size="34.0" fill="var(--dim)" text-anchor="middle" font-weight="500" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">400 gl.</text><line x1="-40.00" y1="220.00" x2="-40.00" y2="0.00" stroke="var(--dim)" stroke-width="1.2" vector-effect="non-scaling-stroke"/><line x1="-52.00" y1="220.00" x2="-28.00" y2="220.00" stroke="var(--dim)" stroke-width="1.2" vector-effect="non-scaling-stroke"/><line x1="-52.00" y1="0.00" x2="-28.00" y2="0.00" stroke="var(--dim)" stroke-width="1.2" vector-effect="non-scaling-stroke"/><g transform="translate(-54.00,110.00) rotate(-90)"><text x="0.00" y="0.00" font-size="34.0" fill="var(--dim)" text-anchor="middle" font-weight="500" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">220</text></g></svg></div></div></div>
+</section>
+
+<section>
+  <div class="hdr"><h2><span class="num">03</span>Elementy szuflady</h2></div>
+  <div class='tw'><table><thead><tr><th>Element</th><th>Wymiar</th><th>Grubosc</th><th>Material</th></tr></thead><tbody><tr><td>drawer-00-front</td><td class='n'>520 &times; 352</td><td class='n'>18 mm</td><td class='d'>sklejka brzozowa 18</td></tr><tr><td>drawer-00-side-L</td><td class='n'>350 &times; 220</td><td class='n'>18 mm</td><td class='d'>sklejka brzozowa 18</td></tr><tr><td>drawer-00-side-R</td><td class='n'>350 &times; 220</td><td class='n'>18 mm</td><td class='d'>sklejka brzozowa 18</td></tr><tr><td>drawer-00-back</td><td class='n'>464 &times; 220</td><td class='n'>18 mm</td><td class='d'>sklejka brzozowa 18</td></tr><tr><td>drawer-00-bottom</td><td class='n'>464 &times; 332</td><td class='n'>4 mm</td><td class='d'>sklejka brzozowa 4</td></tr></tbody></table></div>
+</section>
+
+<section>
+  <div class="hdr"><h2><span class="num">04</span>Wspolrzedne wiercenia (ta para)</h2>
+  <p class="sub">Uklad wspolrzednych calego regalu (patrz preview.html): X wzdluz
+  szerokosci, Y w glab, Z od podlogi. 12 punktow - 6 „lico pionu" (nawiercane w
+  sasiadujace piony), 6 „bok szuflady" (nawiercane w korpus szuflady).</p></div>
+  <div class='tw'><table><thead><tr><th>Strona</th><th>X (mm)</th><th>Y - w glab (mm)</th><th>Z (mm, od podlogi)</th></tr></thead><tbody><tr><td>lico pionu</td><td class='n'>168.0</td><td class='n'>18.0</td><td class='n'>258.0</td></tr><tr><td>lico pionu</td><td class='n'>694.0</td><td class='n'>18.0</td><td class='n'>258.0</td></tr><tr><td>lico pionu</td><td class='n'>168.0</td><td class='n'>280.0</td><td class='n'>258.0</td></tr><tr><td>lico pionu</td><td class='n'>694.0</td><td class='n'>280.0</td><td class='n'>258.0</td></tr><tr><td>lico pionu</td><td class='n'>168.0</td><td class='n'>342.0</td><td class='n'>258.0</td></tr><tr><td>lico pionu</td><td class='n'>694.0</td><td class='n'>342.0</td><td class='n'>258.0</td></tr><tr><td>bok szuflady</td><td class='n'>181.0</td><td class='n'>18.0</td><td class='n'>258.0</td></tr><tr><td>bok szuflady</td><td class='n'>681.0</td><td class='n'>18.0</td><td class='n'>258.0</td></tr><tr><td>bok szuflady</td><td class='n'>181.0</td><td class='n'>280.0</td><td class='n'>258.0</td></tr><tr><td>bok szuflady</td><td class='n'>681.0</td><td class='n'>280.0</td><td class='n'>258.0</td></tr><tr><td>bok szuflady</td><td class='n'>181.0</td><td class='n'>342.0</td><td class='n'>258.0</td></tr><tr><td>bok szuflady</td><td class='n'>681.0</td><td class='n'>342.0</td><td class='n'>258.0</td></tr></tbody></table></div>
+</section>
+
+<footer class="foot">Regal R150 &middot; runda 9.1 &middot; wygenerowano z
+design/drawer_detail_gen.py (ta sama geometria co design/shelf_model.py,
+zero recznego przepisywania wymiarow)</footer>
+</div>
+<script>
+(function(){
+  var MESH = {"front":{"v":[171.0,0.0,121.0,691.0,0.0,121.0,691.0,18.0,121.0,171.0,18.0,121.0,171.0,0.0,473.4,691.0,0.0,473.4,691.0,18.0,473.4,171.0,18.0,473.4],"t":[0,3,2,0,2,1,4,5,6,4,6,7,0,1,5,0,5,4,1,2,6,1,6,5,2,3,7,2,7,6,3,0,4,3,4,7]},"side":{"v":[181.0,18.0,148.0,199.0,18.0,148.0,199.0,368.0,148.0,181.0,368.0,148.0,181.0,18.0,368.0,199.0,18.0,368.0,199.0,368.0,368.0,181.0,368.0,368.0,663.0,18.0,148.0,681.0,18.0,148.0,681.0,368.0,148.0,663.0,368.0,148.0,663.0,18.0,368.0,681.0,18.0,368.0,681.0,368.0,368.0,663.0,368.0,368.0],"t":[0,3,2,0,2,1,4,5,6,4,6,7,0,1,5,0,5,4,1,2,6,1,6,5,2,3,7,2,7,6,3,0,4,3,4,7,8,11,10,8,10,9,12,13,14,12,14,15,8,9,13,8,13,12,9,10,14,9,14,13,10,11,15,10,15,14,11,8,12,11,12,15]},"back":{"v":[199.0,350.0,148.0,663.0,350.0,148.0,663.0,368.0,148.0,199.0,368.0,148.0,199.0,350.0,368.0,663.0,350.0,368.0,663.0,368.0,368.0,199.0,368.0,368.0],"t":[0,3,2,0,2,1,4,5,6,4,6,7,0,1,5,0,5,4,1,2,6,1,6,5,2,3,7,2,7,6,3,0,4,3,4,7]},"bottom":{"v":[199.0,18.0,148.0,663.0,18.0,148.0,663.0,350.0,148.0,199.0,350.0,148.0,199.0,18.0,152.0,663.0,18.0,152.0,663.0,350.0,152.0,199.0,350.0,152.0],"t":[0,3,2,0,2,1,4,5,6,4,6,7,0,1,5,0,5,4,1,2,6,1,6,5,2,3,7,2,7,6,3,0,4,3,4,7]},"gable-ref":{"v":[162.0,0.0,118.0,168.0,0.0,118.0,168.0,396.0,118.0,162.0,396.0,118.0,162.0,0.0,476.4,168.0,0.0,476.4,168.0,396.0,476.4,162.0,396.0,476.4,694.0,0.0,118.0,700.0,0.0,118.0,700.0,396.0,118.0,694.0,396.0,118.0,694.0,0.0,476.4,700.0,0.0,476.4,700.0,396.0,476.4,694.0,396.0,476.4],"t":[0,3,2,0,2,1,4,5,6,4,6,7,0,1,5,0,5,4,1,2,6,1,6,5,2,3,7,2,7,6,3,0,4,3,4,7,8,11,10,8,10,9,12,13,14,12,14,15,8,9,13,8,13,12,9,10,14,9,14,13,10,11,15,10,15,14,11,8,12,11,12,15]},"drill-corpus":{"v":[162.0,12.0,252.0,174.0,12.0,252.0,174.0,24.0,252.0,162.0,24.0,252.0,162.0,12.0,264.0,174.0,12.0,264.0,174.0,24.0,264.0,162.0,24.0,264.0,688.0,12.0,252.0,700.0,12.0,252.0,700.0,24.0,252.0,688.0,24.0,252.0,688.0,12.0,264.0,700.0,12.0,264.0,700.0,24.0,264.0,688.0,24.0,264.0,162.0,274.0,252.0,174.0,274.0,252.0,174.0,286.0,252.0,162.0,286.0,252.0,162.0,274.0,264.0,174.0,274.0,264.0,174.0,286.0,264.0,162.0,286.0,264.0,688.0,274.0,252.0,700.0,274.0,252.0,700.0,286.0,252.0,688.0,286.0,252.0,688.0,274.0,264.0,700.0,274.0,264.0,700.0,286.0,264.0,688.0,286.0,264.0,162.0,336.0,252.0,174.0,336.0,252.0,174.0,348.0,252.0,162.0,348.0,252.0,162.0,336.0,264.0,174.0,336.0,264.0,174.0,348.0,264.0,162.0,348.0,264.0,688.0,336.0,252.0,700.0,336.0,252.0,700.0,348.0,252.0,688.0,348.0,252.0,688.0,336.0,264.0,700.0,336.0,264.0,700.0,348.0,264.0,688.0,348.0,264.0],"t":[0,3,2,0,2,1,4,5,6,4,6,7,0,1,5,0,5,4,1,2,6,1,6,5,2,3,7,2,7,6,3,0,4,3,4,7,8,11,10,8,10,9,12,13,14,12,14,15,8,9,13,8,13,12,9,10,14,9,14,13,10,11,15,10,15,14,11,8,12,11,12,15,16,19,18,16,18,17,20,21,22,20,22,23,16,17,21,16,21,20,17,18,22,17,22,21,18,19,23,18,23,22,19,16,20,19,20,23,24,27,26,24,26,25,28,29,30,28,30,31,24,25,29,24,29,28,25,26,30,25,30,29,26,27,31,26,31,30,27,24,28,27,28,31,32,35,34,32,34,33,36,37,38,36,38,39,32,33,37,32,37,36,33,34,38,33,38,37,34,35,39,34,39,38,35,32,36,35,36,39,40,43,42,40,42,41,44,45,46,44,46,47,40,41,45,40,45,44,41,42,46,41,46,45,42,43,47,42,47,46,43,40,44,43,44,47]},"drill-drawer":{"v":[175.0,12.0,252.0,187.0,12.0,252.0,187.0,24.0,252.0,175.0,24.0,252.0,175.0,12.0,264.0,187.0,12.0,264.0,187.0,24.0,264.0,175.0,24.0,264.0,675.0,12.0,252.0,687.0,12.0,252.0,687.0,24.0,252.0,675.0,24.0,252.0,675.0,12.0,264.0,687.0,12.0,264.0,687.0,24.0,264.0,675.0,24.0,264.0,175.0,274.0,252.0,187.0,274.0,252.0,187.0,286.0,252.0,175.0,286.0,252.0,175.0,274.0,264.0,187.0,274.0,264.0,187.0,286.0,264.0,175.0,286.0,264.0,675.0,274.0,252.0,687.0,274.0,252.0,687.0,286.0,252.0,675.0,286.0,252.0,675.0,274.0,264.0,687.0,274.0,264.0,687.0,286.0,264.0,675.0,286.0,264.0,175.0,336.0,252.0,187.0,336.0,252.0,187.0,348.0,252.0,175.0,348.0,252.0,175.0,336.0,264.0,187.0,336.0,264.0,187.0,348.0,264.0,175.0,348.0,264.0,675.0,336.0,252.0,687.0,336.0,252.0,687.0,348.0,252.0,675.0,348.0,252.0,675.0,336.0,264.0,687.0,336.0,264.0,687.0,348.0,264.0,675.0,348.0,264.0],"t":[0,3,2,0,2,1,4,5,6,4,6,7,0,1,5,0,5,4,1,2,6,1,6,5,2,3,7,2,7,6,3,0,4,3,4,7,8,11,10,8,10,9,12,13,14,12,14,15,8,9,13,8,13,12,9,10,14,9,14,13,10,11,15,10,15,14,11,8,12,11,12,15,16,19,18,16,18,17,20,21,22,20,22,23,16,17,21,16,21,20,17,18,22,17,22,21,18,19,23,18,23,22,19,16,20,19,20,23,24,27,26,24,26,25,28,29,30,28,30,31,24,25,29,24,29,28,25,26,30,25,30,29,26,27,31,26,31,30,27,24,28,27,28,31,32,35,34,32,34,33,36,37,38,36,38,39,32,33,37,32,37,36,33,34,38,33,38,37,34,35,39,34,39,38,35,32,36,35,36,39,40,43,42,40,42,41,44,45,46,44,46,47,40,41,45,40,45,44,41,42,46,41,46,45,42,43,47,42,47,46,43,40,44,43,44,47]}}, KINDS = {"front":{"c":[198,156,104]},"side":{"c":[216,186,138]},"back":{"c":[176,140,96]},"bottom":{"c":[150,121,80]},"gable-ref":{"c":[90,100,108]},"drill-corpus":{"c":[44,129,84]},"drill-drawer":{"c":[198,76,56]}}, BB = [162.0, 0.0, 108.0, 700.0, 400.0, 486.4];
+  var cv = document.getElementById('cv'), out = document.getElementById('ro');
+  var gl = cv.getContext('webgl2', {antialias:true, alpha:false});
+  if(!gl){
+    document.querySelector('.viewer').insertAdjacentHTML('beforeend',
+      '<p class="nogl">Podglad 3D wymaga WebGL 2. Rzuty ponizej pokazuja te sama '
+      + 'geometrie.</p>');
+    return;
+  }
+
+  var az = -32, el = 14, zoom = 1, on = {};
+  var cen = [(BB[0]+BB[3])/2, (BB[1]+BB[4])/2, (BB[2]+BB[5])/2];
+  var RAD = Math.hypot(BB[3]-BB[0], BB[4]-BB[1], BB[5]-BB[2]);
+
+  var VS = `#version 300 es
+  in vec3 aPos;
+  uniform mat4 uMVP; uniform vec3 uCen;
+  out vec3 vP;
+  void main(){ vP = aPos - uCen; gl_Position = uMVP * vec4(vP, 1.0); }`;
+
+  var FS = `#version 300 es
+  precision highp float;
+  in vec3 vP;
+  uniform vec3 uCol, uView;
+  out vec4 frag;
+  void main(){
+    // normalna z pochodnych - plaskie cieniowanie bez atrybutu normalnej
+    vec3 N = normalize(cross(dFdx(vP), dFdy(vP)));
+    if(dot(N, uView) > 0.0) N = -N;                 // cieniowanie dwustronne
+    vec3 key  = normalize(vec3(-0.45, -0.72, 0.62));
+    vec3 fill = normalize(vec3( 0.65,  0.40, 0.18));
+    float l = 0.30 + 0.62*max(dot(N,key),0.0) + 0.20*max(dot(N,fill),0.0);
+    frag = vec4(pow(uCol*l, vec3(0.85)), 1.0);
+  }`;
+
+  function sh(t, src){
+    var s = gl.createShader(t); gl.shaderSource(s, src); gl.compileShader(s);
+    if(!gl.getShaderParameter(s, gl.COMPILE_STATUS))
+      throw new Error(gl.getShaderInfoLog(s));
+    return s;
+  }
+  var prog = gl.createProgram();
+  gl.attachShader(prog, sh(gl.VERTEX_SHADER, VS));
+  gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, FS));
+  gl.bindAttribLocation(prog, 0, 'aPos');
+  gl.linkProgram(prog);
+  gl.useProgram(prog);
+  var uMVP = gl.getUniformLocation(prog,'uMVP'), uCol = gl.getUniformLocation(prog,'uCol'),
+      uView = gl.getUniformLocation(prog,'uView'), uCen = gl.getUniformLocation(prog,'uCen');
+
+  function vao(verts, idx){
+    var a = gl.createVertexArray(); gl.bindVertexArray(a);
+    var vb = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, vb);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(verts), gl.STATIC_DRAW);
+    gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0,3,gl.FLOAT,false,0,0);
+    if(idx){
+      var ib = gl.createBuffer(); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ib);
+      gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint32Array(idx), gl.STATIC_DRAW);
+    }
+    gl.bindVertexArray(null);
+    return a;
+  }
+
+  var layers = {};
+  Object.keys(MESH).forEach(function(k){
+    on[k] = true;
+    layers[k] = {a: vao(MESH[k].v, MESH[k].t), n: MESH[k].t.length,
+                 c: KINDS[k].c.map(function(x){ return x/255; })};
+  });
+
+  // siatka posadzki co 200 mm
+  var gv = [], g0 = -300, g1x = BB[3]+300, g1y = BB[4]+300, gz = -12;
+  for(var gx=g0; gx<=g1x; gx+=200) gv.push(gx,g0,gz, gx,g1y,gz);
+  for(var gy=g0; gy<=g1y; gy+=200) gv.push(g0,gy,gz, g1x,gy,gz);
+  var grid = {a: vao(gv, null), n: gv.length/3};
+
+  function mvp(w,h){
+    var a = az*Math.PI/180, e = el*Math.PI/180;
+    var ca=Math.cos(a), sa=Math.sin(a), ce=Math.cos(e), se=Math.sin(e);
+    // dopasowanie skali do rzutu bryly
+    var mnx=1e9,mxx=-1e9,mnz=1e9,mxz=-1e9;
+    for(var i=0;i<8;i++){
+      var x=BB[i&1?3:0]-cen[0], y=BB[i&2?4:1]-cen[1], z=BB[i&4?5:2]-cen[2];
+      var X = x*ca + y*sa, Y = -x*sa + y*ca;
+      var Z = -Y*se + z*ce;
+      if(X<mnx)mnx=X; if(X>mxx)mxx=X; if(Z<mnz)mnz=Z; if(Z>mxz)mxz=Z;
+    }
+    var s = Math.min(w/(mxx-mnx), h/(mxz-mnz))*0.88*zoom;
+    var sx = 2*s/w, sy = 2*s/h, sz = 1/RAD;
+    // wiersz z: NDC rosnie w glab sceny (gl.LESS -> blizszy fragment wygrywa)
+    return {m:new Float32Array([
+      ca*sx,      sa*se*sy,  -sa*ce*sz,   0,
+      sa*sx,     -ca*se*sy,   ca*ce*sz,   0,
+      0,          ce*sy,      se*sz,      0,
+      0,          0,          0,          1]),
+      view:[-sa*ce, ca*ce, se]};
+  }
+
+  function draw(){
+    var dpr = Math.min(window.devicePixelRatio||1, 2);
+    var w = cv.clientWidth, h = cv.clientHeight;
+    cv.width = Math.round(w*dpr); cv.height = Math.round(h*dpr);
+    gl.viewport(0,0,cv.width,cv.height);
+
+    var dark = (document.documentElement.dataset.theme || (
+      matchMedia('(prefers-color-scheme:dark)').matches ? 'dark':'light')) === 'dark';
+    var bg = dark ? [0.031,0.043,0.051] : [0.063,0.082,0.098];
+    gl.clearColor(bg[0],bg[1],bg[2],1);
+    gl.enable(gl.DEPTH_TEST);
+    gl.disable(gl.CULL_FACE);                    // cieniowanie dwustronne
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+    var M = mvp(w,h);
+    gl.uniformMatrix4fv(uMVP,false,M.m);
+    gl.uniform3fv(uView,M.view);
+    gl.uniform3fv(uCen,cen);
+
+    gl.bindVertexArray(grid.a);
+    gl.uniform3f(uCol, 0.16,0.20,0.23);
+    gl.drawArrays(gl.LINES,0,grid.n);
+
+    Object.keys(layers).forEach(function(k){
+      if(!on[k]) return;
+      var L = layers[k];
+      gl.bindVertexArray(L.a);
+      gl.uniform3fv(uCol, L.c);
+      gl.drawElements(gl.TRIANGLES, L.n, gl.UNSIGNED_INT, 0);
+    });
+    gl.bindVertexArray(null);
+
+    out.textContent = 'az ' + az.toFixed(0) + '°   el ' + el.toFixed(0)
+                    + '°   ' + Math.round(zoom*100) + '%';
+  }
+
+  // --- orbita ---
+  var drag = false, lx = 0, ly = 0;
+  cv.addEventListener('pointerdown', function(e){
+    drag = true; lx = e.clientX; ly = e.clientY;
+    cv.classList.add('drag'); cv.setPointerCapture(e.pointerId);
+  });
+  cv.addEventListener('pointermove', function(e){
+    if(!drag) return;
+    az += (e.clientX-lx)*0.42;
+    el = Math.max(-89, Math.min(89, el + (e.clientY-ly)*0.34));
+    lx = e.clientX; ly = e.clientY; draw();
+  });
+  function stop(e){ drag = false; cv.classList.remove('drag');
+    if(e && e.pointerId!=null && cv.hasPointerCapture(e.pointerId))
+      cv.releasePointerCapture(e.pointerId); }
+  cv.addEventListener('pointerup', stop);
+  cv.addEventListener('pointercancel', stop);
+  cv.addEventListener('wheel', function(e){
+    e.preventDefault();
+    zoom = Math.max(0.4, Math.min(4, zoom * (e.deltaY < 0 ? 1.1 : 0.909)));
+    draw();
+  }, {passive:false});
+
+  document.querySelectorAll('[data-view]').forEach(function(b){
+    b.addEventListener('click', function(){
+      var v = b.dataset.view.split(',');
+      az = +v[0]; el = +v[1]; zoom = 1; draw();
+    });
+  });
+  document.querySelectorAll('[data-kind]').forEach(function(b){
+    b.addEventListener('click', function(){
+      var k = b.dataset.kind;
+      on[k] = !on[k];
+      b.setAttribute('aria-pressed', on[k] ? 'true' : 'false');
+      draw();
+    });
+  });
+
+  addEventListener('resize', draw);
+  var mq = matchMedia('(prefers-color-scheme:dark)');
+  (mq.addEventListener ? mq.addEventListener.bind(mq,'change') : mq.addListener.bind(mq))(draw);
+  new MutationObserver(draw).observe(document.documentElement,
+    {attributes:true, attributeFilter:['data-theme']});
+  draw();
+})();
+</script>
