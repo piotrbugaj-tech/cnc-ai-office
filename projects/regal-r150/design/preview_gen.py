@@ -772,12 +772,20 @@ def build_html(n_tests):
          "~45 kg/pare, dlugosc nominalna 350 mm dobrana do glebokosci szuflady. "
          "Drzwiczki przesunely sie na poziom wyzej (byl na poziomie 1, teraz na "
          "poziomie 2), zeby zwolnic miejsce."),
-        ("q", "Boki i tyl korpusu szuflady scienione z 18 do 16 mm.",
-         "System Blum TANDEM 562H ma limit grubosci boku 16 mm - przy 18 mm "
-         "(standard reszty mebla) prowadnica by nie weszla. Front zostaje 18 mm "
-         "(jak drzwiczki, nie jest czescia zlacza z prowadnica). To realna zmiana "
-         "materialu tylko dla 18 elementow (6 tylow + 12 bokow) - reszta mebla "
-         "bez zmian. Sprawdzane automatycznie."),
+        ("i", "Boki i tyl korpusu szuflady zostaja w T = 18 mm, jak reszta mebla.",
+         "Poprawka po uwadze klienta: wczesniejsza wersja scieniala je do 16 mm, "
+         "myslac ze to twardy limit systemu Blum. Dokladniejsze zrodlo (blum.com) "
+         "pokazuje, ze TANDEM przyjmuje boki 1/2\"-3/4\" (12.7-19 mm) - 16 mm to "
+         "tylko punkt odniesienia we wzorze na luz montazowy, nie gorna granica. "
+         "18 mm miesci sie w zakresie i jest standardowym arkuszem - jeden "
+         "material w calym meblu, bez dodatkowego zamowienia sklejki 16 mm, "
+         "ktorej dostawca nie ma w katalogu."),
+        ("q", "Dzielnik miedzy dwoma rzedami szuflad przywrocony.",
+         "Byl bledny usuniety: petla polek na kolkach pomijala plyte na poziomie "
+         "1, bo traktowala ja tylko jako „dno komory z szuflada”, a ta sama plyta "
+         "jest tez „sufitem” komory ponizej - z dwoma rzedami szuflad ten sufit "
+         "byl potrzebny. Wraca zawsze, niezaleznie od zawartosci obu sasiadujacych "
+         "komor - 12 polek na kolkach zamiast 9. Sprawdzane automatycznie."),
         ("i", "72 wkrety mocujace prowadnice, osobno od 24 srub M6 konstrukcji.",
          "Prowadnica to kupowane okucie, nie plyta - model generuje tylko punkty "
          "pod wiercenie (jak dla zawiasow), nie geometrie samej szyny. Po 6 "
@@ -789,14 +797,14 @@ def build_html(n_tests):
          "Piony stoja miedzy dolna a gorna plyta. Sruby ida pionowo przez czolo "
          "plyty w mimosrod w czole pionu - leb zawsze ma na czym usiasc."),
         ("w", "Masa netto %.0f kg - wyraznie wiecej niz z 3 szufladami." % s["mass_kg"],
-         "Dwa pelne rzedy szuflad to 6 kompletow okucia i materialu zamiast 3. "
-         "Do potwierdzenia z klientem, czy to akceptowalne przy transporcie "
-         "i montazu w dwie osoby."),
+         "Dwa pelne rzedy szuflad to 6 kompletow okucia i materialu zamiast 3, "
+         "plus przywrocony dzielnik. Do potwierdzenia z klientem, czy to "
+         "akceptowalne przy transporcie i montazu w dwie osoby."),
         ("w", "Szablon DXF do ciecia CNC - poza zakresem tej rundy.",
-         "Model ma teraz realne wymiary Blum (grubosc bokow, rozstaw wkretow), "
-         "wiec jest gotowy pod przyszly eksport DXF z warstwami wg CLAUDE.md - "
-         "ale sam generator DXF jeszcze nie istnieje (patrz brief.md, sekcja "
-         "„poza zakresem”). To osobna runda pracy."),
+         "Model ma teraz realne, poprawione wymiary Blum (grubosc bokow, rozstaw "
+         "wkretow), wiec jest gotowy pod przyszly eksport DXF z warstwami wg "
+         "CLAUDE.md - ale sam generator DXF jeszcze nie istnieje (patrz brief.md, "
+         "sekcja „poza zakresem”). To osobna runda pracy."),
     ]
     notes_html = "".join(
         '<div class="note"><span class="tag %s">%s</span>'
@@ -809,14 +817,16 @@ def build_html(n_tests):
 <div class="wrap">
 
 <header>
-  <p class="eyebrow">CNC Furniture Studio &middot; runda 7 &middot; bryla do oceny</p>
+  <p class="eyebrow">CNC Furniture Studio &middot; runda 9 &middot; bryla do oceny</p>
   <h1>Regal R150</h1>
-  <p class="lede">Sklejka brzozowa 18 mm, ciecie CNC na gotowo, montaz rozbieralny.
-  Dolna i gorna plyta to jeden kawalek na pelne 1800 mm; cztery piony stoja
-  <b>miedzy</b> nimi, skrecane pionowo przez czolo plyty. W calym meblu nie ma
-  ani jednego wrebu. Dwa dolne rzedy maja szuflady na prowadnicach kulkowych
-  <b>Blum TANDEM 562H</b> (bez BLUMOTION - wariant ekonomiczny), boki i tyl
-  korpusu szuflady w 16 mm sklejce zgodnie z limitem systemu. Wyzej dwoje
+  <p class="lede">Sklejka brzozowa 18 mm (jeden material w calym meblu), ciecie CNC
+  na gotowo, montaz rozbieralny. Dolna i gorna plyta to jeden kawalek na pelne
+  1800 mm; cztery piony stoja <b>miedzy</b> nimi, skrecane pionowo przez czolo
+  plyty. W calym meblu nie ma ani jednego wrebu. Dwa dolne rzedy maja szuflady
+  na prowadnicach kulkowych <b>Blum TANDEM 562H</b> (bez BLUMOTION - wariant
+  ekonomiczny), korpus szuflady w tej samej sklejce 18 mm co reszta mebla
+  (mieści się w oficjalnym zakresie Blum 1/2"-3/4"), dzielnik miedzy dwoma
+  rzedami szuflad na kolkach jak reszta polek srodkowych. Wyzej dwoje
   drzwiczek (zawiasy z lewej albo z prawej - opcja parametryczna, plyta
   identyczna w obu wariantach). Stoi na cokole 100 mm, cofnietym 22 mm ze
   wszystkich stron. Przedni lewy narozik zaobolony promieniem 150 mm, z
@@ -875,9 +885,10 @@ def build_html(n_tests):
 
 <section>
   <div class="hdr"><h2><span class="num">03</span>Elementy</h2>
-  <p class="sub">Wymiar blanku gotowy do ciecia (bez wrebow od rundy 7). Boki i tyl
-  szuflad w 16 mm sklejce (limit Blum TANDEM 562H), reszta w 18 mm. Pelny szablon
-  DXF z warstwami, nesting i BOM z cenami wchodza w kolejnej rundzie.</p></div>
+  <p class="sub">Wymiar blanku gotowy do ciecia (bez wrebow od rundy 7). Jeden material
+  w calym meblu - sklejka 18 mm (plyty, piony, polki, szuflady, drzwiczki) plus 4 mm
+  na plecy i dna szuflad. Pelny szablon DXF z warstwami, nesting i BOM z cenami
+  wchodza w kolejnej rundzie.</p></div>
   %s
 </section>
 

@@ -59,13 +59,17 @@ PARAMS = {
     "DRAWER_BOX_H": 220.0,
     "DRAWER_BOX_Z": 30.0,   # dol korpusu szuflady nad plyta
     # runda 9 - prowadnice Blum TANDEM 562H (bez BLUMOTION, wariant
-    # ekonomiczny wg klienta - patrz joinery-notes.md sekcja 6):
-    #   system 16 mm - max grubosc boku szuflady 16 mm (stad DRAWER_SIDE_T
-    #   nizsza od T=18 uzywanego wszedzie indziej), luz systemowy 13 mm na
-    #   strone (RUNNER_CLEAR - to jest oficjalna wartosc Blum, nie zmieniona
-    #   z rundy 7, tam bylo to juz zgadniete poprawnie), NL 350 mm dobrane
-    #   do DRAWER_DEPTH, nosnosc statyczna ~45 kg na pare.
-    "DRAWER_SIDE_T": 16.0,
+    # ekonomiczny wg klienta - patrz joinery-notes.md sekcja 6). Pierwotnie
+    # runda 9 zmniejszala boki/tyl szuflady do 16 mm, myslac ze to twardy
+    # limit systemu - klient sluszne zauwazyl, ze sklejka 16 mm nie jest
+    # standardowym arkuszem u dostawcy. Dokladniejsze zrodlo (oficjalna
+    # strona Blum) pokazuje, ze TANDEM przyjmuje boki 1/2"-3/4" (12.7-19 mm)
+    # - "16 mm" to tylko punkt odniesienia we wzorze na luz montazowy, nie
+    # gorna granica. 18 mm miesci sie w tym zakresie, wiec boki/tyl szuflady
+    # wracaja do T = 18 mm (jeden material w calym meblu - patrz
+    # joinery-notes.md sekcja 3), luz systemowy 13 mm na strone (RUNNER_CLEAR
+    # - oficjalna wartosc Blum, bez zmian od rundy 7), NL 350 mm dobrane do
+    # DRAWER_DEPTH, nosnosc statyczna ~45 kg na pare.
     "RUNNER_CLEAR": 13.0,   # luz na prowadnice kulkowa (Blum TANDEM), na strone
     "RUNNER_NL": 350.0,     # dlugosc nominalna prowadnicy (Blum TANDEM 562H)
     "RUNNER_LOAD_KG": 45.0,  # nosnosc statyczna na pare (Blum TANDEM 562H)
@@ -460,13 +464,17 @@ def _build_corpus(p=PARAMS, d=DERIVED):
                           T, mat, "longitudinal", group))
 
     # --- polki srodkowe: leza na kolkach (Ø5), nie sa niczym skrecone.
-    # Dzieki temu sa przestawialne i wyjmowalne - a przy przesle z szuflada
-    # lub drzwiczkami mozna je po prostu pominac ---
+    # Kazda plyta na poziomie li jest jednoczesnie DNEM komory li i SUFITEM
+    # komory li-1 - budujemy ja zawsze, niezaleznie od tego, czy komora li
+    # sama jest szuflada/drzwiczkami/polka. Runda 9 usuwala ja bledny, gdy
+    # (li, b) bylo komora szuflady - to kasowalo rowniez sufit komory PONIZEJ
+    # (np. dzielnik miedzy dwoma rzedami szuflad), nie tylko zbedne dno pod
+    # szuflada. Klient to zauwazyl ("zniknely polki miedzy szufladami") -
+    # dzielnik wraca zawsze, niezaleznie od zawartosci obu sasiadujacych
+    # komor (patrz joinery-notes.md sekcja 3) ---
     for li in range(1, p["N_LEVELS"] - 1):
         z = d["level_z"][li]
         for b in range(p["N_BAYS"]):
-            if (li, b) in p["DRAWER_CELLS"]:
-                continue
             parts.append(Part(
                 "shelf-L%d-B%d" % (li, b), "shelf",
                 {"type": "box", "bounds": (xs[b] + T, 0.0, z, xs[b + 1], fd, z + T)},
@@ -513,13 +521,13 @@ def _build_drawers(p=PARAMS, d=DERIVED):
     """Szuflady - opcja wlaczana przez PARAMS['DRAWER_CELLS'] (runda 7),
     dopasowane do prowadnic Blum TANDEM 562H (runda 9).
 
-    Kazda szuflada to 5 elementow: front nakladany w swietle komory (18 mm,
-    jak drzwiczki) + korpus (2 boki, tyl, dno 4 mm). Boki/tyl korpusu maja
-    DRAWER_SIDE_T = 16 mm, nie T = 18 mm jak reszta mebla - to maksymalna
-    grubosc boku dla systemu Blum TANDEM 562H (16 mm). Prowadnice kulkowe
-    boczne, NL 350 mm, po RUNNER_CLEAR mm luzu na strone.
+    Kazda szuflada to 5 elementow: front nakladany w swietle komory + korpus
+    (2 boki, tyl, dno 4 mm). Boki/tyl korpusu w T = 18 mm - tak jak reszta
+    mebla, w oficjalnym zakresie Blum TANDEM (1/2"-3/4" / 12.7-19 mm), wiec
+    nie trzeba osobnego arkusza sklejki tylko pod szuflady. Prowadnice
+    kulkowe boczne, NL 350 mm, po RUNNER_CLEAR mm luzu na strone.
     """
-    T, ST, B = p["T"], p["DRAWER_SIDE_T"], p["BACK"]
+    T, B = p["T"], p["BACK"]
     g, run = p["DRAWER_GAP"], p["RUNNER_CLEAR"]
     out = []
     for li, b in sorted(p["DRAWER_CELLS"]):
@@ -529,22 +537,22 @@ def _build_drawers(p=PARAMS, d=DERIVED):
         out.append(Part("drawer-%d%d-front" % (li, b), "drawer",
                         {"type": "box", "bounds": (x0 + g, 0.0, z0 + g, x1 - g, T, z1 - g)},
                         T, "sklejka brzozowa 18", "longitudinal", "drawer-front"))
-        # korpus szuflady - grubosc ST (16 mm, limit systemu Blum)
+        # korpus szuflady - grubosc T, jak reszta mebla
         bx0, bx1 = x0 + run, x1 - run
         by0, by1 = T, T + p["DRAWER_DEPTH"]
         bz0 = z0 + p["DRAWER_BOX_Z"]
         bz1 = bz0 + p["DRAWER_BOX_H"]
         out.append(Part("drawer-%d%d-side-L" % (li, b), "drawer",
-                        {"type": "box", "bounds": (bx0, by0, bz0, bx0 + ST, by1, bz1)},
-                        ST, "sklejka brzozowa 16", "longitudinal", "drawer-side"))
+                        {"type": "box", "bounds": (bx0, by0, bz0, bx0 + T, by1, bz1)},
+                        T, "sklejka brzozowa 18", "longitudinal", "drawer-side"))
         out.append(Part("drawer-%d%d-side-R" % (li, b), "drawer",
-                        {"type": "box", "bounds": (bx1 - ST, by0, bz0, bx1, by1, bz1)},
-                        ST, "sklejka brzozowa 16", "longitudinal", "drawer-side"))
+                        {"type": "box", "bounds": (bx1 - T, by0, bz0, bx1, by1, bz1)},
+                        T, "sklejka brzozowa 18", "longitudinal", "drawer-side"))
         out.append(Part("drawer-%d%d-back" % (li, b), "drawer",
-                        {"type": "box", "bounds": (bx0 + ST, by1 - ST, bz0, bx1 - ST, by1, bz1)},
-                        ST, "sklejka brzozowa 16", "longitudinal", "drawer-back"))
+                        {"type": "box", "bounds": (bx0 + T, by1 - T, bz0, bx1 - T, by1, bz1)},
+                        T, "sklejka brzozowa 18", "longitudinal", "drawer-back"))
         out.append(Part("drawer-%d%d-bottom" % (li, b), "drawer",
-                        {"type": "box", "bounds": (bx0 + ST, by0, bz0, bx1 - ST, by1 - ST, bz0 + B)},
+                        {"type": "box", "bounds": (bx0 + T, by0, bz0, bx1 - T, by1 - T, bz0 + B)},
                         B, "sklejka brzozowa 4", "free", "drawer-bottom"))
     return out
 
@@ -558,7 +566,6 @@ def runner_positions(p=PARAMS, d=DERIVED):
 
     Zwraca (x, y, z, strona) w globalnym Z; strona = 'corpus' albo 'drawer'.
     """
-    T, ST = p["T"], p["DRAWER_SIDE_T"]
     z_off = p["PLINTH_H"]
     out = []
     for li, b in sorted(p["DRAWER_CELLS"]):

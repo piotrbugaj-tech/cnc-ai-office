@@ -2,13 +2,16 @@
 
 Zgodnie z CLAUDE.md § 9 — dokumentacja decyzji technicznych.
 **Runda 9:** dwa dolne rzędy dostają szuflady na prowadnicach Blum TANDEM
-562H (realne wymiary handlowe, nie przybliżenie). Boki i tył korpusu szuflady
-scienione z 18 do 16 mm — to limit systemu, nie mój dobór.
+562H (realne wymiary handlowe, nie przybliżenie). **Poprawka w rundzie 9:**
+pierwsza wersja (a) błędnie usuwała dzielnik między dwoma rzędami szuflad i
+(b) ścieniała boki/tył szuflady do 16 mm myśląc, że to twardy limit systemu —
+klient złapał oba błędy. Naprawione, patrz § 3.
 
 ## Status
 
-**26/26 testów** w `checks.py`, zero kolizji na 63 elementach. Nie było
-jeszcze walidacji przez `qa-inspector` ani `safety-officer`.
+**26/26 testów** w `checks.py`, zero kolizji na 66 elementach. Nie było
+jeszcze walidacji przez `qa-inspector` ani `safety-officer` — runda 9
+przewiduje pełny audyt `qa-inspector` (opus) przed przekazaniem do produkcji.
 
 Konstrukcja jest zamknięta technicznie. Otwarte pozostają dwa punkty **do
 Ciebie** (nie do stolarza) — patrz § 7.
@@ -120,29 +123,33 @@ przeniosły się o poziom wyżej (2).
 ### Prowadnice — Blum TANDEM 562H (wariant ekonomiczny)
 
 Klient: *„znajdź i pobierz wymiarowanie szyn do szuflady firmy Blum, wybierz
-jakiś tańszy model"*. **TANDEM 562H** to najtańsza pełnowymiarowa prowadnica
-kulkowa Blum w systemie 16 mm — bez mechanizmu BLUMOTION (samodociąg), pełny
-wysuw. Droższy wariant tej samej rodziny (**569H**) dodaje tylko
-BLUMOTION — mechanicznie identyczny montaż.
+jakiś tańszy model"*. **TANDEM 562H** to podstawowa pełnowymiarowa prowadnica
+kulkowa Blum — bez mechanizmu BLUMOTION (samodociąg), pełny wysuw. Droższy
+wariant tej samej rodziny (**569H**) dodaje tylko BLUMOTION — mechanicznie
+identyczny montaż.
 
 | Parametr | Wartość | Źródło |
 |---|---|---|
 | Model | Blum TANDEM 562H, bez BLUMOTION | wwhardware.com / cabinetparts.com specyfikacje 562H |
 | Długość nominalna (NL) | **350 mm** | dopasowana do `DRAWER_DEPTH`; 350 mm to standardowa metryczna długość w ofercie |
-| Maks. grubość boku szuflady | **16 mm** | oficjalny limit systemu 16 mm (Blum ma osobny system 19 mm dla grubszych boków — nie wybrany, droższy) |
+| Zakres grubości boku szuflady | **1/2"–3/4" (12,7–19,0 mm)** | [blum.com/us/en/products/runnersystems/tandem](https://www.blum.com/us/en/products/runnersystems/tandem/programme/) — „specially designed for wood drawers with a drawer side thickness of 1/2" to 3/4"" |
 | Luz systemowy | **13 mm na stronę** | `RUNNER_CLEAR` — już to miałem poprawnie zgadnięte w rundzie 7 |
 | Nośność statyczna | **~45 kg/parę** | wg konkretnego wariantu długości 533 mm w specyfikacji handlowej |
 | Mocowanie | wkręty w lico pionu (strona korpusu) + w bok szuflady (strona ruchoma) | `runner_positions()` |
 
-**Konsekwencja, którą trzeba było rozwiązać:** system 16 mm ma twardy limit
-grubości boku. Nasz standard to sklejka 18 mm — o 2 mm za grubo. Zamiast
-kupować droższy system 19 mm (istnieje w ofercie Blum, ale to nie jest
-„tańszy model"), **boki i tył korpusu szuflady scieniono do 16 mm**
-(osobny parametr `DRAWER_SIDE_T`, osobny wpis materiałowy „sklejka
-brzozowa 16"). Front zostaje 18 mm — nie wchodzi w złącze z prowadnicą,
-więc nic nie stoi na przeszkodzie, żeby pasował wizualnie do drzwiczek.
-Dotyczy tylko 18 elementów (6 tyłów + 12 boków); reszta mebla bez zmian.
-Sprawdzane automatycznie („boki/tył szuflad <= 16 mm").
+**Poprawka rundy 9 — błąd znaleziony przez klienta:** pierwsza wersja
+przeczytała „system 16 mm" (nazwa wzoru na luz montażowy u dystrybutorów,
+`wwhardware.com`/`cabinetparts.com`) jako twardy górny limit grubości boku i
+ścieniła boki/tył korpusu szuflady z 18 na 16 mm — osobny parametr, osobny
+arkusz sklejki. Klient słusznie zauważył, że **sklejka 16 mm nie jest
+standardowym arkuszem u dostawcy** (Paged Sklejka: 4, 6, 9, 12, 15, 18, 21,
+24, 27, 30 mm — nie 16). Dokładniejsze źródło — oficjalna strona Blum —
+pokazuje, że TANDEM działa z bokami **1/2"–3/4" (12,7–19,0 mm)**: 16 mm to
+tylko punkt odniesienia we wzorze na luz, nie granica systemu. **18 mm
+mieści się w tym zakresie**, więc boki i tył korpusu szuflady wracają do
+T = 18 mm — ten sam materiał co reszta mebla, bez dodatkowego zamówienia.
+Sprawdzane automatycznie („boki/tył szuflad w zakresie Blum TANDEM
+12,7–19,0 mm").
 
 Model **nie generuje geometrii samej prowadnicy** (kupowane okucie
 metalowe, nie płyta) — tylko punkty pod wiercenie wkrętów montażowych
@@ -153,13 +160,31 @@ od 24 śrub M6 konstrukcji nośnej.
 Poziom 0 = komora tuż nad dolną płytą. Przęsła 0–2 od lewej. Włączenie
 komory automatycznie pomija w niej półkę (bez zmian względem rundy 7).
 
-### Szuflada — 5 elementów, dwie grubości materiału
+### Drugi błąd rundy 9 — zniknięty dzielnik między rzędami szuflad
+
+Pętla generująca półki na kołkach (`_build_corpus`, `shelf_model.py`)
+pomijała półkę na poziomie `li`, gdy komora `(li, b)` była szufladą —
+myśląc o tej płycie wyłącznie jako o „dnie komory z szufladą" (niepotrzebnym,
+bo szuflada ma własne dno na prowadnicach). Błąd: ta sama płyta jest
+**jednocześnie sufitem komory poniżej** — a z dwoma rzędami szuflad (poziom
+0 i 1) sufit komory 0 = dno komory 1, więc pomijanie usuwało **jedyny
+fizyczny dzielnik między dwoma rzędami szuflad**. Klient to zauważył
+(„zniknęły nam półki pomiędzy szufladami").
+
+Poprawka: półka na kołkach buduje się teraz **zawsze** na każdym z 4
+środkowych poziomów × 3 przęseł, niezależnie od zawartości obu sąsiadujących
+komór — 12 półek zamiast 9. Nie koliduje z geometrią szuflady (sprawdzone:
+prześwit komory `z1` już wcześniej kończył się dokładnie na spodzie tej
+płyty, niezależnie od tego czy `Part` istniał) — czysto addytywna poprawka,
+potwierdzona przez `checks.py` (0 kolizji na 66 elementach).
+
+### Szuflada — 5 elementów, jeden materiał
 
 | Element | Wymiar | Materiał |
 |---|---|---|
-| Front (nakładany w świetle, szczelina 3 mm) | 520 × 352 mm | sklejka **18** |
-| Boki (2 szt.) | 350 × 220 mm | sklejka **16** |
-| Tył | 464 × 220 mm | sklejka **16** |
+| Front (nakładany w świetle, szczelina 3 mm) | 520 × 352 mm | sklejka 18 |
+| Boki (2 szt.) | 350 × 220 mm | sklejka 18 |
+| Tył | 464 × 220 mm | sklejka 18 |
 | Dno | 460 × 348 mm | sklejka 4 |
 
 Prowadnice kulkowe boczne NL 350, luz **13 mm na stronę** (Blum, potwierdzone
@@ -172,20 +197,24 @@ Bez zmian względem rundy 7: **płyta drzwi jest identyczna w obu wariantach.**
 Strona zawiasów zmienia wyłącznie pozycję puszek Ø35: oś 22,5 mm od krawędzi
 zawiasowej, 100 mm od góry i od dołu. Sprawdzane automatycznie.
 
-### Materiał — przeliczone (runda 9)
+### Materiał — przeliczone (runda 9, po poprawkach)
 
 „Takie same elementy × ilość", z pełnego wydruku `checks.py`:
 
 | Grupa | Szt. | Materiał |
 |---|---|---|
 | `drawer-front` | 6 | sklejka 18 |
-| `drawer-side` | 12 | sklejka **16** |
-| `drawer-back` | 6 | sklejka **16** |
+| `drawer-side` | 12 | sklejka 18 |
+| `drawer-back` | 6 | sklejka 18 |
 | `drawer-bottom` | 6 | sklejka 4 |
 | `door` | 2 | sklejka 18 |
+| `shelf-bay` | 12 (było 9) | sklejka 18 |
 
-Masa netto całego mebla: **135,5 kg** (było 127,6 kg z 3 szufladami — wzrost
-o ~8 kg za trzy dodatkowe komplety okucia i materiału).
+Masa netto całego mebla: **145,5 kg** (było 127,6 kg z 3 szufladami przed
+rundą 9; pierwsza wersja rundy 9 pokazywała błędnie 135,5 kg — brakowało jej
+3 dzielników i miała cieńsze, nierealne boki szuflad). Wzrost względem
+wersji z 3 szufladami: ~18 kg — sześć kompletów okucia/materiału zamiast
+trzech, plus przywrócony dzielnik, plus boki w pełnej grubości 18 mm.
 
 ## 4. Nos zaoblony
 
@@ -258,24 +287,26 @@ Sprawdzane automatycznie dla każdego elementu.
 
 Dwa punkty, oba decyzje klienta/biznesowe, nie problemy techniczne:
 
-1. **Czy masa 135,5 kg z sześcioma szufladami jest akceptowalna** przy
+1. **Czy masa 145,5 kg z sześcioma szufladami jest akceptowalna** przy
    transporcie i montażu w dwie osoby. Model przyjmuje dowolną kombinację
    `DRAWER_CELLS`/`DOOR_CELLS`, więc zakres wyposażenia można jeszcze zmienić.
-2. **Kiedy zrobić szablon DXF do cięcia CNC.** Model ma teraz realne wymiary
-   handlowe (grubość boków szuflady, rozstaw wkrętów Blum), więc jest gotowy
-   pod eksport — ale sam generator DXF z warstwami (wg CLAUDE.md) jeszcze nie
-   istnieje. To jawnie osobna runda pracy (patrz `brief.md` §6, „poza
-   zakresem"), nie coś pominiętego przez przeoczenie.
+2. **Kiedy zrobić szablon DXF do cięcia CNC.** Model ma teraz realne,
+   poprawione wymiary handlowe (grubość boków szuflady, rozstaw wkrętów
+   Blum), więc jest gotowy pod eksport — ale sam generator DXF z warstwami
+   (wg CLAUDE.md) jeszcze nie istnieje. To jawnie osobna runda pracy (patrz
+   `brief.md` §6, „poza zakresem"), nie coś pominiętego przez przeoczenie.
 
-**Zamknięte w rundzie 9:** prowadnice szuflad (Blum TANDEM 562H, realne
-wymiary), grubość boków szuflady (16 mm — limit systemu, nie mój dobór),
-rozmieszczenie dwóch rzędów szuflad. **Zamknięte wcześniej:** wręby (usunięte
-całkowicie), dostęp dla łba śruby, reguła 1/3 grubości, mocowanie plecków,
-konstrukcja półek środkowych, wymiary okucia pion↔płyta, konstrukcja ramy
-cokołu, kotwienie korpus ↔ cokół, nawis prawego boku (§ 5), półeczki
-narożnika nosa (§ 4).
+**Zamknięte w rundzie 9 (po poprawkach):** prowadnice szuflad (Blum TANDEM
+562H, realne wymiary z blum.com), grubość boków szuflady (18 mm — mieści się
+w oficjalnym zakresie Blum 12,7–19,0 mm, jeden materiał w całym meblu),
+rozmieszczenie dwóch rzędów szuflad, dzielnik między rzędami szuflad
+przywrócony po błędzie. **Zamknięte wcześniej:** wręby (usunięte całkowicie),
+dostęp dla łba śruby, reguła 1/3 grubości, mocowanie plecków, konstrukcja
+półek środkowych, wymiary okucia pion↔płyta, konstrukcja ramy cokołu,
+kotwienie korpus ↔ cokół, nawis prawego boku (§ 5), półeczki narożnika nosa
+(§ 4).
 
-**Do zapisania w instrukcji montażu:** masa netto **135,5 kg** z pełnym
+**Do zapisania w instrukcji montażu:** masa netto **145,5 kg** z pełnym
 wyposażeniem — sześć szuflad, dwoje drzwiczek (same płyty i okucie,
 bez lakieru). Montaż w dwie osoby, na miejscu ustawienia — kolejność:
 dolna płyta → piony → plecki → górna płyta → półeczki narożnika →

@@ -269,16 +269,19 @@ def run():
             "%d poleczek, %d srub na x=%.0f" % (len(corners), len(cbolts), p["R"])
             if not bad_cb else str(bad_cb[:3]))
 
-    # --- 6g. boki/tyl szuflady miesza sie w limicie systemu Blum TANDEM
-    # 562H (max grubosc boku 16 mm - runda 9) -----------------------------
-    over_spec = [q for q in parts
-                 if q.qty_group in ("drawer-side", "drawer-back")
-                 and q.thickness > p["DRAWER_SIDE_T"] + TOL]
-    r.check("boki/tyl szuflad <= %.0f mm (limit Blum TANDEM 562H)" % p["DRAWER_SIDE_T"],
-            not over_spec,
-            "wszystkie %d elementow w limicie" % sum(
+    # --- 6g. boki/tyl szuflady w oficjalnym zakresie grubosci Blum TANDEM
+    # (1/2"-3/4" = 12.7-19.0 mm - blum.com/us/en/products/runnersystems/
+    # tandem, runda 9 poprawka) - dawniej test wymuszal max 16 mm mysznie
+    # biorac punkt odniesienia wzoru na luz za twardy limit gornej granicy
+    BLUM_MIN, BLUM_MAX = 12.7, 19.0
+    off_spec = [q for q in parts
+                if q.qty_group in ("drawer-side", "drawer-back")
+                and not (BLUM_MIN - TOL <= q.thickness <= BLUM_MAX + TOL)]
+    r.check("boki/tyl szuflad w zakresie Blum TANDEM %.1f-%.1f mm" % (BLUM_MIN, BLUM_MAX),
+            not off_spec,
+            "wszystkie %d elementow w zakresie" % sum(
                 1 for q in parts if q.qty_group in ("drawer-side", "drawer-back"))
-            if not over_spec else str([q.name for q in over_spec][:3]))
+            if not off_spec else str([q.name for q in off_spec][:3]))
 
     # --- 6h. otwory pod prowadnice trafiaja w lico pionu / boku szuflady -
     runs = m.runner_positions(p, d)
