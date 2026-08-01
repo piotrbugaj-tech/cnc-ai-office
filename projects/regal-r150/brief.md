@@ -1,9 +1,9 @@
 # Regał R150 — brief
 
 **Klient:** wewnętrzny / własny
-**Runda:** 9 — szuflady na prowadnicach Blum (dwa dolne rzędy), z poprawkami
+**Runda:** 9.1 — szuflady na prowadnicach Blum + audyt qa-inspector i poprawki
 **Data:** 2026-08-01
-**Status:** czeka na akceptację bryły. Wszystkie kwestie techniczne zamknięte; otwarte dwie decyzje biznesowe (masa z pełnym wyposażeniem, termin szablonu DXF) — patrz §5. Klient znalazł dwa błędy w pierwszej wersji rundy 9 (zniknięty dzielnik między rzędami szuflad, nierealna grubość 16 mm) — poprawione, patrz §15.
+**Status:** audyt `qa-inspector` (opus) na życzenie klienta znalazł 7 usterek blokujących handoff do produkcji — wszystkie niezależne od niezweryfikowanych danych producenta zostały naprawione w tej rundzie (§16). Jeden techniczny punkt pozostaje świadomie otwarty (sposób mocowania prowadnicy Blum — wymaga karty katalogowej, nie kolejnego domysłu), plus dwie decyzje biznesowe (masa z pełnym wyposażeniem, termin szablonu DXF) — patrz §5, §16.
 
 ## 1. Zakres
 
@@ -18,8 +18,8 @@ przez klienta.
 | Materiał nośny | sklejka brzozowa 18 mm |
 | Zaoblenie | przedni lewy narożnik, R150, cała wysokość (korpus i cokół) |
 | Cokół | 100 mm, cofnięty 22 mm od krawędzi korpusu na wszystkich czterech bokach |
-| Poziomy | dolna i górna płyta 1800 mm; 2 półki środkowe na kołkach (poziomy 2–4, po 3) |
-| Wyposażenie | 6 szuflad (dwa dolne rzędy, Blum TANDEM 562H) + 2 drzwiczki (poziom 3, zawiasy L/R) |
+| Poziomy | dolna i górna płyta 1800 mm; 4 poziomy środkowe na kołkach × 3 przęsła = 12 półek |
+| Wyposażenie | 6 szuflad (poziomy 0–1, dwa dolne rzędy, Blum TANDEM 562H) + 2 drzwiczki (poziom 2, zawiasy L/R) — poziomy liczone od 0 |
 | Montaż | rozbieralny na śruby (bez kleju) |
 
 ## 2. Decyzje klienta
@@ -59,7 +59,7 @@ Konstrukcja bez jednego wrębu (od rundy 7):
   wysokości. Skręcane pionowo: śruba M6 przez czoło płyty w mimośród
   beczkowy w czole pionu — lico płyty jest wolne z góry i od spodu, więc łeb
   zawsze ma na czym usiąść. 16 śrub.
-- **Dwie środkowe wysokości** (3 przęsła każda) leżą na kołkach Ø5 —
+- **Cztery środkowe wysokości** (3 przęsła każda, 12 półek łącznie) leżą na kołkach Ø5 —
   przestawialne i wyjmowalne, bez okuć.
 - **Trzy przęsła po 526 mm** światła.
 - **Plecki** ze sklejki 4 mm, wsuwane we wpust 4 × 8 mm w tylnych
@@ -78,12 +78,17 @@ Szczegóły stolarki: `design/joinery-notes.md`.
 
 ## 5. Otwarte kwestie
 
-Zostały **dwie decyzje biznesowe** (nie techniczne):
+Jeden punkt techniczny (wymaga akceptacji, nie tylko informacji) i dwie
+decyzje biznesowe — patrz §16 dla pełnego kontekstu audytu:
 
-1. Czy masa 145,5 kg z sześcioma szufladami jest akceptowalna przy
+1. **[TECHNICZNE]** Propozycja złącza korpusu szuflady (klej + kołki,
+   `design/joinery-notes.md` §3, NC-03) — czeka na Twoją akceptację.
+2. Czy masa 148,7 kg z sześcioma szufladami jest akceptowalna przy
    transporcie i montażu w dwie osoby.
-2. Kiedy zrobić szablon DXF do cięcia CNC — model jest gotowy pod eksport
-   (realne wymiary Blum), ale generator DXF jeszcze nie istnieje (§6).
+3. Kiedy zrobić szablon DXF do cięcia CNC — większość modelu jest gotowa
+   pod eksport (realne wymiary Blum), ale generator DXF jeszcze nie
+   istnieje (§6) i dwa punkty muszą się zamknąć najpierw (§16: sposób
+   mocowania prowadnicy, złącze szuflady).
 
 ## 6. Poza zakresem rundy 1–9
 
@@ -460,3 +465,116 @@ cokołu + 72 wkręty prowadnic (bez zmian), masa netto **145,5 kg** (było
 135,5 kg — +10 kg za przywrócony dzielnik i pełną grubość boków). **26/26
 testów** geometrii — test grubości boków szuflady przepisany na sprawdzanie
 całego oficjalnego zakresu Blum (12,7–19,0 mm), nie sztywnego 16 mm.
+
+## 16. Runda 9.1 — audyt `qa-inspector` (opus) i poprawki
+
+Klient: *„wypuść agenta na opusie do weryfikacji kompletności projektu od
+ogólnych założeń po najmniejszą śrubkę. jeśli uzna on że wszystko jest już
+na swoim miejscu i każdy element, łączenie, wymiarowanie itd się zgadza
+stwórz komplet dokumentów i plików do dostarczenia do produkcji."* — plus,
+osobno, dwie poprawki zauważone przy przeglądzie bryły: zniknięty dzielnik
+między rzędami szuflad i propozycja cieńszej (12/8 mm) sklejki na korpus
+szuflady zamiast 16 mm.
+
+### Poprawki zauważone przez klienta (przed audytem)
+
+1. **Zniknięty dzielnik między dwoma rzędami szuflad.** Pętla budująca
+   półki na kołkach pomijała półkę, gdy komora na tym poziomie była
+   szufladą — myśląc o niej tylko jako o zbędnym dnie pod szufladą, nie
+   dostrzegając że ta sama płyta jest też sufitem komory poniżej.
+   Naprawione: dzielnik buduje się teraz zawsze, niezależnie od zawartości
+   sąsiednich komór.
+2. **Sklejka 16 mm nie jest standardowym arkuszem u dostawcy.** Ponowne
+   sprawdzenie na oficjalnej stronie Blum pokazało, że TANDEM 562H
+   przyjmuje boki 1/2"–3/4" (12,7–19,0 mm) — „16 mm" było tylko punktem
+   odniesienia we wzorze dystrybutorów na luz montażowy, nie granicą
+   systemu. Boki/tył szuflady wróciły do T = 18 mm (jeden materiał w
+   całym meblu), zamiast schodzenia do niestandardowej, cieńszej sklejki.
+
+Osobno, na życzenie klienta, powstał `design/drawer-detail.html` —
+samodzielny podgląd 3D jednej szuflady i rozmieszczenia wiercenia pod
+prowadnicę.
+
+### Audyt qa-inspector — werdykt: NOT READY
+
+Pełny audyt (uruchomiony na modelu `opus`) sprawdził parametry, logikę
+złączeń, pozycje okuć, BOM, spójność dokumentacji i pokrycie testami.
+Wynik: **7 usterek blokujących**, 11 „do poprawy", kilka drobnych — patrz
+`design/joinery-notes.md` §7 dla pełnej listy z numerami NC-01…NC-19.
+Najpoważniejsze ustalenie: **żaden test nie sprawdzał, czy punkt wiercenia
+(łeb śruby, kotwa) trafia w materiał, który już tam stoi** — stąd 26/26
+zielonych testów w rundzie 9 mimo trzech realnych kolizji.
+
+Kluczowe zweryfikowane osobiście (nie tylko powtórzone za audytem):
+6 z 8 śrub mocujących dolną płytę do pionów miało łeb dokładnie na
+wysokości żebra cokołu — zero luzu, fizycznie niemożliwe do zamontowania.
+
+### Co naprawiono w tej samej rundzie (bez zgadywania nowych danych)
+
+- Łeb śruby dno↔pion vs żebro cokołu — żebra dostały wąskie okna dokładnie
+  przy pozycjach śrub.
+- Łeb śruby poleczki narożnika vs przywrócona półka przęsła 0 — analogiczna
+  poprawka na pasku półki najbliższym pionowi.
+- Dno szuflady 4 mm uginałoby się znacząco ponad przyjęty limit pod
+  obciążeniem — podniesione do 9 mm (osobny parametr, nie mylone z
+  grubością pleców).
+- Luz kotwy cokołu od krawędzi ramy (leżała dokładnie na styku dwóch
+  elementów ramy) — przesunięta o 15 mm.
+- Głębokość otworów kołków półkowych w pionach środkowych — jawnie
+  ograniczona (8 mm z każdej strony), żeby się nie spotkały w 18 mm płycie.
+- Błąd liczenia masy zakrzywionego pasa narożnika cokołu (liczył pole
+  rzutu z góry zamiast pola rozwinięcia — różne wielkości dla stojącego
+  pasa).
+- Kilkanaście poprawek dokumentacji: błędna arytmetyka (72 = 6×6 zamiast
+  12×6), nieaktualne liczby elementów, sprzeczne wymiary dna szuflady w
+  dwóch miejscach, martwy parametr bez asercji.
+- Dodana nowa klasa testów w `checks.py` sprawdzająca łby śrub/kotew wprost
+  przeciwko materiałowi (nie tylko płyta-płyta) — 26 → 32 testy.
+
+### Co pozostaje świadomie otwarte
+
+**Sposób mocowania prowadnicy Blum.** Kilku sprzedawców opisuje TANDEM
+562H jako „concealed undermount slide" (mocowana pod dnem szuflady), a
+model zakłada mocowanie boczne (wkręty w bok szuflady i w lico pionu).
+Jeśli sprzedawcy mają rację, cały schemat punktów wiercenia
+(`runner_positions()`) mierzy złe miejsce. Dwa błędy w tej samej rundzie
+(limit 16 mm, zniknięty dzielnik) już raz wynikły z pracy na fragmentach
+wyszukiwania zamiast na karcie katalogowej — **trzeci domysł z rzędu nie
+jest tego wart**, zwłaszcza że koszt pomyłki rośnie z każdym etapem (design
+→ CAM → cięcie). Zostawione jawnie oznaczone jako prowizoryczne w
+`design/joinery-notes.md` §3, z rekomendacją przekazania do
+`head-of-design` → `research-scout` po zweryfikowaną kartę katalogową
+zanim ktokolwiek to wywierci.
+
+**Złącze korpusu szuflady** (NC-03) — model nigdy nie określił, czym boki/
+tył/dno szuflady są łączone. Propozycja (klej + kołki, bo szuflada — w
+odróżnieniu od korpusu — nie jest czymś klient rozkłada wielokrotnie)
+czeka na Twoją akceptację, patrz §5 i `design/joinery-notes.md` §3.
+
+**Wpust plecków nieobecny w geometrii** (NC-15) — udokumentowany od rundy 7
+`BACK_GROOVE_W/D`, ale nigdy nie trafił do modelu bryłowego. Wymaga decyzji
+joinery-specialist: dofrezować naprawdę, czy świadomie zrezygnować i
+poprawić opis.
+
+**Klasy tolerancji, dog-bone'y, tabsy** (NC-18, drobne uwagi audytu) — jawnie
+odłożone do rundy DXF, gdzie mają realne znaczenie (dziś nic nie jest
+jeszcze cięte).
+
+### Dlaczego komplet dokumentów produkcyjnych jeszcze nie powstał
+
+Klient poprosił o komplet dokumentów **pod warunkiem**, że audyt uzna
+wszystko za gotowe. Audyt tego nie potwierdził — właśnie po to był
+wykonany. Dwa punkty (mocowanie Blum, złącze szuflady) nie są jeszcze
+zamknięte, a od nich zależy m.in. warstwa wiercenia w przyszłym eksporcie
+DXF. Wygenerowanie kompletu dokumentów produkcyjnych teraz oznaczałoby
+zakodowanie tych samych niezweryfikowanych założeń w formacie, który
+trafia bezpośrednio na maszynę CNC — dokładnie to, przed czym audyt miał
+ochronić.
+
+**Wynik:** 84 elementy CNC (66 fizycznych jednostek — różnica to kawałki
+odciążające pod śruby, patrz `design/joinery-notes.md` §3/§5), 24 śruby M6
++ 10 kotew do cokołu + 72 wkręty prowadnic (bez zmian), masa netto
+**148,7 kg** (było 145,5 kg — +3,2 kg za grubsze dno szuflady i poprawioną
+masę narożnika cokołu). **32/32 testów** geometrii (było 26), w tym 5
+nowych z klasy „łeb śruby vs materiał", której brak pozwolił poprzednim
+usterkom przejść niezauważonym.

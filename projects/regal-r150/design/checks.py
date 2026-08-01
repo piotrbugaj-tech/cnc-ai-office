@@ -90,6 +90,19 @@ def ranges_overlap(r0, r1, s0, s1, eps=TOUCH):
     return min(r1, s1) - max(r0, s0) > eps
 
 
+def point_in_bbox(pt, bbox, margin=0.0):
+    """Runda 9.1 (NC-19, audyt qa-inspector) - klasa testow luzu okuc:
+    czy punkt (np. leb sruby) wpada w bryle bbox innego elementu. Celowo
+    proste (AABB, nie pelny CSG) - wystarcza do wykrycia dokladnie tego typu
+    bledu, ktory audyt zlapal (NC-01/NC-02): punkt wiercenia bez sprawdzenia
+    materialu, ktory tam juz stoi."""
+    x, y, z = pt
+    x0, y0, z0, x1, y1, z1 = bbox
+    return (x0 - margin <= x <= x1 + margin and
+            y0 - margin <= y <= y1 + margin and
+            z0 - margin <= z <= z1 + margin)
+
+
 # ---------------------------------------------------------------- testy
 
 class Results:
@@ -252,7 +265,12 @@ def run():
         faces.add(round(x, 3))
         faces.add(round(x + T, 3))
     off = [q for q in pins if round(q[0], 3) not in faces]
-    n_shelves = sum(1 for q in parts if q.qty_group == "shelf-bay")
+    # fizycznych polek (jednostek do wyjecia), NIE licznik Part - runda 9.1
+    # rozbila polki przesla 0 na kilka sklejonych kawalkow (luz pod leb sruby
+    # NC-02), wiec sum(qty_group=="shelf-bay") liczylby CNC-kawalki, nie
+    # polki - myllace w tym konkretnym opisie testu (patrz preview_gen.py o
+    # tej samej roznicy dla vertical-L-gable)
+    n_shelves = (p["N_LEVELS"] - 2) * p["N_BAYS"]
     r.check("kolki Ø5 w licach pionow, %d polek przestawialnych" % n_shelves,
             not off,
             "%d otworow, wszystkie na licu pionu" % len(pins) if not off
@@ -283,6 +301,13 @@ def run():
                 1 for q in parts if q.qty_group in ("drawer-side", "drawer-back"))
             if not off_spec else str([q.name for q in off_spec][:3]))
 
+    # NC-17 (audyt qa-inspector): RUNNER_NL byl niesprawdzonym parametrem -
+    # docstring twierdzil "dobrane do DRAWER_DEPTH" ale nic tego nie
+    # egzekwowalo. Teraz przynajmniej ta jedna relacja jest pilnowana.
+    r.check("RUNNER_NL zgodne z DRAWER_DEPTH (wg dokumentacji)",
+            abs(p["RUNNER_NL"] - p["DRAWER_DEPTH"]) < TOL,
+            "RUNNER_NL=%.0f, DRAWER_DEPTH=%.0f" % (p["RUNNER_NL"], p["DRAWER_DEPTH"]))
+
     # --- 6h. otwory pod prowadnice trafiaja w lico pionu / boku szuflady -
     runs = m.runner_positions(p, d)
     faces = {round(v, 3) for v in xs} | {round(v + p["T"], 3) for v in xs}
@@ -305,6 +330,41 @@ def run():
     r.check("kazda kotwa korpus-cokol trafia w material ramy", not missed,
             "%d kotew M6 w szynach/zebrach" % len(anchors) if not missed
             else "%d chybia: %s" % (len(missed), missed[:3]))
+
+    # --- 6i. NC-19 (audyt qa-inspector): klasa testow luzu okuc - lby srub
+    # sprawdzone wprost przeciwko materialowi, nie tylko "0 kolizji plyta-
+    # plyta" jak test 1. To ta klasa testow, ktorej brak pozwolil NC-01/02/08
+    # przejsc niezauwazonym w rundzie 9 mimo 26/26 -----------------------
+    ribs_bb = [q.bbox() for q in parts if q.qty_group == "plinth-rib"]
+    bolts_bottom = [b for b in m.bolt_positions(p, d) if b[3] == "+z"]
+    crushed = [(round(x), round(y)) for x, y, z, _ in bolts_bottom
+               if any(point_in_bbox((x, y, z - 1.0), rb) for rb in ribs_bb)]
+    r.check("leb sruby dno<->pion ma luz od zebra cokolu (NC-01)", not crushed,
+            "wszystkie %d wolne" % len(bolts_bottom) if not crushed
+            else "%d zderzen: %s" % (len(crushed), crushed[:3]))
+
+    shelf_b0 = [q.bbox() for q in parts if q.qty_group == "shelf-bay" and "-B0-" in q.name]
+    head_x = p["R"] + T
+    crushed2 = [(round(y), round(z)) for x, y, z, _ in cbolts
+                if any(point_in_bbox((head_x, y, z), sb) for sb in shelf_b0)]
+    r.check("leb sruby poleczki naroznika ma luz od polki B0 (NC-02)", not crushed2,
+            "wszystkie %d wolne" % len(cbolts) if not crushed2
+            else "%d zderzen: %s" % (len(crushed2), crushed2[:3]))
+
+    EDGE_MIN = 8.0
+    close_edge = []
+    for ax, ay, _, _ in anchors:
+        for fp in plinth_fp:
+            if point_in_poly((ax, ay), fp) and dist_to_boundary((ax, ay), fp) < EDGE_MIN:
+                close_edge.append((round(ax), round(ay)))
+    r.check("kotwy korpus-cokol maja luz >= %.0f mm od krawedzi ramy (NC-08)" % EDGE_MIN,
+            not close_edge, "wszystkie %d z luzem" % len(anchors) if not close_edge
+            else "%d za blisko: %s" % (len(close_edge), close_edge[:3]))
+
+    core = T - 2 * p["PIN_DEPTH"]
+    r.check("kolki polkowe: 2x PIN_DEPTH zostawia rdzen w pionie (NC-07)",
+            core > TOL,
+            "rdzen %.1f mm (T=%.0f mm, PIN_DEPTH=%.1f mm x2 strony)" % (core, T, p["PIN_DEPTH"]))
 
     # --- 6d. wyposazenie komor miesci sie w swietle, nic sie nie dubluje --
     cells_dr = set(p["DRAWER_CELLS"])
@@ -379,6 +439,15 @@ def run():
             d["bay_clear"] <= 800.0,
             "swiatlo przesla %.0f mm" % d["bay_clear"])
 
+    # --- 10b. dno szuflady - grubosc minimalna wg limitu ugiecia (NC-04,
+    # audyt qa-inspector) - 4 mm (jak plecy) dawalo ugiecie znacznie ponad
+    # L/300 pod obciazeniem ocenianym na nosnosc prowadnicy Blum; szczegoly
+    # rachunku w joinery-notes.md sekcja 3 -------------------------------
+    MIN_BOTTOM_T = 8.0
+    r.check("dno szuflady >= %.0f mm (limit ugiecia L/300, NC-04)" % MIN_BOTTOM_T,
+            p["DRAWER_BOTTOM_T"] >= MIN_BOTTOM_T,
+            "DRAWER_BOTTOM_T = %.0f mm" % p["DRAWER_BOTTOM_T"])
+
     # --- 11. cokol nigdzie nie wychodzi poza zaokraglony nawis korpusu --
     cx, cy = d["arc_center"]
     corner = next((q for q in parts if q.name == "plinth-corner"), None)
@@ -429,4 +498,10 @@ if __name__ == "__main__":
         e["n"] += 1
     for name, e in sorted(groups.items()):
         print("  %-16s %2d szt.  (%s)" % (name, e["n"], e["mat"]))
+    print()
+    print("uwaga: plinth-rib i shelf-bay licza kawalki CNC, nie fizyczne")
+    print("jednostki po montazu - runda 9.1 rozbila zebra cokolu i polki")
+    print("przesla 0 na kilka sklejonych kawalkow (luz pod leb sruby,")
+    print("NC-01/NC-02) - fizycznie to nadal 3 zebra i 12 polek, jak w")
+    print("nazwach 'plinth-rib-<i>-<j>' / 'shelf-L<li>-B0-strip-<j>'.")
     sys.exit(1 if res.report() else 0)

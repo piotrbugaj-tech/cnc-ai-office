@@ -805,6 +805,16 @@ def build_html(n_tests):
          "wkretow), wiec jest gotowy pod przyszly eksport DXF z warstwami wg "
          "CLAUDE.md - ale sam generator DXF jeszcze nie istnieje (patrz brief.md, "
          "sekcja „poza zakresem”). To osobna runda pracy."),
+        ("q", "Audyt qa-inspector (opus): 7 usterek blokujacych, naprawione.",
+         "Leb sruby dno<->pion vs zebro cokolu, leb sruby poleczki naroznika vs "
+         "polka przesla 0, dno szuflady za cienkie (4->9 mm), luz kotwy cokolu od "
+         "krawedzi, glebokosc otworow kolkow, blad liczenia masy naroznika cokolu. "
+         "Dodana nowa klasa testow (leb sruby vs material) - 26 -> 32 testy."),
+        ("w", "Otwarte: sposob mocowania prowadnicy Blum (bok czy spod?).",
+         "Kilku sprzedawcow opisuje TANDEM 562H jako 'concealed undermount slide' "
+         "- model zaklada mocowanie boczne. Nie zgadujemy trzeci raz (po bledzie "
+         "16 mm i znikniety dzielniku) - wymaga karty katalogowej przed wierceniem. "
+         "Patrz joinery-notes.md sekcja 3."),
     ]
     notes_html = "".join(
         '<div class="note"><span class="tag %s">%s</span>'
@@ -817,7 +827,7 @@ def build_html(n_tests):
 <div class="wrap">
 
 <header>
-  <p class="eyebrow">CNC Furniture Studio &middot; runda 9 &middot; bryla do oceny</p>
+  <p class="eyebrow">CNC Furniture Studio &middot; runda 9.1 &middot; audyt qa-inspector + poprawki</p>
   <h1>Regal R150</h1>
   <p class="lede">Sklejka brzozowa 18 mm (jeden material w calym meblu), ciecie CNC
   na gotowo, montaz rozbieralny. Dolna i gorna plyta to jeden kawalek na pelne

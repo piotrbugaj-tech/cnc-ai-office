@@ -44,6 +44,13 @@ PARAMS = {
     "DOWEL_D": 10.0,        # mimosrod beczkowy (gwint zenski, nie wkret)
     "PIN_D": 5.0,           # kolek polkowy
     "PIN_Y": (60.0, 340.0), # osie kolkow polkowych, w glab
+    # runda 9.1 (NC-07, audyt qa-inspector): przy pionach srodkowych (mid-1,
+    # mid-2) dwa otwory na kolek - jeden z lica lewego, jeden z lica prawego
+    # tego samego 18 mm pionu - sa wspolosiowe (ten sam y, z). Bez limitu
+    # glebokosci ślepy otwor 10 mm z kazdej strony (typowa praktyka dla
+    # kolka Ø5) dawaloby 20 mm > 18 mm grubosci pionu - otwory by sie
+    # spotkaly. PIN_DEPTH=8 mm z kazdej strony zostawia 2 mm rdzenia.
+    "PIN_DEPTH": 8.0,
     "NOSE_CORNER_BOLT_Y": (60.0, 300.0),  # runda 8 - sruby poleczek naroznika
     "BACK_GROOVE_W": 4.0,   # wpust pod plecki w tylnych krawedziach
     "BACK_GROOVE_D": 8.0,
@@ -55,6 +62,12 @@ PARAMS = {
     "DRAWER_DEPTH": 350.0,
     "DRAWER_BOX_H": 220.0,
     "DRAWER_BOX_Z": 30.0,   # dol korpusu szuflady nad plyta
+    # runda 9.1 (NC-04, audyt qa-inspector): dno szuflady bylo w tej samej
+    # sklejce 4 mm co plecy - ugiecie policzone dla 464x332 mm dna pod
+    # obciazeniem to ~5 mm przy 5 kg i ~10 mm przy 20 kg (limit L/300 = ok.
+    # 1.5 mm). Osobny parametr (nie BACK, ktore zostaje dla plecow - inny
+    # przypadek obciazenia) - 9 mm daje ugiecie ~0.9 mm przy 20 kg, w limicie.
+    "DRAWER_BOTTOM_T": 9.0,
     # runda 9 - prowadnice Blum TANDEM 562H (bez BLUMOTION, wariant
     # ekonomiczny wg klienta - patrz joinery-notes.md sekcja 6). Pierwotnie
     # runda 9 zmniejszala boki/tyl szuflady do 16 mm, myslac ze to twardy
@@ -226,6 +239,24 @@ class Part:
         return verts, tris
 
 
+def _y_gapped_segments(y0, y1, gap_centers, half_gap):
+    """Dzieli przedzial (y0, y1) na kawalki, pomijajac wazkie okna
+    (c - half_gap, c + half_gap) wokol kazdego gap_centers - luz montazowy
+    pod leb sruby, ktora inaczej wjezdzalaby w pelny material (runda 9.1,
+    NC-01/NC-02 z audytu qa-inspector). Zwraca liste (ya, yb)."""
+    cuts = sorted(gap_centers)
+    segs = []
+    cur = y0
+    for c in cuts:
+        a, b = c - half_gap, c + half_gap
+        if a > cur:
+            segs.append((cur, a))
+        cur = max(cur, b)
+    if cur < y1:
+        segs.append((cur, y1))
+    return segs
+
+
 def polygon_area(poly):
     """Pole ze wzoru shoelace (dodatnie dla CCW)."""
     s = 0.0
@@ -361,6 +392,24 @@ def _translate_z(parts, dz):
     return out
 
 
+def _plinth_corner_area(p=PARAMS, d=DERIVED):
+    """Pole rozwiniecia pasa naroznika cokolu (runda 9.1, NC-16, audyt
+    qa-inspector). plinth-corner stoi PIONOWO (wysokosc ph=100 mm to
+    faktyczny wymiar plyty, T=18 mm to grubosc materialu w przekroju
+    poziomym) - domyslny Part.area_m2() liczy pole footprintu XY (rzut z
+    gory pierscienia), co jest polem WLASCIWYM dla plyty lezacej plasko, nie
+    dla stojacego pasa. Zamiast tego: dlugosc rozwiniecia (luk sredniego
+    promienia) x wysokosc ph - to samo pole, co Part.area_override jest
+    przeznaczony reprezentowac (patrz docstring klasy Part - "elementy
+    giete leza na arkuszu w rozwinieciu, nie w przekroju")."""
+    inset, T, R, ph = p["PLINTH_INSET"], p["T"], p["R"], p["PLINTH_H"]
+    r_out = R - inset
+    r_in = r_out - T
+    mean_r = (r_out + r_in) / 2.0
+    arc_len = mean_r * (math.pi / 2.0)     # cwiartka luku (270 -> 180 stopni)
+    return arc_len * ph / 1e6
+
+
 def _build_plinth(p=PARAMS, d=DERIVED):
     """Cokol - rama (nie plyta pelna), z=0..PLINTH_H, cofnieta o PLINTH_INSET
     od zewnetrznego obrysu korpusu na WSZYSTKICH czterech bokach (runda 5 -
@@ -394,16 +443,24 @@ def _build_plinth(p=PARAMS, d=DERIVED):
              T, mat, grain, "plinth"),
         Part("plinth-corner", "plinth",
              {"type": "prism_z", "profile": plinth_corner_profile(p, d), "z0": 0.0, "z1": ph},
-             T, mat, "free", "plinth"),
+             T, mat, "free", "plinth", area_override=_plinth_corner_area(p, d)),
     ]
     # zebra poprzeczne pod kazdym pionem, ktory trafia w swiatlo ramy -
     # bez nich plyta dna przenosilaby cale obciazenie pionu na zginanie
-    # miedzy szynami (runda 6, patrz joinery-notes.md sekcja 3)
+    # miedzy szynami (runda 6, patrz joinery-notes.md sekcja 3).
+    #
+    # Runda 9.1 (NC-01, audyt qa-inspector): sruby pion<->plyta ("+z", patrz
+    # bolt_positions) wchodza od spodu dokladnie na BOLT_Y, ktore lezaly w
+    # calosci w swietle zebra (0 mm luzu na leb sruby M6 - nie do zamontowania).
+    # Zebro dostaje teraz waskie okna przy kazdym BOLT_Y (patrz
+    # _y_gapped_segments) - reszta dlugosci nadal przenosi obciazenie pionu,
+    # okna sa tylko tam, gdzie i tak stoi sruba, nie polka.
     for i, x in enumerate(d["vertical_x"][:3]):
-        parts.append(Part(
-            "plinth-rib-%d" % i, "plinth",
-            {"type": "box", "bounds": (x, y0 + T, 0.0, x + T, y1 - T, ph)},
-            T, mat, grain, "plinth-rib"))
+        for j, (ya, yb) in enumerate(_y_gapped_segments(y0 + T, y1 - T, p["BOLT_Y"], 12.0)):
+            parts.append(Part(
+                "plinth-rib-%d-%d" % (i, j), "plinth",
+                {"type": "box", "bounds": (x, ya, 0.0, x + T, yb, ph)},
+                T, mat, grain, "plinth-rib"))
     return parts
 
 
@@ -469,13 +526,33 @@ def _build_corpus(p=PARAMS, d=DERIVED):
     # szuflada. Klient to zauwazyl ("zniknely polki miedzy szufladami") -
     # dzielnik wraca zawsze, niezaleznie od zawartosci obu sasiadujacych
     # komor (patrz joinery-notes.md sekcja 3) ---
+    # Runda 9.1 (NC-02, audyt qa-inspector): sruby poleczek naroznika
+    # (nose_corner_bolt_positions) wchodza poziomo w lico x = xs[0]+T = 168 -
+    # dokladnie tam, gdzie zaczyna sie kazda polka przesla 0 (bay=0). Leb
+    # sruby ladowal w pelnym materiale polki (0 mm luzu). Waski pasek polki
+    # najblizszy pionowi dostaje te same okna co zebra cokolu (NC-01) - reszta
+    # polki (od xs[0]+T+STRIP w prawo) bez zmian.
+    STRIP = 20.0
     for li in range(1, p["N_LEVELS"] - 1):
         z = d["level_z"][li]
         for b in range(p["N_BAYS"]):
-            parts.append(Part(
-                "shelf-L%d-B%d" % (li, b), "shelf",
-                {"type": "box", "bounds": (xs[b] + T, 0.0, z, xs[b + 1], fd, z + T)},
-                T, mat, "longitudinal", "shelf-bay"))
+            x0b, x1b = xs[b] + T, xs[b + 1]
+            if b == 0:
+                parts.append(Part(
+                    "shelf-L%d-B%d-main" % (li, b), "shelf",
+                    {"type": "box", "bounds": (x0b + STRIP, 0.0, z, x1b, fd, z + T)},
+                    T, mat, "longitudinal", "shelf-bay"))
+                for j, (ya, yb) in enumerate(
+                        _y_gapped_segments(0.0, fd, p["NOSE_CORNER_BOLT_Y"], 12.0)):
+                    parts.append(Part(
+                        "shelf-L%d-B%d-strip-%d" % (li, b, j), "shelf",
+                        {"type": "box", "bounds": (x0b, ya, z, x0b + STRIP, yb, z + T)},
+                        T, mat, "longitudinal", "shelf-bay"))
+            else:
+                parts.append(Part(
+                    "shelf-L%d-B%d" % (li, b), "shelf",
+                    {"type": "box", "bounds": (x0b, 0.0, z, x1b, fd, z + T)},
+                    T, mat, "longitudinal", "shelf-bay"))
 
     # --- male zaokraglone poleczki w rogu nosa (runda 8) - runda 7
     # zostawila te strefe pusta, klient poprosil o przywrocenie. Wraca jako
@@ -519,12 +596,14 @@ def _build_drawers(p=PARAMS, d=DERIVED):
     dopasowane do prowadnic Blum TANDEM 562H (runda 9).
 
     Kazda szuflada to 5 elementow: front nakladany w swietle komory + korpus
-    (2 boki, tyl, dno 4 mm). Boki/tyl korpusu w T = 18 mm - tak jak reszta
-    mebla, w oficjalnym zakresie Blum TANDEM (1/2"-3/4" / 12.7-19 mm), wiec
-    nie trzeba osobnego arkusza sklejki tylko pod szuflady. Prowadnice
-    kulkowe boczne, NL 350 mm, po RUNNER_CLEAR mm luzu na strone.
+    (2 boki, tyl, dno DRAWER_BOTTOM_T). Boki/tyl korpusu w T = 18 mm - tak
+    jak reszta mebla, w oficjalnym zakresie Blum TANDEM (1/2"-3/4" /
+    12.7-19 mm), wiec nie trzeba osobnego arkusza sklejki tylko pod
+    szuflady. Dno w DRAWER_BOTTOM_T (9 mm, nie BACK=4 mm jak plecy - runda
+    9.1, NC-04: dno pod obciazeniem uginaloby sie ponad limit L/300 w 4 mm).
+    Prowadnice kulkowe boczne, NL 350 mm, po RUNNER_CLEAR mm luzu na strone.
     """
-    T, B = p["T"], p["BACK"]
+    T, B = p["T"], p["DRAWER_BOTTOM_T"]
     g, run = p["DRAWER_GAP"], p["RUNNER_CLEAR"]
     out = []
     for li, b in sorted(p["DRAWER_CELLS"]):
@@ -550,7 +629,7 @@ def _build_drawers(p=PARAMS, d=DERIVED):
                         T, "sklejka brzozowa 18", "longitudinal", "drawer-back"))
         out.append(Part("drawer-%d%d-bottom" % (li, b), "drawer",
                         {"type": "box", "bounds": (bx0 + T, by0, bz0, bx1 - T, by1 - T, bz0 + B)},
-                        B, "sklejka brzozowa 4", "free", "drawer-bottom"))
+                        B, "sklejka brzozowa 9", "free", "drawer-bottom"))
     return out
 
 
@@ -666,7 +745,10 @@ def plinth_bolt_positions(p=PARAMS, d=DERIVED):
     for x in (400.0, 900.0, 1400.0):          # szyna przednia i tylna
         out.append((x, y0, z, "-z"))
         out.append((x, y1, z, "-z"))
-    for y in (150.0, 300.0):                  # szyna lewa i prawa
+    # runda 9.1 (NC-08, audyt qa-inspector): y=150 lezalo dokladnie na styku
+    # plinth-left/plinth-corner (plinth-left zaczyna sie w y=R=150) - 0 mm
+    # luzu na otwor Ø10 kotwy. Przesuniete o 15 mm w glab szyny lewej/prawej.
+    for y in (165.0, 300.0):                  # szyna lewa i prawa
         out.append((x0, y, z, "-z"))
         out.append((x1, y, z, "-z"))
     return out
