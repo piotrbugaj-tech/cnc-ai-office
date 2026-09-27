@@ -1,73 +1,142 @@
-grupa,nazwa,grubosc_mm,dl_mm,szer_mm,obrocony_w_rozkroju,obrobka,plik
-korpus,Polka 1,18,1900,400,nie,,rozkroj_18mm_ark1.dxf
-korpus,Polka 4.2,18,1191,400,tak,,rozkroj_18mm_ark1.dxf
-korpus,Przegroda 12,18,400,82,tak,,rozkroj_18mm_ark1.dxf
-korpus,Przegroda 13,18,400,82,tak,Ø5 x2,rozkroj_18mm_ark1.dxf
-korpus,Przegroda 16,18,400,82,tak,,rozkroj_18mm_ark1.dxf
-korpus,Wieniec dolny,18,1900,400,nie,,rozkroj_18mm_ark1.dxf
-korpus,Wieniec gorny,18,1900,400,nie,,rozkroj_18mm_ark1.dxf
-szuflady,Szuflada 1 bok L,12,350,167,tak,rowek 6.2 mm x1; Ø3 x3; Ø4.5 x6,rozkroj_12mm_ark1.dxf
-szuflady,Szuflada 1 bok P,12,350,167,tak,rowek 6.2 mm x1; Ø3 x3; Ø4.5 x6,rozkroj_12mm_ark1.dxf
-szuflady,Szuflada 1 przod,12,332,167,tak,rowek 6.2 mm x1,rozkroj_12mm_ark1.dxf
-szuflady,Szuflada 1 tyl,12,332,150.8,tak,,rozkroj_12mm_ark2.dxf
-szuflady,Szuflada 2 bok L,12,350,167,tak,rowek 6.2 mm x1; Ø3 x3; Ø4.5 x6,rozkroj_12mm_ark1.dxf
-szuflady,Szuflada 2 bok P,12,350,167,tak,rowek 6.2 mm x1; Ø3 x3; Ø4.5 x6,rozkroj_12mm_ark1.dxf
-szuflady,Szuflada 2 przod,12,532,167,tak,rowek 6.2 mm x1,rozkroj_12mm_ark1.dxf
-szuflady,Szuflada 2 tyl,12,532,150.8,tak,,rozkroj_12mm_ark1.dxf
-szuflady,Szuflada 3 bok L,12,350,167,tak,rowek 6.2 mm x1; Ø3 x3; Ø4.5 x6,rozkroj_12mm_ark1.dxf
-szuflady,Szuflada 3 bok P,12,350,167,nie,rowek 6.2 mm x1; Ø3 x3; Ø4.5 x6,rozkroj_12mm_ark1.dxf
-szuflady,Szuflada 3 przod,12,232,167,nie,rowek 6.2 mm x1,rozkroj_12mm_ark1.dxf
-szuflady,Szuflada 3 tyl,12,232,150.8,tak,,rozkroj_12mm_ark2.dxf
-szuflady,Szuflada 4 bok L,12,350,67,tak,rowek 6.2 mm x1; Ø3 x3; Ø4.5 x4,rozkroj_12mm_ark1.dxf
-szuflady,Szuflada 4 bok P,12,350,67,tak,rowek 6.2 mm x1; Ø3 x3; Ø4.5 x4,rozkroj_12mm_ark1.dxf
-szuflady,Szuflada 4 przod,12,332,67,nie,rowek 6.2 mm x1,rozkroj_12mm_ark1.dxf
-szuflady,Szuflada 4 tyl,12,332,50.8,nie,,rozkroj_12mm_ark1.dxf
-szuflady,Szuflada 5 bok L,12,350,67,tak,rowek 6.2 mm x1; Ø3 x3; Ø4.5 x4,rozkroj_12mm_ark1.dxf
-szuflady,Szuflada 5 bok P,12,350,67,tak,rowek 6.2 mm x1; Ø3 x3; Ø4.5 x4,rozkroj_12mm_ark1.dxf
-szuflady,Szuflada 5 przod,12,332,67,nie,rowek 6.2 mm x1,rozkroj_12mm_ark1.dxf
-szuflady,Szuflada 5 tyl,12,332,50.8,nie,,rozkroj_12mm_ark1.dxf
-szuflady,Szuflada 6 bok L,12,350,267,tak,rowek 6.2 mm x1; Ø3 x3; Ø4.5 x6,rozkroj_12mm_ark1.dxf
-szuflady,Szuflada 6 bok P,12,350,267,nie,rowek 6.2 mm x1; Ø3 x3; Ø4.5 x6,rozkroj_12mm_ark1.dxf
-szuflady,Szuflada 6 przod,12,332,267,nie,rowek 6.2 mm x1,rozkroj_12mm_ark1.dxf
-szuflady,Szuflada 6 tyl,12,332,250.8,tak,,rozkroj_12mm_ark2.dxf
-szuflady,Szuflada 7 bok L,12,350,267,tak,rowek 6.2 mm x1; Ø3 x3; Ø4.5 x6,rozkroj_12mm_ark1.dxf
-szuflady,Szuflada 7 bok P,12,350,267,tak,rowek 6.2 mm x1; Ø3 x3; Ø4.5 x6,rozkroj_12mm_ark1.dxf
-szuflady,Szuflada 7 przod,12,532,267,tak,rowek 6.2 mm x1,rozkroj_12mm_ark1.dxf
-szuflady,Szuflada 7 tyl,12,532,250.8,tak,,rozkroj_12mm_ark1.dxf
-szuflady,Szuflada 8 bok L,12,350,258,tak,rowek 6.2 mm x1; Ø3 x3; Ø4.5 x6,rozkroj_12mm_ark1.dxf
-szuflady,Szuflada 8 bok P,12,350,258,tak,rowek 6.2 mm x1; Ø3 x3; Ø4.5 x6,rozkroj_12mm_ark1.dxf
-szuflady,Szuflada 8 przod,12,232,258,nie,rowek 6.2 mm x1,rozkroj_12mm_ark2.dxf
-szuflady,Szuflada 8 tyl,12,232,241.8,nie,,rozkroj_12mm_ark2.dxf
-szuflady,Szuflada 9 bok L,12,350,258,tak,rowek 6.2 mm x1; Ø3 x3; Ø4.5 x6,rozkroj_12mm_ark1.dxf
-szuflady,Szuflada 9 bok P,12,350,258,tak,rowek 6.2 mm x1; Ø3 x3; Ø4.5 x6,rozkroj_12mm_ark1.dxf
-szuflady,Szuflada 9 przod,12,332,258,tak,rowek 6.2 mm x1,rozkroj_12mm_ark1.dxf
-szuflady,Szuflada 9 tyl,12,332,241.8,tak,,rozkroj_12mm_ark2.dxf
-szuflady,Szuflada 10 bok L,12,350,258,tak,rowek 6.2 mm x1; Ø3 x3; Ø4.5 x6,rozkroj_12mm_ark1.dxf
-szuflady,Szuflada 10 bok P,12,350,258,tak,rowek 6.2 mm x1; Ø3 x3; Ø4.5 x6,rozkroj_12mm_ark1.dxf
-szuflady,Szuflada 10 przod,12,532,258,tak,rowek 6.2 mm x1,rozkroj_12mm_ark1.dxf
-szuflady,Szuflada 10 tyl,12,532,241.8,tak,,rozkroj_12mm_ark1.dxf
-szuflady,Szuflada 11 bok L,12,350,258,tak,rowek 6.2 mm x1; Ø3 x3; Ø4.5 x6,rozkroj_12mm_ark1.dxf
-szuflady,Szuflada 11 bok P,12,350,258,tak,rowek 6.2 mm x1; Ø3 x3; Ø4.5 x6,rozkroj_12mm_ark1.dxf
-szuflady,Szuflada 11 przod,12,232,258,nie,rowek 6.2 mm x1,rozkroj_12mm_ark2.dxf
-szuflady,Szuflada 11 tyl,12,232,241.8,nie,,rozkroj_12mm_ark2.dxf
-szuflady,Szuflada 1 dno,6,343,344,nie,,rozkroj_6mm_ark1.dxf
-szuflady,Szuflada 2 dno,6,543,344,tak,,rozkroj_6mm_ark1.dxf
-szuflady,Szuflada 3 dno,6,243,344,tak,,rozkroj_6mm_ark1.dxf
-szuflady,Szuflada 4 dno,6,343,344,nie,,rozkroj_6mm_ark1.dxf
-szuflady,Szuflada 5 dno,6,343,344,nie,,rozkroj_6mm_ark1.dxf
-szuflady,Szuflada 6 dno,6,343,344,nie,,rozkroj_6mm_ark1.dxf
-szuflady,Szuflada 7 dno,6,543,344,tak,,rozkroj_6mm_ark1.dxf
-szuflady,Szuflada 8 dno,6,243,344,tak,,rozkroj_6mm_ark1.dxf
-szuflady,Szuflada 9 dno,6,343,344,nie,,rozkroj_6mm_ark1.dxf
-szuflady,Szuflada 10 dno,6,543,344,tak,,rozkroj_6mm_ark1.dxf
-szuflady,Szuflada 11 dno,6,243,344,nie,,rozkroj_6mm_ark1.dxf
-plecy,Plecek szafki 1,4,381,272,tak,,rozkroj_4mm_ark1.dxf
-plecy,Plecek szafki 2,4,381,272,tak,,rozkroj_4mm_ark1.dxf
-plecy,Plecek szafki 3,4,281,181,tak,,rozkroj_4mm_ark1.dxf
-plecy,Plecek szafki 4,4,381,181,tak,,rozkroj_4mm_ark1.dxf
-plecy,Plecek szafki 5,4,281,81,tak,,rozkroj_4mm_ark1.dxf
-plecy,Plecek szafki 6,4,181,81,tak,,rozkroj_4mm_ark1.dxf
-plecy,Plecek szafki 7,4,181,181,nie,,rozkroj_4mm_ark1.dxf
-plecy,Plecek szafki 8,4,381,181,tak,,rozkroj_4mm_ark1.dxf
-plecy,Plecek szafki 9,4,381,281,tak,,rozkroj_4mm_ark1.dxf
-plecy,Plecek szafki 10,4,381,281,tak,,rozkroj_4mm_ark1.dxf
+grupa,nazwa,grubosc_mm,dl_mm,szer_mm,obrobka,plik
+korpus,Polka 1,18,1900,400,,rozkroj_18mm_ark1.dxf
+korpus,Polka 2.1,18,791,400,,rozkroj_18mm_ark3.dxf
+korpus,Polka 2.2,18,791,400,,rozkroj_18mm_ark3.dxf
+korpus,Polka 3.1,18,1391,400,,rozkroj_18mm_ark3.dxf
+korpus,Polka 3.2,18,291,400,,rozkroj_18mm_ark3.dxf
+korpus,Polka 4.1,18,291,400,,rozkroj_18mm_ark3.dxf
+korpus,Polka 4.2,18,1191,400,,rozkroj_18mm_ark1.dxf
+korpus,Polka 5,18,1900,400,,rozkroj_18mm_ark2.dxf
+korpus,Polka 6.1,18,1191,400,,rozkroj_18mm_ark2.dxf
+korpus,Polka 6.2,18,391,400,,rozkroj_18mm_ark3.dxf
+korpus,Polka 7,18,1900,400,,rozkroj_18mm_ark2.dxf
+korpus,Polka 8,18,1900,400,,rozkroj_18mm_ark2.dxf
+korpus,Przegroda 1,18,400,273,,rozkroj_18mm_ark4.dxf
+korpus,Przegroda 2,18,400,273,otw. Ø5 x4,rozkroj_18mm_ark4.dxf
+korpus,Przegroda 3,18,400,273,,rozkroj_18mm_ark4.dxf
+korpus,Przegroda 4,18,400,273,otw. Ø5 x4,rozkroj_18mm_ark4.dxf
+korpus,Przegroda 5,18,400,273,,rozkroj_18mm_ark4.dxf
+korpus,Przegroda 6,18,400,182,otw. Ø5 x4,rozkroj_18mm_ark3.dxf
+korpus,Przegroda 7,18,400,182,,rozkroj_18mm_ark3.dxf
+korpus,Przegroda 8,18,400,282,,rozkroj_18mm_ark3.dxf
+korpus,Przegroda 9,18,400,282,otw. Ø5 x4,rozkroj_18mm_ark3.dxf
+korpus,Przegroda 10,18,400,182,,rozkroj_18mm_ark4.dxf
+korpus,Przegroda 11,18,400,182,,rozkroj_18mm_ark4.dxf
+korpus,Przegroda 12,18,400,82,,rozkroj_18mm_ark1.dxf
+korpus,Przegroda 13,18,400,82,otw. Ø5 x2,rozkroj_18mm_ark1.dxf
+korpus,Przegroda 14,18,400,282,,rozkroj_18mm_ark4.dxf
+korpus,Przegroda 15,18,400,282,otw. Ø5 x2,rozkroj_18mm_ark4.dxf
+korpus,Przegroda 16,18,400,82,,rozkroj_18mm_ark1.dxf
+korpus,Przegroda 17,18,400,182,otw. Ø5 x4,rozkroj_18mm_ark4.dxf
+korpus,Przegroda 18,18,400,482,,rozkroj_18mm_ark3.dxf
+korpus,Przegroda 19,18,400,482,otw. Ø5 x4,rozkroj_18mm_ark3.dxf
+korpus,Przegroda 20,18,400,182,otw. Ø5 x4,rozkroj_18mm_ark4.dxf
+korpus,Przegroda 21,18,400,282,,rozkroj_18mm_ark4.dxf
+korpus,Przegroda 22,18,400,282,otw. Ø5 x4,rozkroj_18mm_ark4.dxf
+korpus,Przegroda 23,18,400,282,,rozkroj_18mm_ark4.dxf
+korpus,Przegroda 24,18,400,182,otw. Ø5 x3,rozkroj_18mm_ark4.dxf
+korpus,Przegroda 25,18,400,182,otw. Ø5 x3; obróbka też ze strony B,rozkroj_18mm_ark5.dxf
+korpus,Przegroda 26,18,400,282,otw. Ø5 x6,rozkroj_18mm_ark4.dxf
+korpus,Przegroda 27,18,400,282,otw. Ø5 x3,rozkroj_18mm_ark4.dxf
+korpus,Przegroda 28,18,400,182,otw. Ø5 x3,rozkroj_18mm_ark5.dxf
+korpus,Przegroda 29,18,400,82,otw. Ø5 x3,rozkroj_18mm_ark2.dxf
+korpus,Przegroda 30,18,400,82,otw. Ø5 x3,rozkroj_18mm_ark2.dxf
+korpus,Przegroda 31,18,400,82,otw. Ø5 x3,rozkroj_18mm_ark2.dxf
+korpus,Przegroda 32,18,400,82,,rozkroj_18mm_ark3.dxf
+korpus,Przegroda 33,18,400,282,otw. Ø5 x3,rozkroj_18mm_ark4.dxf
+korpus,Przegroda 34,18,400,282,otw. Ø5 x3,rozkroj_18mm_ark4.dxf
+korpus,Przegroda 35,18,400,282,otw. Ø5 x3,rozkroj_18mm_ark4.dxf
+korpus,Przegroda 36,18,400,282,otw. Ø5 x3,rozkroj_18mm_ark4.dxf
+korpus,Przegroda 37,18,400,273,otw. Ø5 x3,rozkroj_18mm_ark4.dxf
+korpus,Przegroda 38,18,400,273,otw. Ø5 x3; obróbka też ze strony B,rozkroj_18mm_ark4.dxf
+korpus,Przegroda 39,18,400,273,otw. Ø5 x3; obróbka też ze strony B,rozkroj_18mm_ark4.dxf
+korpus,Przegroda 40,18,400,273,otw. Ø5 x3; obróbka też ze strony B,rozkroj_18mm_ark4.dxf
+korpus,Przegroda 41,18,400,273,otw. Ø5 x3,rozkroj_18mm_ark4.dxf
+korpus,Wieniec dolny,18,1900,400,,rozkroj_18mm_ark1.dxf
+korpus,Wieniec gorny,18,1900,400,,rozkroj_18mm_ark1.dxf
+front,Drzwiczki 1,18,378,269,puszka Ø35 x2,rozkroj_18mm_ark5.dxf
+front,Drzwiczki 2,18,378,269,puszka Ø35 x2,rozkroj_18mm_ark5.dxf
+front,Drzwiczki 3,18,278,178,puszka Ø35 x2,rozkroj_18mm_ark5.dxf
+front,Drzwiczki 4,18,378,178,puszka Ø35 x2,rozkroj_18mm_ark5.dxf
+front,Drzwiczki 5,18,278,78,puszka Ø35 x1,rozkroj_18mm_ark5.dxf
+front,Drzwiczki 6,18,178,78,puszka Ø35 x1,rozkroj_18mm_ark3.dxf
+front,Drzwiczki 7,18,178,178,puszka Ø35 x2,rozkroj_18mm_ark3.dxf
+front,Drzwiczki 8,18,378,178,puszka Ø35 x2,rozkroj_18mm_ark5.dxf
+front,Drzwiczki 9,18,378,278,puszka Ø35 x2,rozkroj_18mm_ark5.dxf
+front,Drzwiczki 10,18,378,278,puszka Ø35 x2,rozkroj_18mm_ark5.dxf
+front,Front szuflady 1,18,378,178,,rozkroj_18mm_ark5.dxf
+front,Front szuflady 2,18,578,178,,rozkroj_18mm_ark3.dxf
+front,Front szuflady 3,18,278,178,,rozkroj_18mm_ark5.dxf
+front,Front szuflady 4,18,378,78,,rozkroj_18mm_ark4.dxf
+front,Front szuflady 5,18,378,78,,rozkroj_18mm_ark5.dxf
+front,Front szuflady 6,18,378,278,,rozkroj_18mm_ark5.dxf
+front,Front szuflady 7,18,578,278,,rozkroj_18mm_ark3.dxf
+front,Front szuflady 8,18,278,269,,rozkroj_18mm_ark5.dxf
+front,Front szuflady 9,18,378,269,,rozkroj_18mm_ark5.dxf
+front,Front szuflady 10,18,578,269,,rozkroj_18mm_ark3.dxf
+front,Front szuflady 11,18,278,269,,rozkroj_18mm_ark5.dxf
+szuflady,Szuflada 1 bok L,12,350,167,rowek 6.2 x1; otw. Ø3 x3; otw. Ø4.5 x6,rozkroj_12mm_ark1.dxf
+szuflady,Szuflada 1 bok P,12,350,167,rowek 6.2 x1; otw. Ø3 x3; otw. Ø4.5 x6,rozkroj_12mm_ark1.dxf
+szuflady,Szuflada 1 dno,6,343,344,,rozkroj_6mm_ark1.dxf
+szuflady,Szuflada 1 przod,12,332,167,rowek 6.2 x1,rozkroj_12mm_ark1.dxf
+szuflady,Szuflada 1 tyl,12,332,150.8,,rozkroj_12mm_ark2.dxf
+szuflady,Szuflada 2 bok L,12,350,167,rowek 6.2 x1; otw. Ø3 x3; otw. Ø4.5 x6,rozkroj_12mm_ark1.dxf
+szuflady,Szuflada 2 bok P,12,350,167,rowek 6.2 x1; otw. Ø3 x3; otw. Ø4.5 x6,rozkroj_12mm_ark1.dxf
+szuflady,Szuflada 2 dno,6,543,344,,rozkroj_6mm_ark1.dxf
+szuflady,Szuflada 2 przod,12,532,167,rowek 6.2 x1,rozkroj_12mm_ark1.dxf
+szuflady,Szuflada 2 tyl,12,532,150.8,,rozkroj_12mm_ark1.dxf
+szuflady,Szuflada 3 bok L,12,350,167,rowek 6.2 x1; otw. Ø3 x3; otw. Ø4.5 x6,rozkroj_12mm_ark1.dxf
+szuflady,Szuflada 3 bok P,12,350,167,rowek 6.2 x1; otw. Ø3 x3; otw. Ø4.5 x6,rozkroj_12mm_ark1.dxf
+szuflady,Szuflada 3 dno,6,243,344,,rozkroj_6mm_ark1.dxf
+szuflady,Szuflada 3 przod,12,232,167,rowek 6.2 x1,rozkroj_12mm_ark1.dxf
+szuflady,Szuflada 3 tyl,12,232,150.8,,rozkroj_12mm_ark2.dxf
+szuflady,Szuflada 4 bok L,12,350,67,rowek 6.2 x1; otw. Ø3 x3; otw. Ø4.5 x4,rozkroj_12mm_ark1.dxf
+szuflady,Szuflada 4 bok P,12,350,67,rowek 6.2 x1; otw. Ø3 x3; otw. Ø4.5 x4,rozkroj_12mm_ark1.dxf
+szuflady,Szuflada 4 dno,6,343,344,,rozkroj_6mm_ark1.dxf
+szuflady,Szuflada 4 przod,12,332,67,rowek 6.2 x1,rozkroj_12mm_ark1.dxf
+szuflady,Szuflada 4 tyl,12,332,50.8,,rozkroj_12mm_ark1.dxf
+szuflady,Szuflada 5 bok L,12,350,67,rowek 6.2 x1; otw. Ø3 x3; otw. Ø4.5 x4,rozkroj_12mm_ark1.dxf
+szuflady,Szuflada 5 bok P,12,350,67,rowek 6.2 x1; otw. Ø3 x3; otw. Ø4.5 x4,rozkroj_12mm_ark1.dxf
+szuflady,Szuflada 5 dno,6,343,344,,rozkroj_6mm_ark1.dxf
+szuflady,Szuflada 5 przod,12,332,67,rowek 6.2 x1,rozkroj_12mm_ark1.dxf
+szuflady,Szuflada 5 tyl,12,332,50.8,,rozkroj_12mm_ark1.dxf
+szuflady,Szuflada 6 bok L,12,350,267,rowek 6.2 x1; otw. Ø3 x3; otw. Ø4.5 x6,rozkroj_12mm_ark1.dxf
+szuflady,Szuflada 6 bok P,12,350,267,rowek 6.2 x1; otw. Ø3 x3; otw. Ø4.5 x6,rozkroj_12mm_ark1.dxf
+szuflady,Szuflada 6 dno,6,343,344,,rozkroj_6mm_ark1.dxf
+szuflady,Szuflada 6 przod,12,332,267,rowek 6.2 x1,rozkroj_12mm_ark1.dxf
+szuflady,Szuflada 6 tyl,12,332,250.8,,rozkroj_12mm_ark2.dxf
+szuflady,Szuflada 7 bok L,12,350,267,rowek 6.2 x1; otw. Ø3 x3; otw. Ø4.5 x6,rozkroj_12mm_ark1.dxf
+szuflady,Szuflada 7 bok P,12,350,267,rowek 6.2 x1; otw. Ø3 x3; otw. Ø4.5 x6,rozkroj_12mm_ark1.dxf
+szuflady,Szuflada 7 dno,6,543,344,,rozkroj_6mm_ark1.dxf
+szuflady,Szuflada 7 przod,12,532,267,rowek 6.2 x1,rozkroj_12mm_ark1.dxf
+szuflady,Szuflada 7 tyl,12,532,250.8,,rozkroj_12mm_ark1.dxf
+szuflady,Szuflada 8 bok L,12,350,258,rowek 6.2 x1; otw. Ø3 x3; otw. Ø4.5 x6,rozkroj_12mm_ark1.dxf
+szuflady,Szuflada 8 bok P,12,350,258,rowek 6.2 x1; otw. Ø3 x3; otw. Ø4.5 x6,rozkroj_12mm_ark1.dxf
+szuflady,Szuflada 8 dno,6,243,344,,rozkroj_6mm_ark1.dxf
+szuflady,Szuflada 8 przod,12,232,258,rowek 6.2 x1,rozkroj_12mm_ark2.dxf
+szuflady,Szuflada 8 tyl,12,232,241.8,,rozkroj_12mm_ark2.dxf
+szuflady,Szuflada 9 bok L,12,350,258,rowek 6.2 x1; otw. Ø3 x3; otw. Ø4.5 x6,rozkroj_12mm_ark1.dxf
+szuflady,Szuflada 9 bok P,12,350,258,rowek 6.2 x1; otw. Ø3 x3; otw. Ø4.5 x6,rozkroj_12mm_ark1.dxf
+szuflady,Szuflada 9 dno,6,343,344,,rozkroj_6mm_ark1.dxf
+szuflady,Szuflada 9 przod,12,332,258,rowek 6.2 x1,rozkroj_12mm_ark1.dxf
+szuflady,Szuflada 9 tyl,12,332,241.8,,rozkroj_12mm_ark2.dxf
+szuflady,Szuflada 10 bok L,12,350,258,rowek 6.2 x1; otw. Ø3 x3; otw. Ø4.5 x6,rozkroj_12mm_ark1.dxf
+szuflady,Szuflada 10 bok P,12,350,258,rowek 6.2 x1; otw. Ø3 x3; otw. Ø4.5 x6,rozkroj_12mm_ark1.dxf
+szuflady,Szuflada 10 dno,6,543,344,,rozkroj_6mm_ark1.dxf
+szuflady,Szuflada 10 przod,12,532,258,rowek 6.2 x1,rozkroj_12mm_ark1.dxf
+szuflady,Szuflada 10 tyl,12,532,241.8,,rozkroj_12mm_ark1.dxf
+szuflady,Szuflada 11 bok L,12,350,258,rowek 6.2 x1; otw. Ø3 x3; otw. Ø4.5 x6,rozkroj_12mm_ark1.dxf
+szuflady,Szuflada 11 bok P,12,350,258,rowek 6.2 x1; otw. Ø3 x3; otw. Ø4.5 x6,rozkroj_12mm_ark1.dxf
+szuflady,Szuflada 11 dno,6,243,344,,rozkroj_6mm_ark1.dxf
+szuflady,Szuflada 11 przod,12,232,258,rowek 6.2 x1,rozkroj_12mm_ark2.dxf
+szuflady,Szuflada 11 tyl,12,232,241.8,,rozkroj_12mm_ark2.dxf
+plecy,Plecek szafki 1,4,381,272,,rozkroj_4mm_ark1.dxf
+plecy,Plecek szafki 2,4,381,272,,rozkroj_4mm_ark1.dxf
+plecy,Plecek szafki 3,4,281,181,,rozkroj_4mm_ark1.dxf
+plecy,Plecek szafki 4,4,381,181,,rozkroj_4mm_ark1.dxf
+plecy,Plecek szafki 5,4,281,81,,rozkroj_4mm_ark1.dxf
+plecy,Plecek szafki 6,4,181,81,,rozkroj_4mm_ark1.dxf
+plecy,Plecek szafki 7,4,181,181,,rozkroj_4mm_ark1.dxf
+plecy,Plecek szafki 8,4,381,181,,rozkroj_4mm_ark1.dxf
+plecy,Plecek szafki 9,4,381,281,,rozkroj_4mm_ark1.dxf
+plecy,Plecek szafki 10,4,381,281,,rozkroj_4mm_ark1.dxf

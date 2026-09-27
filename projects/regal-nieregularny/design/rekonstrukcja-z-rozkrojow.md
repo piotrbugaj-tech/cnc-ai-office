@@ -1,86 +1,60 @@
 # Regał nieregularny: rekonstrukcja z odzyskanych rozkrojów
 
 ## Status
-Etap 1/n. Przeanalizowano pierwszą paczkę odzyskanych plików (5 × DXF). Czekam na resztę plików (pozostałe arkusze 18 mm, fronty).
+Komplet odzyskanych plików przeanalizowany (10 plików w `../_odzyskane/`). Układ frontowy odtworzony jako **rev A, propozycja do potwierdzenia przez klienta**: `uklad.json` + `widok-przod.svg/png` (generator: `render_widok.py`).
 
-Źródła, zachowane bez zmian w `../_odzyskane/`:
+| Plik | Zawartość |
+|---|---|
+| `rozkroj_18mm_ark1..5.dxf` | korpus (wieńce, półki, 41 przegród), 11 frontów szuflad, 10 drzwiczek |
+| `rozkroj_12mm_ark1..2.dxf` | skrzynki 11 szuflad (44 elementy) |
+| `rozkroj_6mm_ark1.dxf` | 11 den szuflad |
+| `rozkroj_4mm_ark1.dxf` | 10 pleców szafek |
+| `rozkroj_stronaB.dxf` | obróbka drugiej strony przegród 25, 38, 39, 40 |
+| `rozkroj_lista.csv` | lista rozkroju (orientacja słojów frontów: pionowo) |
 
-| Plik | Materiał | Elementy | Uzysk arkusza |
-|---|---|---|---|
-| `rozkroj_18mm_ark1.dxf` | sklejka 18 mm | 7 (wieńce, półki, przegrody) | 91.4 % |
-| `rozkroj_12mm_ark1.dxf` | sklejka 12 mm | 36 (skrzynki szuflad) | 83.1 % |
-| `rozkroj_12mm_ark2.dxf` | sklejka 12 mm | 8 (skrzynki szuflad) | 15.4 % |
-| `rozkroj_6mm_ark1.dxf` | sklejka 6 mm | 11 (dna szuflad) | 44.8 % |
-| `rozkroj_4mm_ark1.dxf` | sklejka 4 mm | 10 (plecy szafek) | 21.8 % |
-
-Pełna lista elementów z wymiarami: `../_odzyskane/inwentarz-z-rozkrojow.csv` (72 elementy).
+Pełna lista 141 elementów z obróbkami: `../_odzyskane/inwentarz-z-rozkrojow.csv`.
 
 ## Wykonane: co wynika z plików
 
-### Konwencje odzyskanych DXF
-- Arkusz **2500 × 1250 mm**, margines 12 mm, odstęp między elementami 8 mm.
-- Warstwy: `ARKUSZ` (obrys arkusza), `OPIS` (etykiety), `OBRYS` (cięcie przelotowe), `ROWEK_6` (rowek 6.2 mm pod dno), `PILOT_3` (Ø3), `WKRET_45` (Ø4.5, ale na przegrodzie 13 są tu też Ø5).
-- Etykieta `A x B` podaje wymiar w orientacji elementu, `[OBR]` oznacza element obrócony o 90° w rozkroju.
-- Brak głębokości wierceń i rowków, brak warstwy `GRAIN`, brak grawerowanych oznaczeń elementów.
+### Siatka i gabaryt
+- Model był budowany na **siatce 100 mm**: osie wszystkich płyt 18 mm leżą na liniach siatki. Wieńce są licowane z gabarytem, stąd skrajne rzędy mają 273 mm zamiast 282.
+- Poziomy (osie): wieniec dolny 0–18, półki na 300 / 400 / 600 / 700 / 900 / 1200 / 1400 / 1700, wieniec górny 1982–2000. Wysokość **2000 mm**, głębokość **400 mm**.
+- Wysokości rzędów w świetle (od dołu): 273 / 82 / 182 / 82 / 182 / 282 / 182 / 282 / 273.
+- Półki 2, 3, 4 i 6 są dzielone. Przerwy w nich tworzą 4 wysokie wnęki otwarte: 282×282, 182×282, 382×282, 282×482.
+- Długości kawałków półek (791, 1191, 1391, 291, 391) = n·100 − 9. Kawałek biegnie od krawędzi 0 do lica przegrody na linii siatki.
 
-### Korpus (sklejka 18 mm)
-- Szerokość **1900 mm**, głębokość **400 mm**.
-- Wieniec górny, wieniec dolny i półka 1 mają po 1900 mm, czyli poziomy biegną na całą szerokość, a piony (przegrody, także skrajne) stoją **między** poziomami. To konstrukcja w stylu Tylko.
-- `Polka 4.2` = 1191 mm, więc półka 4 jest dzielona (4.1 + 4.2); prawdopodobnie tu jest „nieregularność” (uskok poziomu).
-- Przegrody 12, 13 i 16 mają 400 × 82, co oznacza rząd o świetle 82 mm.
-- Przegroda 13: 2 × Ø5 w rozstawie 32 mm, 37 mm od krawędzi, w połowie wysokości. To nawierty pod prowadnik zawiasu puszkowego (system 32), a więc drzwiczki nakładane.
-- Wysokość całkowita i położenie przegród: **nieznane** (w półkach i wieńcach nie ma nawiertów, które by je zdradzały).
+### Błąd gabarytu w starym modelu
+Skrajne przegrody stały na liniach siatki 0 i 1900 (wystawały 9 mm poza półki), a półki miały 1900 mm. Jest to sprawdzone solverem: przy bokach licowanych z półkami wymiary frontów się nie zgadzają.
+**Poprawka rev A:** poziomy wydłużone do **1918 mm** (lico w lico z bokami). Fronty i przegrody bez zmian; kawałki półek dzielonych mają okrągłe długości 800 / 1200 / 1400 / 300 / 400.
 
-### Wymiary światła modułów (wyprowadzone)
-- Wysokości światła rzędów: **82 / 182 / 273 / 282 mm**
-- Szerokości światła: **182 / 282 / 382 / 582 mm**
+### Fronty
+- 18 mm, **wpuszczane (licowane z korpusem)**, szczelina 2 mm dookoła (front = światło − 4 mm), słoje pionowo.
+- Drzwiczki: puszka Ø35, 22,5 mm od krawędzi (K = 5 mm). Pozycje puszek są symetryczne, więc drzwiczki są uniwersalne L/P (obrót o 180°).
+- Brak otworów pod gałki i pod mocowanie frontów do skrzynek.
 
-### Szuflady (11 szt.): skrzynka 12 mm, dno 6 mm
-Zasady konstrukcji odczytane z geometrii:
-- Boki 350 mm nakładają na czoła przodu i tyłu (wkręty Ø4.5 w bokach, 6 mm od końców, 3 lub 2 na złącze).
-- Dno 6 mm w rowku 6.2 mm, 10 mm od dolnej krawędzi (w bokach i przodzie). Tył jest niższy o 16.2 mm, więc dno wsuwa się od tyłu pod tylną ściankę.
-- Szerokość skrzynki = światło − 26 mm, co oznacza **prowadnice boczne kulkowe 12.7 mm**.
-- Wysokość skrzynki = światło − 15 mm.
-- Ø3 w bokach (pod prowadnicę): 25 mm od dołu, 35 / 175 / 300 mm od przodu, więc prowadnice 350 mm.
+### Odtworzenie układu (solver ograniczeń)
+Każde drzwiczki mają zawias na dokładnie jednej przegrodzie, a każda szuflada prowadnice na dwóch. Wysokości przegród wyznaczają rzędy. Z tych ograniczeń przeszukano wszystkie ustawienia na siatce 100 mm:
+- **Pewne:** poziomy, przerwy w półkach (z dokładnością do odbicia lustrzanego całości), sąsiedztwo drzwiczek/szuflad z przegrodami, wszystkie wymiary.
+- **Wybrane heurystycznie:** odbicie L/P (numeracja przegród 33→36 i 37→41 rośnie od lewej), kolejność elementów w rzędach, strony zawiasów. Pliki nie zawierają pozycji przegród wzdłuż półek, a szerokości wnęk otwartych nie są nigdzie zapisane.
 
-| Szuflada | Skrzynka szer. × wys. × gł. | Przód/tył (dł.) | Dno | Światło (szer. × wys.) |
-|---|---|---|---|---|
-| 1 | 356 × 167 × 350 | 332 | 343 × 344 | 382 × 182 |
-| 2 | 556 × 167 × 350 | 532 | 543 × 344 | 582 × 182 |
-| 3 | 256 × 167 × 350 | 232 | 243 × 344 | 282 × 182 |
-| 4 | 356 × 67 × 350 | 332 | 343 × 344 | 382 × 82 |
-| 5 | 356 × 67 × 350 | 332 | 343 × 344 | 382 × 82 |
-| 6 | 356 × 267 × 350 | 332 | 343 × 344 | 382 × 282 |
-| 7 | 556 × 267 × 350 | 532 | 543 × 344 | 582 × 282 |
-| 8 | 256 × 258 × 350 | 232 | 243 × 344 | 282 × 273 |
-| 9 | 356 × 258 × 350 | 332 | 343 × 344 | 382 × 273 |
-| 10 | 556 × 258 × 350 | 532 | 543 × 344 | 582 × 273 |
-| 11 | 256 × 258 × 350 | 232 | 243 × 344 | 282 × 273 |
+## Blockery / błędy w starych plikach (do naprawy w rev A)
+1. Boki szuflad L i P identyczne zamiast lustrzanych (rowek pod dno po złej stronie w jednym boku).
+2. Otwory prowadnic na dwóch licach przegród przesunięte względem siebie o 16 mm (37/165/293 vs 53/181/309 od frontu): szuflada byłaby skośna. Poprawna jest seria 53 = 18 (front) + 35.
+3. Prowadniki zawiasów na 37 mm od krawędzi, czyli wartość dla frontów nakładanych. Przy frontach wpuszczanych prowadnik trzeba cofnąć o grubość frontu (dokładnie wg karty wybranego zawiasu).
+4. Drzwiczki 78 mm (D5, D6) na jednym zawiasie. W rev A: 2 mini zawiasy Ø26.
+5. Brak nawiertów montażowych korpusu, brak otworów pod gałki i mocowanie frontów.
+6. Plecy bez sposobu mocowania. Decyzja: klipsy bez wkręcania i bez rowków.
+7. Otwory Ø5 w warstwie `WKRET_45`, brak głębokości obróbek, obróbka strony B tylko jako notatka.
 
-### Szafki (10 szt.): plecy 4 mm
-Plecy mają wymiar światła − 1 mm (brak rowka/wręgu):
-
-| Szafka | Plecy (szer. × wys.) | Światło |
-|---|---|---|
-| 1, 2 | 381 × 272 | 382 × 273 |
-| 3 | 281 × 181 | 282 × 182 |
-| 4, 8 | 381 × 181 | 382 × 182 |
-| 5 | 281 × 81 | 282 × 82 |
-| 6 | 181 × 81 | 182 × 82 |
-| 7 | 181 × 181 | 182 × 182 |
-| 9, 10 | 381 × 281 | 382 × 282 |
-
-## Blockery / wykryte problemy
-1. **Boki L i P szuflad są identyczne, a nie lustrzane.** Rowek pod dno jest jednostronny, więc jeden z boków wyjdzie rowkiem na zewnątrz. Odwrócenie elementu zamienia wzory otworów przód/tył: tylny wkręt trafia wtedy 3.8 mm od krawędzi tylnej ścianki i ją rozsadzi. Naprawa: P = lustro L.
-2. **Brak nawiertów montażowych w elementach 18 mm** (wieńce, półki, przegrody). Do zaprojektowania od zera.
-3. **Brak frontów** (szuflad i drzwiczek) w otrzymanych plikach.
-4. **Szafki 5 i 6 (światło 82 mm):** na drzwiczkach ~100 mm mieści się tylko 1 zawias (zgodne z przegrodą 13). Wymaga decyzji: 1 zawias / klapka / zamiana na szufladę / wnęka otwarta.
-5. **Plecy = światło − 1 mm, bez rowka.** Sposób mocowania pleców nieokreślony.
-6. **Niespójne warstwy/średnice** (Ø5 w warstwie `WKRET_45`), brak głębokości (Ø3 pod prowadnice muszą być nieprzelotowe).
-7. **Format arkusza 2500 × 1250** zamiast firmowego 2440 × 1220. Przyjmuję 2500 × 1250 zgodnie z plikami (do potwierdzenia z wykonawcą CNC).
-8. **Niski uzysk** arkuszy 4 / 6 / 12-2. Do ponownego nestingu po skompletowaniu listy.
+## Decyzje klienta (27.09.2026)
+- Arkusz **2500 × 1250 mm**.
+- Rowki pod dna szuflad do poprawy.
+- Niskie drzwiczki: szukać mini zawiasów.
+- Plecy: bez wkręcania i rowków, mocowanie klipsami (druk 3D).
+- **Bez graweru** numerów elementów: etykiety naklejane.
+- Fronty szuflad i drzwiczek **zlicowane z korpusem**.
 
 ## Rekomendacje (następne kroki)
-- Zebrać pozostałe pliki i, jeśli istnieje, widok z przodu / szkic / zrzut ekranu z modelu (pozycje przegród).
-- Odtworzyć model układu (siatka modułów), potem nawierty korpusu, fronty, okucia.
-- Nowe DXF: warstwy z głębokością obróbki, lustrzane boki, grawer numeru elementu, warstwa `GRAIN`.
+1. Potwierdzenie układu rev A (`widok-przod.png`) i pytań otwartych: zamiana rzędu szuflad z góry na dół, szerokość 1918, wybór prowadnic.
+2. Model parametryczny, nawierty korpusu (wkręty), okucia, nowe DXF (warstwy z głębokością, strona A/B, warstwa etykiet), nesting 2500×1250.
+3. BOM + lista okuć, instrukcja montażu, arkusz etykiet, model klipsów pleców (druk 3D).
