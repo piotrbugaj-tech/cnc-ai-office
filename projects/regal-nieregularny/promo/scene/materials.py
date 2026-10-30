@@ -185,14 +185,14 @@ BIRCH = dict(                        # paleta wg research-brief.md 3.2 (sRGB HEX
     face_mid=hex_lin("E0C59A"),     # lico – baza (#E3CBA5)
     face_dark=hex_lin("CFB083"),    # słoje / figura rotary-cut
     pore=hex_lin("8E6A42"),         # plamki rdzeniowe (pith flecks)
-    ply_light=hex_lin("E6D2AE"),    # krawędź: warstwa wzdłużna (#EAD8B9)
-    ply_dark=hex_lin("C6A374"),     # krawędź: warstwa poprzeczna (#CDAE82, nieco ciemniej dla czytelności)
+    ply_light=hex_lin("E6D3B0"),    # krawędź: warstwa wzdłużna (#EAD8B9)
+    ply_dark=hex_lin("D2B488"),     # krawędź: warstwa poprzeczna – subtelnie ciemniejsza i bardziej matowa
     glue=hex_lin("6F5338"),         # spoina klejowa (#7B5E43)
 )
 
 
 def plywood(name="Sklejka_brzoza_18", t_mm=18.0, plies=13, tint=(1.0, 1.0, 1.0), face_rough=0.40,
-            coat=0.12, anis=0.25, edge_contrast=1.0, variation=1.0, uv_name="UVMap", grade="BB",
+            coat=0.12, anis=0.12, edge_contrast=1.0, variation=1.0, uv_name="UVMap", grade="BB",
             per_object_pattern=True, fade_near=2.2, fade_far=5.0):
     """Sklejka brzozowa olejowana. `tint` mnoży kolor (np. fronty minimalnie jaśniejsze),
     `variation` – siła różnic tonu między arkuszami, `grade` "BB" (lica) / "CP" (plecy – więcej plam),
@@ -220,17 +220,17 @@ def plywood(name="Sklejka_brzoza_18", t_mm=18.0, plies=13, tint=(1.0, 1.0, 1.0),
     # figura rotary-cut: faliste pasma w poprzek usłojenia (okres ~2,5–3 cm), silnie zniekształcone
     warp = nb.noise(nb.combine(nb.math("MULTIPLY", g2, 2.2), nb.math("MULTIPLY", c2, 11.0), pr),
                     scale=1.0, detail=4.0, rough=0.55, loc=(-1500, -250))
-    phase = nb.math("ADD", nb.math("MULTIPLY", c2, 2 * math.pi / 0.034),
+    phase = nb.math("ADD", nb.math("MULTIPLY", c2, 2 * math.pi / 0.065),
                     nb.math("MULTIPLY", warp.outputs["Fac"], 22.0), (-1300, -250))
     phase = nb.math("ADD", phase, nb.math("MULTIPLY", nb.math("SINE", nb.math("MULTIPLY", g2, 3.7)), 1.6),
                     (-1150, -250))
     band = nb.maprange(nb.math("SINE", phase), -1.0, 1.0, 0.0, 1.0, (-1000, -250))
-    band = nb.math("POWER", band, 1.7, (-850, -250))          # miękkie, chmurkowe pasma (brzoza, nie sosna)
+    band = nb.math("POWER", band, 1.3, (-850, -250))          # szerokie, miękkie, chmurkowe pasma (rotary-cut)
     figmask = nb.noise(nb.combine(nb.math("MULTIPLY", g2, 1.4), nb.math("MULTIPLY", c2, 4.5), pr), scale=1.0,
                        detail=2.0, loc=(-1000, -450))
     fig = nb.math("MULTIPLY", band, nb.maprange(figmask.outputs["Fac"], 0.38, 0.66, 0.15, 1.0), (-700, -300))
     # drobne smugi włókien (wzdłuż usłojenia)
-    streak = nb.noise(nb.combine(nb.math("MULTIPLY", g2, 9.0), nb.math("MULTIPLY", c2, 1300.0), 0.0),
+    streak = nb.noise(nb.combine(nb.math("MULTIPLY", g2, 3.0), nb.math("MULTIPLY", c2, 260.0), 0.0),
                       scale=1.0, detail=3.0, rough=0.6, loc=(-1000, -700))
     fine_m = nb.maprange(streak.outputs["Fac"], 0.3, 0.72, 0.0, 1.0, (-800, -700))
     # plamki rdzeniowe (pith flecks) – rzadkie, wydłużone, brązowe: podpis brzozy
@@ -239,8 +239,8 @@ def plywood(name="Sklejka_brzoza_18", t_mm=18.0, plies=13, tint=(1.0, 1.0, 1.0),
     pore_m = nb.maprange(fl.outputs["Fac"], 0.745, 0.80, 0.0, 1.0, (-800, -900))
 
     face = nb.mix(tone_m, BIRCH["face_light"], BIRCH["face_mid"], (-500, -100))
-    face = nb.mix(nb.math("MULTIPLY", fig, 0.6), face, BIRCH["face_dark"], (-350, -200))
-    sv = nb.math("ADD", 1.0, nb.math("MULTIPLY", nb.math("SUBTRACT", fine_m, 0.5), 0.16), (-500, -500))
+    face = nb.mix(nb.math("MULTIPLY", fig, 0.45), face, BIRCH["face_dark"], (-350, -200))
+    sv = nb.math("ADD", 1.0, nb.math("MULTIPLY", nb.math("SUBTRACT", fine_m, 0.5), 0.05), (-500, -500))
     face = nb.mix(1.0, face, nb.combine(sv, sv, sv), (-200, -300), blend="MULTIPLY")
     face = nb.mix(nb.math("MULTIPLY", pore_m, 0.75), face, BIRCH["pore"], (-100, -350))
     if grade == "CP":
@@ -290,9 +290,9 @@ def plywood(name="Sklejka_brzoza_18", t_mm=18.0, plies=13, tint=(1.0, 1.0, 1.0),
     dist = nb.math("MINIMUM", nb.math("ABSOLUTE", nb.math("SUBTRACT", f, o0)),
                    nb.math("ABSOLUTE", nb.math("SUBTRACT", top1, f)), (-850, 300))
     glue_w = 0.075 / (t_mm / plies)      # ~0,075 mm w jednostkach warstwy
-    glue = nb.maprange(dist, glue_w * 0.4, glue_w * 1.6, 1.0, 0.0, (-700, 300), interp="SMOOTHSTEP")
+    glue = nb.maprange(dist, glue_w * 0.55, glue_w * 1.05, 1.0, 0.0, (-700, 300), interp="LINEAR")
     # tekstura wewnątrz warstwy: wzdłużne smugi (jasne) / punktowe pory czoła (ciemne)
-    streak = nb.noise(nb.combine(nb.math("MULTIPLY", along, 25.0), nb.math("MULTIPLY", oz, 3000.0), rnd),
+    streak = nb.noise(nb.combine(nb.math("MULTIPLY", along, 60.0), nb.math("MULTIPLY", oz, 6000.0), rnd),
                       scale=1.0, detail=2.0, loc=(-850, 850))
     endg = nb.noise(tc.outputs["Object"], scale=3600.0, detail=2.0, rough=0.45, loc=(-850, 1050))
     tex = nb.mixf(parity, streak.outputs["Fac"], endg.outputs["Fac"], (-600, 900))
@@ -300,7 +300,7 @@ def plywood(name="Sklejka_brzoza_18", t_mm=18.0, plies=13, tint=(1.0, 1.0, 1.0),
 
     ply_col = nb.mix(parity, BIRCH["ply_light"], BIRCH["ply_dark"], (-450, 600))
     # jasność warstwy: ±6 % + tekstura
-    var = nb.math("ADD", nb.math("MULTIPLY", nb.math("SUBTRACT", wn.outputs["Value"], 0.5), 0.22),
+    var = nb.math("ADD", nb.math("MULTIPLY", nb.math("SUBTRACT", wn.outputs["Value"], 0.5), 0.14),
                   nb.math("MULTIPLY", tex_m, nb.mixf(parity, 0.08, 0.10)), (-300, 800))
     var = nb.math("ADD", var, 1.0, (-150, 800))
     ply_col = nb.mix(1.0, ply_col, nb.combine(var, var, var), (-150, 600), blend="MULTIPLY")
@@ -311,7 +311,7 @@ def plywood(name="Sklejka_brzoza_18", t_mm=18.0, plies=13, tint=(1.0, 1.0, 1.0),
     avg_col = nb.mix(0.5, BIRCH["ply_light"], BIRCH["ply_dark"], (-450, 1250))
     avg_col = nb.mix(0.10, avg_col, BIRCH["glue"], (-300, 1250))
     ply_col = nb.mix(fade, avg_col, ply_col, (-150, 1100))
-    edge = nb.mix(nb.math("MULTIPLY", nb.math("MULTIPLY", glue, 0.85 * edge_contrast), fade), ply_col,
+    edge = nb.mix(nb.math("MULTIPLY", nb.math("MULTIPLY", glue, 0.75 * edge_contrast), fade), ply_col,
                   BIRCH["glue"], (0, 500))
 
     # ---------------- maska lico / krawędź (|N.z| w układzie obiektu, miękko na fazie)
@@ -331,7 +331,8 @@ def plywood(name="Sklejka_brzoza_18", t_mm=18.0, plies=13, tint=(1.0, 1.0, 1.0),
 
     # ---------------- roughness / bump
     r_face = nb.math("ADD", face_rough, nb.math("MULTIPLY", nb.math("SUBTRACT", fine_m, 0.5), 0.08), (0, -600))
-    r_edge = nb.math("ADD", 0.56, nb.math("MULTIPLY", tex_m, 0.05), (0, -750))
+    # krawędź po frezie: matowa (0,62 warstwy wzdłużne, 0,72 poprzeczne), lekko "włóknista"
+    r_edge = nb.math("ADD", nb.mixf(parity, 0.62, 0.72), nb.math("MULTIPLY", tex_m, 0.04), (0, -750))
     rough = nb.mixf(is_face, r_edge, r_face, (200, -650))
 
     # bump celowo tani: Cycles liczy całą sieć nad wejściem Height 3× – lico: tylko smugi włókien,
@@ -340,7 +341,7 @@ def plywood(name="Sklejka_brzoza_18", t_mm=18.0, plies=13, tint=(1.0, 1.0, 1.0),
     h_edge = 0.0       # krawędź szlifowana na płasko: spoiny tylko kolorem (bump dawał efekt "żebrowania")
     h = nb.mixf(is_face, h_edge, h_face, (200, -1000))
     bump = nb.n("ShaderNodeBump", (400, -950))
-    bump.inputs["Strength"].default_value = 0.35
+    bump.inputs["Strength"].default_value = 0.15
     bump.inputs["Distance"].default_value = 0.00004
     nb.link(h, bump.inputs["Height"])
 
@@ -367,20 +368,32 @@ def plywood(name="Sklejka_brzoza_18", t_mm=18.0, plies=13, tint=(1.0, 1.0, 1.0),
 
 
 # --------------------------------------------------------------------------- okucia, gałki
-def metal(name, color=(0.80, 0.81, 0.83), rough=0.26, aniso=0.0, rough_var=0.015, var_scale=60.0):
-    """Metal (ocynk / nikiel / stal A2): delikatna, wielkoskalowa zmienność roughness (bez "brokatu")."""
+def metal(name, color=(0.80, 0.81, 0.83), rough=0.26, aniso=0.0, rough_var=0.015, var_scale=60.0, spangle=0.0):
+    """Metal (ocynk / nikiel / stal A2): delikatna, wielkoskalowa zmienność roughness (bez "brokatu").
+    `spangle` > 0 – ziarna ocynku (komórki Voronoi ~6 mm) o różnej szorstkości i jasności."""
     m, nt, nb = new_material(name)
     tc = nb.n("ShaderNodeTexCoord", (-900, 0))
     nz = nb.noise(tc.outputs["Object"], scale=var_scale, detail=2.0, loc=(-700, 0))
     r = nb.maprange(nz.outputs["Fac"], 0.3, 0.7, rough - rough_var, rough + rough_var, (-450, 0))
+    col = (*color, 1)
     b = principled(nb)
-    b.inputs["Base Color"].default_value = (*color, 1)
+    if spangle:
+        vor = nb.n("ShaderNodeTexVoronoi", (-700, -250))
+        vor.inputs["Scale"].default_value = 420.0      # drobne ziarno (ocynk galwaniczny, nie ogniowy)
+        nb.link(tc.outputs["Object"], vor.inputs["Vector"])
+        cell = nb.separate(vor.outputs["Color"], (-500, -250))[0]
+        r = nb.math("ADD", r, nb.maprange(cell, 0.0, 1.0, -spangle, spangle), (-300, -100))
+        v = nb.maprange(cell, 0.0, 1.0, 1.0 - spangle * 0.4, 1.0 + spangle * 0.2, (-300, -250))
+        colv = nb.mix(1.0, col, nb.combine(v, v, v), (-150, -250), blend="MULTIPLY")
+        nb.link(colv, b.inputs["Base Color"])
+    else:
+        b.inputs["Base Color"].default_value = col
     b.inputs["Metallic"].default_value = 1.0
     nb.link(r, b.inputs["Roughness"])
     if aniso and "Anisotropic" in b.inputs:
         b.inputs["Anisotropic"].default_value = aniso
     out_node(nb, b.outputs[0])
-    m.diffuse_color = (*color, 1)
+    m.diffuse_color = col
     return m
 
 

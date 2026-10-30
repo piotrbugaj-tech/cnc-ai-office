@@ -45,7 +45,7 @@ SHOTS = {
     # f = [start, koniec) ; spp/thr – budżet z briefu (9.2) dla 2560×1440
     "S01": dict(f=(0, 60), lens=50, fstop=4.0, ev=-0.3, spp=45, thr=0.03, name="RYTM"),
     "S02": dict(f=(60, 180), lens=35, fstop=5.6, ev=0.0, spp=36, thr=0.035, name="Bez boków"),
-    "S03": dict(f=(180, 225), lens=60, fstop=4.0, ev=0.1, spp=36, thr=0.035, name="Pełny wysuw"),
+    "S03": dict(f=(180, 225), lens=60, fstop=4.0, ev=-0.5, spp=36, thr=0.035, name="Pełny wysuw"),   # brief +0,1
     "S04": dict(f=(225, 300), lens=50, fstop=5.6, ev=0.0, spp=27, thr=0.04, name="Cichy domyk",
                 holds=[(225, 249), (286, 299)]),
     "S05": dict(f=(300, 345), lens=50, fstop=4.0, ev=0.0, spp=36, thr=0.035, name="Domyka się sam"),
@@ -156,8 +156,11 @@ def shot_S02():
 def shot_S03():
     s = SHOTS["S03"]
     c = cam("S03", P(1010, -215, 830), P(900, -15, 809), s["lens"], s["fstop"])
+    # f180–188 jak w briefie (makro gałki); od f199 kamera obchodzi front z prawej i w f210–225 staje ZA płaszczyzną
+    # wysuniętego frontu – widać bok skrzynki z prowadnicą KA 4532 (zmiana zaakceptowana przez CEO)
     keys = [(180, (1010, -215, 830), (900, -15, 809)), (188, (1015, -225, 832), (900, -15, 809)),
-            (210, (1350, -900, 1050), (900, -330, 800)), (225, (1380, -960, 1080), (900, -320, 790))]
+            (199, (1250, -560, 980), (1000, -220, 805)), (210, (1520, -470, 1060), (1110, -170, 800)),
+            (225, (1700, -480, 1150), (1080, -150, 800))]
     for f, C, T in keys:
         key_cam(c, f, P(*C), P(*T), interp="BEZIER")
     # ostrość = gałka S09 (empty jedzie z szufladą)
@@ -165,10 +168,14 @@ def shot_S03():
     foc = bpy.data.objects["FOC_CAM_S03"]
     if foc.animation_data:
         foc.animation_data_clear()
-    knobF = Matrix.Translation((0.900, -0.019, 0.809))
     foc.parent = d.rig
     foc.matrix_parent_inverse = Matrix.Identity(4)
-    foc.matrix_basis = B.rest_F(d.rig).inverted() @ knobF
+    inv = B.rest_F(d.rig).inverted()
+    for f, pF in ((188, (0.900, -0.019, 0.809)), (195, (0.900, -0.019, 0.809)),     # gałka
+                  (208, (1.186, 0.150, 0.809))):                                    # prowadnica (bok skrzynki)
+        foc.matrix_basis = inv @ Matrix.Translation(pF)
+        foc.keyframe_insert("location", frame=f)
+    B.set_interp(foc, "BEZIER")
     # S09: Hermite 0 → 352 mm (v1 = 3 mm/kl), uderzenie w ogranicznik f210, odbicie do 350 w f213
     B.hold_state("drawer", "S09", -10, 0.0)
     B.hold_state("drawer", "S09", 187, 0.0)
@@ -177,7 +184,7 @@ def shot_S03():
     B.key_drawer_curve("S09", sm)
     B.hold_state("drawer", "S09", 214, 350.0)
     B.hold_state("drawer", "S09", 229, 0.0)
-    aux_light("S03_blenda", P(1300, -500, 600), P(900, -200, 800), 0.4, 10.0, 4800, 180 - OVERLAP, 225 + OVERLAP)
+    aux_light("S03_blenda", P(1300, -500, 600), P(900, -200, 800), 0.4, 6.0, 5500, 180 - OVERLAP, 225 + OVERLAP)
     ev("drawer_roll", 188, "S09", end=210, direction="open")
     ev("drawer_stop", 210, "S09", note="ogranicznik pełnego wysuwu")
     ev("cloth_rustle", 211, "S09", end=220)
@@ -230,11 +237,12 @@ CALLOUTS = {"A_18mm": [(1591, 0, 570), (1609, 0, 570)], "B_2mm": [(1560, 0, 598)
 
 def shot_S06():
     s = SHOTS["S06"]
-    c = cam("S06", P(1540, -430, 610), P(1570, 0, 600), s["lens"], s["fstop"], focus=P(1570, 0, 600))
+    # kadr obniżony o 15 mm względem briefu (górna 1/3 była pustą, ciemną wnęką – uwaga CEO)
+    c = cam("S06", P(1540, -430, 595), P(1570, 0, 585), s["lens"], s["fstop"], focus=P(1570, 0, 585))
     for f in range(345 - OVERLAP, 420 + OVERLAP + 1):
         u = min(1.0, max(0.0, (f - 345) / 75.0))
         sm = u * u * (3 - 2 * u)
-        key_cam(c, f, P(1540 + 80 * sm, -430, 610), P(1570 + 80 * sm, 0, 600), P(1570 + 80 * sm, 0, 600))
+        key_cam(c, f, P(1540 + 80 * sm, -430, 595), P(1570 + 80 * sm, 0, 585), P(1570 + 80 * sm, 0, 585))
     aux_light("S06_pasek", P(1900, -120, 600), P(1500, -120, 600), 0.1, 4.0, 4500, 345 - OVERLAP, 420 + OVERLAP,
               size_y=0.6)
     for f, nm, note in ((360, "A_18mm", "F6"), (375, "B_2mm", "A6"), (390, "C_13warstw", "C7")):

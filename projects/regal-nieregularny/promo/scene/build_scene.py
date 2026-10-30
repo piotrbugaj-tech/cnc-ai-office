@@ -309,7 +309,7 @@ def make_materials():
                            per_object_pattern=False)
     m["box"] = M.plywood("Sklejka_brzoza_18_szuflada", tint=(1.0, 0.99, 0.97), variation=0.8)
     m["thin"] = M.plywood("Sklejka_brzoza_6.5_BBCP", t_mm=6.5, plies=5, tint=(0.98, 0.96, 0.93), grade="CP")
-    m["zinc"] = M.metal("Ocynk_prowadnice", (0.80, 0.82, 0.85), rough=0.34, rough_var=0.02)
+    m["zinc"] = M.metal("Ocynk_prowadnice", (0.76, 0.81, 0.88), rough=0.24, rough_var=0.02, spangle=0.025)
     m["nickel"] = M.metal("Nikiel_zawiasy", (0.80, 0.79, 0.76), rough=0.18)
     m["steel_a2"] = M.metal("Stal_A2_wkrety", (0.66, 0.66, 0.67), rough=0.30)
     m["knob"] = M.knob_pla()
@@ -566,6 +566,7 @@ def _build_slides(dr, data, collection, attach):
             me.materials.append(mat)
             ob = bpy.data.objects.new(nm, me)
             collection.objects.link(ob)
+            add_bevel(ob, 0.35 * q, segments=2, angle=40)      # zaokrąglone zagięcia blachy
             return ob
 
         o = mk(f"prowadnica_{dr.code}_{side}_korpus", outer, by, by + L, S.mats["zinc"])
@@ -574,6 +575,24 @@ def _build_slides(dr, data, collection, attach):
         attach(mi, dr.mid, Matrix.Identity(4), dr.F)
         inn = mk(f"prowadnica_{dr.code}_{side}_szuflada", inner, by, by + L - 12 * q, S.mats["zinc"])
         attach(inn, dr.rig, Matrix.Identity(4), dr.F)
+        sx_ = 1 if side == "L" else -1
+        # przetłoczenia (dwa podłużne przetłoczenia na środniku członu środkowego)
+        for dz in (-7.5, 7.5):
+            rib = bpy.data.objects.new(f"prowadnica_{dr.code}_{side}_przetloczenie",
+                                       box_mesh("przetloczenie", 1.0 * q, L - 30 * q, 2.4 * q,
+                                                (x_div + sx_ * 2.3 * q, by + L / 2 - 2 * q, z + dz * q)))
+            rib.data.materials.append(S.mats["zinc"])
+            collection.objects.link(rib)
+            add_bevel(rib, 0.4 * q, segments=2, angle=40)
+            attach(rib, dr.mid, Matrix.Identity(4), dr.F)
+        # wkręty mocujące człon szufladowy (37 mm i 37 + C od przodu skrzynki – katalog Hettich)
+        for yy in (37.0, 257.0):
+            sc_ = bpy.data.objects.new(f"prowadnica_{dr.code}_{side}_wkret",
+                                       cyl_mesh("wkret_prow", 3.6 * q, 1.4 * q, 24, "X",
+                                                (x_div + sx_ * 11.0 * q, by + yy * q, z)))
+            sc_.data.materials.append(S.mats["steel_a2"])
+            collection.objects.link(sc_)
+            attach(sc_, dr.rig, Matrix.Identity(4), dr.F)
         # czarna dźwignia odczepiania z przodu członu szufladowego + tłumik Silent System z tyłu (szary)
         sx = 1 if side == "L" else -1
         xl = x_div + sx * 9.0 * q
