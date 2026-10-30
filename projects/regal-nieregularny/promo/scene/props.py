@@ -124,7 +124,8 @@ def books_row(S, rnd, cell, n=7, from_right=True, lean=True, y_spine=0.035, pref
     return x
 
 
-def books_stack(S, rnd, cell, n=3, x_left=None, y_c=0.2, prefix="C", rot_deg=None):
+def books_stack(S, rnd, cell, n=3, x_left=None, y_c=0.2, prefix="C", rot_deg=None, L_range=(0.22, 0.25),
+                D_range=(0.16, 0.18)):
     xa, xb, za, zb = cell_box(*cell)
     z = za
     x0 = x_left if x_left is not None else xa + 0.03
@@ -132,8 +133,8 @@ def books_stack(S, rnd, cell, n=3, x_left=None, y_c=0.2, prefix="C", rot_deg=Non
     top = z
     for i in range(n):
         th = rnd.uniform(0.018, 0.034)
-        L = rnd.uniform(0.22, 0.25) - i * 0.012
-        D = rnd.uniform(0.16, 0.18) - i * 0.008
+        L = rnd.uniform(*L_range) - i * 0.012
+        D = rnd.uniform(*D_range) - i * 0.008
         ang = math.radians(rot_deg[i] if rot_deg else rnd.uniform(-4, 4))
         # książka leżąca: wysokość książki → X, grubość → Z
         rot = Matrix.Rotation(ang, 4, "Z") @ Matrix.Rotation(math.radians(-90), 4, "Y")
@@ -147,6 +148,7 @@ def books_stack(S, rnd, cell, n=3, x_left=None, y_c=0.2, prefix="C", rot_deg=Non
 # --------------------------------------------------------------------------- kamionka
 def vessel_mesh(name, outer, wall=0.004, depth=None, segments=72):
     """Naczynie z profilu zewnętrznego [(r,z) od dna do krawędzi]; ścianka `wall`, wnętrze do `depth`."""
+    outer = [(r, max(0.0, z)) for r, z in outer]     # spline nie może zejść pod dno (przenikanie półki)
     rim_r, rim_z = outer[-1]
     inner = []
     depth = depth if depth is not None else rim_z - 0.006
@@ -158,6 +160,7 @@ def vessel_mesh(name, outer, wall=0.004, depth=None, segments=72):
             break
         inner.append((max(0.0005, r - wall), z))
     inner.append((0.0, inner[-1][1] - wall * 0.5))
+    inner = [(r, max(wall * 0.6, z)) for r, z in inner]   # dno wewnętrzne zawsze nad zewnętrznym
     prof = [(0.0, 0.0)] + outer + inner
     bm = bmesh.new()
     vs = [bm.verts.new((r, 0.0, z)) for r, z in prof]
@@ -483,8 +486,9 @@ def build_extra(S, rnd):
         x -= w + 0.0008
     # H: #15 – walcowy wazon terakota Ø90×200 + 2 książki płasko
     xa, xb, za, zb = cell_box(120, 150, 60, 90)
-    cylinder_vase(S, "prop_wazon_H", (xa + 0.075, 0.21, za), r=0.045, h=0.20, mat=cer_terra)
-    books_stack(S, rnd, (120, 150, 60, 90), n=2, x_left=xb - 0.205, y_c=0.2, prefix="H", rot_deg=[1, -3])
+    cylinder_vase(S, "prop_wazon_H", (xa + 0.052, 0.21, za), r=0.045, h=0.20, mat=cer_terra)
+    books_stack(S, rnd, (120, 150, 60, 90), n=2, x_left=xb - 0.184, y_c=0.2, prefix="H", rot_deg=[1, -2],
+                L_range=(0.172, 0.178), D_range=(0.115, 0.125))
     # I: #26 – grafika w ramce oparta o ścianę
     xa, xb, za, zb = cell_box(110, 130, 90, 120)
     yw = getattr(S, "wall_y", S.D + 0.0095)

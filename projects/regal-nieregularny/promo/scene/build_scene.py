@@ -309,7 +309,7 @@ def make_materials():
                            per_object_pattern=False)
     m["box"] = M.plywood("Sklejka_brzoza_18_szuflada", tint=(1.0, 0.99, 0.97), variation=0.8)
     m["thin"] = M.plywood("Sklejka_brzoza_6.5_BBCP", t_mm=6.5, plies=5, tint=(0.98, 0.96, 0.93), grade="CP")
-    m["zinc"] = M.metal("Ocynk_prowadnice", (0.78, 0.80, 0.83), rough=0.24)
+    m["zinc"] = M.metal("Ocynk_prowadnice", (0.80, 0.82, 0.85), rough=0.34, rough_var=0.02)
     m["nickel"] = M.metal("Nikiel_zawiasy", (0.80, 0.79, 0.76), rough=0.18)
     m["steel_a2"] = M.metal("Stal_A2_wkrety", (0.66, 0.66, 0.67), rough=0.30)
     m["knob"] = M.knob_pla()
@@ -1271,7 +1271,7 @@ def world_simple(name, color, strength, camera_sky=None):
     o = nt.nodes.new("ShaderNodeOutputWorld")
     if camera_sky:
         sky = nt.nodes.new("ShaderNodeBackground")
-        sky.inputs[0].default_value = (*M.kelvin_rgb(9000), 1)
+        sky.inputs[0].default_value = (*M.kelvin_rgb(7000), 1)
         sky.inputs[1].default_value = camera_sky
         lp = nt.nodes.new("ShaderNodeLightPath")
         mx = nt.nodes.new("ShaderNodeMixShader")
@@ -1587,6 +1587,12 @@ def setup_device(device=None):
         return "CPU"
 
 
+# Transformacja widoku. Pomiar w look-devie: AgX (też z lookiem Medium High Contrast) odsyca albedo brzozy
+# #E0C59A do ~#C7BAA6 (szarawy "jesion/płyta"), Khronos PBR Neutral oddaje je wiernie (~#DDC49E) i łagodnie
+# kompresuje światła → domyślnie PBR Neutral + balans bieli 5300 K. Nadpisanie: REGAL_VIEW="AgX" / view=...
+VIEW_TRANSFORM = "Khronos PBR Neutral"
+WHITE_BALANCE_K = 5300
+
 PRESETS = dict(
     # samples, adaptive threshold, min samples, bounces (total, diffuse, glossy, transmission), clamp ind.
     preview=dict(samples=24, thr=0.05, min=0, b=(6, 3, 2, 4), clamp=8.0, quality="BALANCED"),
@@ -1598,7 +1604,8 @@ PRESETS = dict(
 
 def render_settings(preset="final", res=(1920, 1080), engine="CYCLES", samples=None, threshold=None,
                     denoise=True, persistent=True, motion_blur=False, shutter=0.5, look="AgX - Medium High Contrast",
-                    exposure=0.0, device=None, percentage=100, time_limit=0.0):
+                    exposure=0.0, device=None, percentage=100, time_limit=0.0, light_tree=False, white_balance="auto",
+                    view=None):  # white_balance=None → bez balansu bieli
     sc = bpy.context.scene
     sc.render.engine = engine
     sc.render.resolution_x, sc.render.resolution_y = res
@@ -1608,17 +1615,26 @@ def render_settings(preset="final", res=(1920, 1080), engine="CYCLES", samples=N
     sc.render.use_motion_blur = motion_blur
     sc.render.motion_blur_shutter = shutter
     vs = sc.view_settings
-    vs.view_transform = "AgX"
+    view = view or os.environ.get("REGAL_VIEW", VIEW_TRANSFORM)
+    vs.view_transform = view
     try:
-        vs.look = look
-        want = look
+        vs.look = look if view == "AgX" else "None"
+        want = vs.look
     except TypeError:
         want = "None"
         vs.look = want
     vs.exposure = exposure
     vs.gamma = 1.0
+    # balans bieli "aparatu" (Blender 4.3+): światła 4600–5000 K bez niego przesuwały brzozę w łososiowy róż
+    if white_balance == "auto":
+        white_balance = WHITE_BALANCE_K if view == "Khronos PBR Neutral" else None
+    if hasattr(vs, "use_white_balance"):
+        vs.use_white_balance = white_balance is not None
+        if white_balance:
+            vs.white_balance_temperature = white_balance
+            vs.white_balance_tint = 0.0
     sc.display_settings.display_device = "sRGB"
-    out = {"engine": engine, "look": want}
+    out = {"engine": engine, "view": view, "look": want}
     if engine == "CYCLES":
         P = PRESETS[preset]
         cy = sc.cycles
@@ -1651,7 +1667,7 @@ def render_settings(preset="final", res=(1920, 1080), engine="CYCLES", samples=N
         cy.caustics_reflective = False
         cy.caustics_refractive = False
         try:
-            cy.use_light_tree = True
+            cy.use_light_tree = light_tree     # przy kilku światłach drzewo światła kosztuje ~17 % (pomiar)
         except Exception:
             pass
         sc.render.film_transparent = False

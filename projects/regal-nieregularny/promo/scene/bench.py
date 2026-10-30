@@ -41,7 +41,13 @@ sc = bpy.context.scene
 results = []
 
 
+ONLY = args[args.index("--only") + 1].split(",") if "--only" in args else None
+JSON = out / (args[args.index("--json") + 1] if "--json" in args else "bench.json")
+
+
 def run(name, sid, frame, res, spp, thr, mb=False, persistent=True):
+    if ONLY and name not in ONLY:
+        return
     F.set_shot_render(sid, "final", res, spp, device, thr=thr)
     sc.render.use_persistent_data = persistent
     sc.render.use_motion_blur = mb
@@ -57,21 +63,21 @@ def run(name, sid, frame, res, spp, thr, mb=False, persistent=True):
              persistent=persistent, seconds=round(dt, 1))
     print("[bench]", r, flush=True)
     results.append(r)
-    (out / "bench.json").write_text(json.dumps(dict(build_s=round(t_build, 1), cpu_threads=os.cpu_count(),
-                                                    blender=bpy.app.version_string, results=results), indent=1))
+    JSON.write_text(json.dumps(dict(build_s=round(t_build, 1), cpu_threads=os.cpu_count(),
+                                    blender=bpy.app.version_string, results=results), indent=1))
 
 
 R1440, R1080 = (2560, 1440), (1920, 1080)
 run("B_S02_1440_s36", "S02", 120, R1440, 36, 0.035)
-run("S02_1440_s36_PD", "S02", 121, R1440, 36, 0.035)
+run("S02_1440_s1", "S02", 121, R1440, 1, 0.5)            # stały narzut (synchronizacja, OIDN, zapis)
 if "--quick" not in args:
-    run("S02_1440_s64", "S02", 122, R1440, 64, 0.02)
     if "--full" in args:
+        run("S02_1440_s64", "S02", 122, R1440, 64, 0.02)
         run("S02_1440_s128", "S02", 123, R1440, 128, 0.01)
     run("S02_1080_s36", "S02", 124, R1080, 36, 0.035)
     run("S06_1440_s45", "S06", 382, R1440, 45, 0.03)
     run("S08_1440_s27_MB", "S08", 540, R1440, 27, 0.05, mb=True)
-if "--eevee" in args or "--quick" not in args:
+if "--eevee" in args:   # headless bez GPU/EGL kończy proces (brak libEGL) – tylko na żądanie
     try:
         B.render_settings(engine="BLENDER_EEVEE", res=(640, 360), samples=16)
         sc.render.filepath = str(out / "bench_eevee.png")

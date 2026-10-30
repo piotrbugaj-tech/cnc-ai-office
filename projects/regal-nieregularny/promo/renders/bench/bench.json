@@ -1,0 +1,77 @@
+{
+ "build_s": 3.5,
+ "cpu_threads": 4,
+ "blender": "5.2.3 LTS",
+ "results": [
+  {
+   "name": "B_S02_1440_s36",
+   "shot": "S02",
+   "frame": 120,
+   "res": [
+    2560,
+    1440
+   ],
+   "spp": 36,
+   "threshold": 0.035,
+   "motion_blur": false,
+   "persistent": true,
+   "seconds": 283.9
+  },
+  {
+   "name": "S02_1440_s1",
+   "shot": "S02",
+   "frame": 121,
+   "res": [
+    2560,
+    1440
+   ],
+   "spp": 1,
+   "threshold": 0.5,
+   "motion_blur": false,
+   "persistent": true,
+   "seconds": 30.8
+  },
+  {
+   "name": "S02_1080_s36",
+   "shot": "S02",
+   "frame": 124,
+   "res": [
+    1920,
+    1080
+   ],
+   "spp": 36,
+   "threshold": 0.035,
+   "motion_blur": false,
+   "persistent": true,
+   "seconds": 245.4
+  },
+  {
+   "name": "S06_1440_s45",
+   "shot": "S06",
+   "frame": 382,
+   "res": [
+    2560,
+    1440
+   ],
+   "spp": 45,
+   "threshold": 0.03,
+   "motion_blur": false,
+   "persistent": true,
+   "seconds": 822.3
+  },
+  {
+   "name": "S08_1440_s27_MB",
+   "shot": "S08",
+   "frame": 540,
+   "res": [
+    2560,
+    1440
+   ],
+   "spp": 27,
+   "threshold": 0.05,
+   "motion_blur": true,
+   "persistent": true,
+   "seconds": 271.9
+  }
+ ]
+}

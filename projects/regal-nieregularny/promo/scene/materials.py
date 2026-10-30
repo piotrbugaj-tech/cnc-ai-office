@@ -240,7 +240,7 @@ def plywood(name="Sklejka_brzoza_18", t_mm=18.0, plies=13, tint=(1.0, 1.0, 1.0),
 
     face = nb.mix(tone_m, BIRCH["face_light"], BIRCH["face_mid"], (-500, -100))
     face = nb.mix(nb.math("MULTIPLY", fig, 0.6), face, BIRCH["face_dark"], (-350, -200))
-    sv = nb.math("ADD", 1.0, nb.math("MULTIPLY", nb.math("SUBTRACT", fine_m, 0.5), 0.12), (-500, -500))
+    sv = nb.math("ADD", 1.0, nb.math("MULTIPLY", nb.math("SUBTRACT", fine_m, 0.5), 0.16), (-500, -500))
     face = nb.mix(1.0, face, nb.combine(sv, sv, sv), (-200, -300), blend="MULTIPLY")
     face = nb.mix(nb.math("MULTIPLY", pore_m, 0.75), face, BIRCH["pore"], (-100, -350))
     if grade == "CP":
@@ -254,18 +254,29 @@ def plywood(name="Sklejka_brzoza_18", t_mm=18.0, plies=13, tint=(1.0, 1.0, 1.0),
     ox, oy, oz = obj[0], obj[1], obj[2]
     # współrzędna wzdłuż krawędzi (x+y wystarczy do falowania)
     along = nb.math("ADD", ox, oy, (-1800, 550))
-    # nierówne grubości warstw: wolne zniekształcenie z (stałe na całej długości krawędzi) + falowanie granic
-    zn = nb.noise(nb.combine(nb.math("MULTIPLY", oz, 520.0), rnd, 0.0), scale=1.0, detail=1.0,
-                  loc=(-1700, 300))
-    wav = nb.noise(nb.combine(nb.math("MULTIPLY", along, 9.0), nb.math("MULTIPLY", oz, 120.0),
+    # falowanie granic wzdłuż krawędzi (fornir łuszczony nie jest idealnie płaski)
+    wav = nb.noise(nb.combine(nb.math("MULTIPLY", along, 14.0), nb.math("MULTIPLY", oz, 120.0),
                               nb.math("MULTIPLY", rnd, 5.0)), scale=1.0, detail=3.0, loc=(-1700, 600))
-    zw = nb.math("ADD", oz, nb.math("MULTIPLY", nb.math("SUBTRACT", zn.outputs["Fac"], 0.5), ply * 1.6),
-                 (-1450, 350))
-    zw = nb.math("ADD", zw, nb.math("MULTIPLY", nb.math("SUBTRACT", wav.outputs["Fac"], 0.5), ply * 0.18),
+    zw = nb.math("ADD", oz, nb.math("MULTIPLY", nb.math("SUBTRACT", wav.outputs["Fac"], 0.5), ply * 0.35),
                  (-1300, 400))
     pz = nb.math("DIVIDE", zw, ply, (-1150, 400))
-    k = nb.math("FLOOR", pz, loc=(-1000, 500))
+    k0 = nb.math("FLOOR", pz, loc=(-1000, 500))
     f = nb.math("FRACT", pz, loc=(-1000, 350))
+    # nierówne grubości warstw: każda granica przesunięta losowo o ±25 % grubości warstwy (hash z numeru granicy)
+    def _jit(kk, loc):
+        w = nb.n("ShaderNodeTexWhiteNoise", loc)
+        try:
+            w.noise_dimensions = "2D"
+        except Exception:
+            pass
+        nb.link(nb.combine(kk, nb.math("MULTIPLY", rnd, 7.0), 0.0), w.inputs["Vector"])
+        return nb.math("MULTIPLY", nb.math("SUBTRACT", w.outputs["Value"], 0.5), 0.5)
+    o0 = _jit(k0, (-1000, 800))
+    o1 = _jit(nb.math("ADD", k0, 1.0), (-1000, 950))
+    top1 = nb.math("ADD", o1, 1.0, (-850, 950))
+    below = nb.math("LESS_THAN", f, o0, (-850, 800))
+    above = nb.math("GREATER_THAN", f, top1, (-850, 900))
+    k = nb.math("ADD", nb.math("SUBTRACT", k0, below), above, (-720, 850))
     parity = nb.math("MODULO", k, 2.0, (-850, 500))   # 0 = warstwa wzdłużna (jasna), 1 = poprzeczna
     parity = nb.math("ABSOLUTE", parity, loc=(-720, 500))
     # losowy ton każdej warstwy
@@ -276,7 +287,8 @@ def plywood(name="Sklejka_brzoza_18", t_mm=18.0, plies=13, tint=(1.0, 1.0, 1.0),
         pass
     nb.link(nb.combine(k, nb.math("MULTIPLY", rnd, 13.0), 0.0), wn.inputs["Vector"])
     # spoina: odległość do granicy warstwy
-    dist = nb.math("MINIMUM", f, nb.math("SUBTRACT", 1.0, f), (-850, 300))
+    dist = nb.math("MINIMUM", nb.math("ABSOLUTE", nb.math("SUBTRACT", f, o0)),
+                   nb.math("ABSOLUTE", nb.math("SUBTRACT", top1, f)), (-850, 300))
     glue_w = 0.075 / (t_mm / plies)      # ~0,075 mm w jednostkach warstwy
     glue = nb.maprange(dist, glue_w * 0.4, glue_w * 1.6, 1.0, 0.0, (-700, 300), interp="SMOOTHSTEP")
     # tekstura wewnątrz warstwy: wzdłużne smugi (jasne) / punktowe pory czoła (ciemne)
@@ -322,8 +334,10 @@ def plywood(name="Sklejka_brzoza_18", t_mm=18.0, plies=13, tint=(1.0, 1.0, 1.0),
     r_edge = nb.math("ADD", 0.56, nb.math("MULTIPLY", tex_m, 0.05), (0, -750))
     rough = nb.mixf(is_face, r_edge, r_face, (200, -650))
 
-    h_face = nb.math("ADD", nb.math("MULTIPLY", pore_m, -0.4), nb.math("MULTIPLY", fine_m, -0.6), (0, -950))
-    h_edge = nb.math("ADD", nb.math("MULTIPLY", glue, -1.0), nb.math("MULTIPLY", tex_m, 0.35), (0, -1100))
+    # bump celowo tani: Cycles liczy całą sieć nad wejściem Height 3× – lico: tylko smugi włókien,
+    # krawędź: rowki spoin (pory czoła i plamki zostają w kolorze/roughness)
+    h_face = nb.math("MULTIPLY", fine_m, -0.6, (0, -950))
+    h_edge = 0.0       # krawędź szlifowana na płasko: spoiny tylko kolorem (bump dawał efekt "żebrowania")
     h = nb.mixf(is_face, h_edge, h_face, (200, -1000))
     bump = nb.n("ShaderNodeBump", (400, -950))
     bump.inputs["Strength"].default_value = 0.35
@@ -353,10 +367,11 @@ def plywood(name="Sklejka_brzoza_18", t_mm=18.0, plies=13, tint=(1.0, 1.0, 1.0),
 
 
 # --------------------------------------------------------------------------- okucia, gałki
-def metal(name, color=(0.80, 0.81, 0.83), rough=0.26, aniso=0.0, rough_var=0.06):
+def metal(name, color=(0.80, 0.81, 0.83), rough=0.26, aniso=0.0, rough_var=0.015, var_scale=60.0):
+    """Metal (ocynk / nikiel / stal A2): delikatna, wielkoskalowa zmienność roughness (bez "brokatu")."""
     m, nt, nb = new_material(name)
     tc = nb.n("ShaderNodeTexCoord", (-900, 0))
-    nz = nb.noise(tc.outputs["Object"], scale=900.0, detail=2.0, loc=(-700, 0))
+    nz = nb.noise(tc.outputs["Object"], scale=var_scale, detail=2.0, loc=(-700, 0))
     r = nb.maprange(nz.outputs["Fac"], 0.3, 0.7, rough - rough_var, rough + rough_var, (-450, 0))
     b = principled(nb)
     b.inputs["Base Color"].default_value = (*color, 1)
@@ -431,7 +446,8 @@ def plaster(name="Sciana_tynk", color="E9E4DB", bump=0.12):
     v2 = nb.maprange(mid.outputs["Fac"], 0.3, 0.7, 0.99, 1.01, (-650, 50))
     vv = nb.math("MULTIPLY", v, v2, (-500, 150))
     col = nb.mix(1.0, base, nb.combine(vv, vv, vv), (-300, 150), blend="MULTIPLY")
-    h = nb.math("ADD", nb.math("MULTIPLY", mid.outputs["Fac"], 0.5), fine.outputs["Fac"], (-500, -150))
+    fine_b = nb.noise(tc.outputs["Object"], scale=180.0, detail=1.0, rough=0.5, loc=(-900, -400))
+    h = fine_b.outputs["Fac"]                      # tani bump (1 oktawa) – faktura tynku w zbliżeniach
     bp = nb.n("ShaderNodeBump", (-250, -200))
     bp.inputs["Strength"].default_value = bump
     bp.inputs["Distance"].default_value = 0.0004
@@ -473,8 +489,8 @@ def microcement(name="Podloga_mikrocement", color="CFC6B8", rough=0.55):
     bp = nb.n("ShaderNodeBump", (-300, -450))
     bp.inputs["Strength"].default_value = 0.08
     bp.inputs["Distance"].default_value = 0.0005
-    nb.link(nb.math("ADD", trowel.outputs["Fac"], nb.math("MULTIPLY", speck.outputs["Fac"], 0.3)),
-            bp.inputs["Height"])
+    tr_b = nb.noise(mp.outputs[0], scale=2.5, detail=1.0, loc=(-1100, -650))   # tani bump: 1 oktawa
+    nb.link(tr_b.outputs["Fac"], bp.inputs["Height"])
     b = principled(nb)
     nb.link(col, b.inputs["Base Color"])
     nb.link(r, b.inputs["Roughness"])

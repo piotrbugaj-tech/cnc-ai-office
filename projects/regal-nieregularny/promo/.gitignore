@@ -11,3 +11,6 @@ audio_edit/sfx_demo.wav
 # muzyka i stemy generowane skryptami (odtwarzalne, duże)
 audio_edit/music/*.wav
 audio_edit/music/**/*.wav
+
+# pełne PNG look-devu (lokalnie); w repo podglądy JPG w renders/lookdev/podglad/
+renders/lookdev/*.png

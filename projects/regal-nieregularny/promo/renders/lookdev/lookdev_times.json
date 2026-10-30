@@ -1,0 +1,35 @@
+{
+ "settings": {
+  "res": [
+   1920,
+   1080
+  ],
+  "spp": 64,
+  "adaptive_threshold": 0.02,
+  "denoiser": "OIDN HIGH (albedo+normal)",
+  "view": "Khronos PBR Neutral, white balance 5300 K",
+  "bounces": "4/3/2",
+  "light_tree": false,
+  "device": "CPU 4 vCPU Xeon 2.8 GHz (Firecracker VM)"
+ },
+ "frames": [
+  {
+   "file": "lookdev/a_hero_34.png",
+   "shot": "S02",
+   "frame": 179,
+   "seconds": 234.2
+  },
+  {
+   "file": "lookdev/b_makro_krawedz_szczelina.png",
+   "shot": "S06",
+   "frame": 382,
+   "seconds": 377.6
+  },
+  {
+   "file": "lookdev/c_szuflada_wysuw.png",
+   "shot": "S03 (kamera look-devu z boku)",
+   "frame": 224,
+   "seconds": 363.1
+  }
+ ]
+}

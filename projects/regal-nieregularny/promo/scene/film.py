@@ -49,12 +49,13 @@ SHOTS = {
     "S04": dict(f=(225, 300), lens=50, fstop=5.6, ev=0.0, spp=27, thr=0.04, name="Cichy domyk",
                 holds=[(225, 249), (286, 299)]),
     "S05": dict(f=(300, 345), lens=50, fstop=4.0, ev=0.0, spp=36, thr=0.035, name="Domyka się sam"),
-    "S06": dict(f=(345, 420), lens=100, fstop=5.6, ev=0.2, spp=45, thr=0.03, name="2 mm"),
+    "S06": dict(f=(345, 420), lens=100, fstop=5.6, ev=-0.8, spp=45, thr=0.03, name="2 mm"),   # brief: +0,2 (look-dev: −0,8)
     "S07": dict(f=(420, 480), lens=35, fstop=8.0, ev=0.1, spp=27, thr=0.05, name="140 elementów"),
     "S08": dict(f=(480, 600), lens=35, fstop=8.0, ev=0.0, spp=27, thr=0.05, name="Z płaskiego", mb=0.4),
     "S09": dict(f=(600, 660), lens=50, fstop=5.6, ev=-0.1, spp=36, thr=0.035, name="Hero", tail=10),
 }
 OVERLAP = 3
+EV_OFFSET = -0.3   # globalna korekta ekspozycji pod Khronos PBR Neutral (brief liczył EV pod AgX)
 F_SHEETS, F_ASSEMBLED, F_HERO = 420, 600, 600
 
 
@@ -234,7 +235,7 @@ def shot_S06():
         u = min(1.0, max(0.0, (f - 345) / 75.0))
         sm = u * u * (3 - 2 * u)
         key_cam(c, f, P(1540 + 80 * sm, -430, 610), P(1570 + 80 * sm, 0, 600), P(1570 + 80 * sm, 0, 600))
-    aux_light("S06_pasek", P(1900, -120, 600), P(1500, -120, 600), 0.1, 8.0, 3800, 345 - OVERLAP, 420 + OVERLAP,
+    aux_light("S06_pasek", P(1900, -120, 600), P(1500, -120, 600), 0.1, 4.0, 4500, 345 - OVERLAP, 420 + OVERLAP,
               size_y=0.6)
     for f, nm, note in ((360, "A_18mm", "F6"), (375, "B_2mm", "A6"), (390, "C_13warstw", "C7")):
         ev("callout", f, nm, note=note)
@@ -436,7 +437,7 @@ def exposure_keys():
     sc = bpy.context.scene
     with B._ConstKeys():
         for sid, s in SHOTS.items():
-            sc.view_settings.exposure = s["ev"]
+            sc.view_settings.exposure = s["ev"] + EV_OFFSET
             sc.view_settings.keyframe_insert("exposure", frame=s["f"][0] if sid != "S01" else -10)
     B.set_interp(sc, "CONSTANT")
 
@@ -533,6 +534,21 @@ def build_film(props=True):
     return cams
 
 
+class no_marker_cams:
+    """Na czas renderu jednego ujęcia/klatki odpina kamery od markerów (inaczej Blender przy frame_set i renderze
+    przełącza kamerę wg markerów – zakładki ±3 kl. dostałyby kamerę sąsiedniego ujęcia)."""
+
+    def __enter__(self):
+        self.saved = [(m, m.camera) for m in bpy.context.scene.timeline_markers]
+        for m, _ in self.saved:
+            m.camera = None
+        return self
+
+    def __exit__(self, *a):
+        for m, c in self.saved:
+            m.camera = c
+
+
 def set_shot_render(sid, preset="final", res=(2560, 1440), spp=None, device=None, animatic=False, thr=None):
     s = SHOTS[sid]
     sc = bpy.context.scene
@@ -542,7 +558,7 @@ def set_shot_render(sid, preset="final", res=(2560, 1440), spp=None, device=None
     # stała ekspozycja ujęcia (klucze ekspozycji służą tylko animatikowi – w renderze ujęcia je zdejmujemy)
     if sc.animation_data:
         sc.animation_data_clear()
-    sc.view_settings.exposure = s["ev"]
+    sc.view_settings.exposure = s["ev"] + EV_OFFSET
     cy = sc.cycles
     cy.use_animated_seed = False
     cy.max_bounces, cy.diffuse_bounces, cy.glossy_bounces = 4, 3, 2
@@ -561,14 +577,16 @@ def render_stills(spec, preset, res, out, spp=None, device=None, thr=None, suffi
         sid, f = item.split(":")
         f = int(f)
         info = set_shot_render(sid, preset, res, spp, device, thr=thr)
-        sc.view_settings.exposure = SHOTS[sid]["ev"]
-        sc.frame_set(f)
+        sc.view_settings.exposure = SHOTS[sid]["ev"] + EV_OFFSET
         path = Path(out) / f"{sid}_f{f:03d}{suffix}.png"
         t = time.time()
         sc.render.filepath = str(path)
         sc.render.image_settings.file_format = "PNG"
         sc.render.image_settings.color_depth = "8"
-        bpy.ops.render.render(write_still=True)
+        with no_marker_cams():
+            sc.frame_set(f)
+            sc.camera = B.S.film_cams[sid]
+            bpy.ops.render.render(write_still=True)
         dt = time.time() - t
         print(f"[film] {sid} f{f}: {dt:.1f} s → {path}")
         rep.append(dict(shot=sid, frame=f, file=str(path), seconds=round(dt, 1), **info))
@@ -586,6 +604,11 @@ def render_shot(sid, preset="final", res=(2560, 1440), spp=None, device=None, ou
     holds = s.get("holds", [])
     sc.render.image_settings.file_format = "PNG"
     sc.render.use_overwrite = False
+    with no_marker_cams():
+        _render_range(sid, sc, out, f0, f1, holds)
+
+
+def _render_range(sid, sc, out, f0, f1, holds):
     for f in range(f0, f1 + 1):
         dst = out / f"f_{f:04d}.png"
         if dst.exists():
@@ -597,30 +620,50 @@ def render_shot(sid, preset="final", res=(2560, 1440), spp=None, device=None, ou
                 shutil.copyfile(src, dst)
                 continue
         sc.frame_set(f)
+        sc.camera = B.S.film_cams[sid]
         sc.render.filepath = str(dst)
         bpy.ops.render.render(write_still=True)
 
 
-def animatic(out_dir=None, res=(640, 360), spp=8):
-    """Cały film w niskiej jakości: Cycles 640×360, 8 spp, OIDN; kamery z markerów; nakładka ID ujęcia/klatka;
-    plansza S10 jako prosta tymczasowa karta; MP4 przez ffmpeg."""
+def animatic(out_dir=None, res=(640, 360), spp=6):
+    """Cały film w niskiej jakości do sprawdzenia timingu: Cycles, `spp` sampli + OIDN, 2 odbicia, Fast GI,
+    kamery z markerów, klatki S04 "trzymane" renderowane raz i kopiowane; wznawialne (pomija istniejące)."""
     sc = bpy.context.scene
     out = Path(out_dir or (B.FRAMES_DIR / "animatic"))
     out.mkdir(parents=True, exist_ok=True)
     B.render_settings("preview", res=res, samples=spp, threshold=0.1)
     cy = sc.cycles
-    cy.max_bounces, cy.diffuse_bounces, cy.glossy_bounces, cy.transmission_bounces = 3, 2, 1, 1
+    cy.max_bounces, cy.diffuse_bounces, cy.glossy_bounces, cy.transmission_bounces = 2, 1, 1, 1
+    try:
+        cy.use_fast_gi = True
+        cy.fast_gi_method = "REPLACE"
+        cy.ao_bounces_render = 1
+        sc.world.light_settings.distance = 1.0
+    except Exception:
+        pass
     cy.use_animated_seed = False
     sc.render.use_motion_blur = False
     sc.render.image_settings.file_format = "PNG"
     sc.render.image_settings.color_depth = "8"
-    sc.frame_start, sc.frame_end = 0, 659
-    sc.render.filepath = str(out / "f_")
-    sc.render.use_overwrite = False
-    sc.render.use_placeholder = True
+    holds = [h for s in SHOTS.values() for h in s.get("holds", [])]
     t = time.time()
-    bpy.ops.render.render(animation=True)
-    print(f"[film] animatik 3D: {time.time() - t:.0f} s")
+    n = 0
+    for f in range(0, 660):
+        dst = out / f"f_{f:04d}.png"
+        if dst.exists():
+            continue
+        hold = next(((a, b) for a, b in holds if a <= f <= b), None)
+        if hold and f != hold[0] and (out / f"f_{hold[0]:04d}.png").exists():
+            shutil.copyfile(out / f"f_{hold[0]:04d}.png", dst)
+            continue
+        sc.frame_set(f)
+        sc.camera = B.S.film_cams[shot_of(f)]
+        sc.render.filepath = str(dst)
+        bpy.ops.render.render(write_still=True)
+        n += 1
+        if n % 25 == 0:
+            print(f"[film] animatik f{f}: {(time.time() - t) / n:.1f} s/kl.", flush=True)
+    print(f"[film] animatik 3D: {time.time() - t:.0f} s, wyrenderowano {n} kl.", flush=True)
     return out
 
 
@@ -687,7 +730,7 @@ def main():
         for sid in arg("--shot").split(","):
             render_shot(sid, arg("--preset", "final"), res, arg("--spp", None, int), device)
     if "--animatic" in args:
-        fr = animatic(res=tuple(int(v) for v in arg("--ares", "640x360").split("x")), spp=arg("--aspp", 8, int))
+        fr = animatic(res=tuple(int(v) for v in arg("--ares", "640x360").split("x")), spp=arg("--aspp", 6, int))
         mp4 = finish_animatic(fr)
         print("[film] animatik →", mp4)
 

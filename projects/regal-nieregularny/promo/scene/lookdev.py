@@ -2,7 +2,8 @@
 
   a) hero 3/4 całego regału w świetle okna, z rekwizytami  → S02 f179 (koniec łuku kamery, rig "Poranek")
   b) makro krawędzi sklejki i szczeliny 2 mm (płytka GO)    → S06 f382 (front S06 / P060 / D160-030, 100 mm f/5.6)
-  c) szuflada w pełnym wysuwie: prowadnica + wnętrze        → S03 f224 (S09 wysunięta 350 mm, tkaniny w środku)
+  c) szuflada w pełnym wysuwie: prowadnica + wnętrze        → S03 f224 (S09 wysunięta 350 mm, tkaniny w środku);
+     kamera look-devu z boku (kamera z briefu nie pokazuje prowadnicy – opcja --brief-cam-c renderuje oryginalną)
 
 Użycie:
   python3.13 scene/lookdev.py -- [--res 1920x1080] [--spp 128] [--thr 0.01] [--device METAL] [--only a,b]
@@ -38,6 +39,13 @@ def main():
     out = Path(arg("--out", str(B.RENDERS_DIR / "lookdev")))
     keys = arg("--only", "a,b,c").split(",")
     F.build_film()
+    if "c" in keys and "--brief-cam-c" not in args:
+        # Kamera z briefu (S03, f210–225) stoi przed płaszczyzną frontu, więc prowadnica schowana za frontem
+        # jest niewidoczna. Do look-devu (c) – kamera z prawej, z góry, za płaszczyzną frontu: bok skrzynki S09
+        # z członami KA 4532 (wewnętrzny + środkowy) i wnętrze z tkaninami.
+        cam = B.make_camera("CAM_LD_szuflada", F.P(1500, -255, 1090), F.P(1140, -175, 790), lens=40, fstop=4.0,
+                            focus=F.P(1186, -190, 809))
+        F.B.S.film_cams["S03"] = cam
     spec = ",".join(LOOKDEV[k][1] for k in keys)
     rep = F.render_stills(spec, "final", res, out, arg("--spp", 128, int), arg("--device"), arg("--thr", 0.01, float))
     for k, r in zip(keys, rep):
