@@ -25,12 +25,17 @@ Przyklady:
   pip3 install fal-client
   export FAL_KEY=...            # albo plik .env z linia FAL_KEY=...
   python3 fal_music.py --dry-run                        # pokaz payloady i koszt, bez klucza
-  python3 fal_music.py --env ~/sekrety/.env             # domyslnie: eleven25 x3 warianty + lyria3 x2 (~1.9 USD)
-  python3 fal_music.py --env ~/.env --models eleven25 --variants warm_marimba --seeds 11 12 13
+  python3 fal_music.py --env ~/sekrety/.env             # 30 s: eleven25 x3 warianty + lyria3 x2 (~1.9 USD)
+  python3 fal_music.py --env ~/sekrety/.env --length 15 --models eleven25    # cutdown 15 s (~1.8 USD)
+  python3 fal_music.py --env ~/.env --models eleven25 --variants nordic_marimba --seeds 11 12 13
   python3 fal_music.py --env ~/.env --models lyria3 --image ../renders/lookdev/a_hero_34_t3.png
   python3 fal_music.py --env ~/.env --sfx               # biblioteka SFX AI do sfx_ai/
   python3 fal_music.py --env ~/.env --mmaudio ../renders/shot03.mp4 --prompt "drawer sliding open on ball bearing runners"
-Parametry czasowe (BPM, reveal, end card) sa brane z research-brief.md (jesli istnieje) albo z flag.
+Plan muzyki wg research-brief.md (6.1): 100 BPM, F-dur, takt 2,4 s, ciecia na uderzeniach; 30 s:
+  [Hook 0-7.2: nuty polek, f60=2.4 s sub + pad] [Groove 7.2-16.2] [Breakdown 16.2-19.2, cisza 18.96]
+  [Drop 19.2-26.4: drop, f585 akord, rozwiazanie 24.0] [Outro 26.4-30: sygnal RYTM]
+Muzyka AI to "lozko": nuty zwiazane z obrazem (nuty polek, ladowania, sygnal) dokladamy z music_synth
+(stem `motif`) albo z events.json - edit.py miesza je na wierzchu.
 """
 from __future__ import annotations
 
@@ -72,44 +77,72 @@ EST_COST = {
 # --------------------------------------------------------------------------
 # styl i warianty
 # --------------------------------------------------------------------------
-BASE_STYLE = ("premium minimal product commercial score, Scandinavian design, birch plywood furniture, "
-              "warm, refined, calm confidence, optimistic, high-end product film (Apple, Vitsoe, USM, Tylko), "
-              "clean modern mix, wide stereo, tasteful, instrumental only")
-NEGATIVE = ["vocals", "singing", "humming", "choir", "spoken words", "rap", "EDM drop", "dubstep",
-            "distorted guitars", "aggressive drums", "cheesy corporate ukulele", "whistling", "lo-fi hiss"]
+BASE_STYLE = ("premium minimal product film score, Nordic, warm and woody, calm confidence, refined, "
+              "high-end furniture commercial (Tylko, Vitsoe, USM, HAY), clean modern mix, wide stereo, "
+              "100 BPM, F major, 4/4, half-time pulse, instrumental only")
+NEGATIVE = ["vocals", "singing", "humming", "choir", "spoken words", "rap", "EDM build-up", "dubstep",
+            "distorted guitars", "aggressive drums", "trap hi-hats", "cheesy corporate ukulele", "whistling",
+            "lo-fi vinyl hiss", "busy lead melody"]
 
+# warianty brzmienia (research-brief 6.1: marimba, pady, sub-kick, wood clap, shaker, bas w dropie)
 VARIANTS = {
-    'warm_marimba': dict(
-        label='A - cieple pady + marimba',
-        styles=["warm analog synth pads with gentle detune", "soft marimba and kalimba plucks",
-                "woodblock and shaker minimal groove", "deep round sub bass"],
-        logo="a 4-note marimba sonic logo"),
+    'nordic_marimba': dict(
+        label='A - brief: drewniana marimba + cieple pady (najblizej syntezy)',
+        styles=["soft wooden marimba", "warm analog pads with gentle chorus", "deep round sub kick",
+                "wooden clap on beat 3", "very quiet shaker 16ths", "warm sine bass in the drop"],
+        logo="a 5-note marimba sonic logo F4 A4 C5 D5 F5"),
     'felt_piano': dict(
-        label='B - felt piano + elektronika',
-        styles=["intimate felt piano motif", "soft airy synth pads", "subtle electronic pulse",
-                "light finger snaps and soft kick", "warm sub bass"],
-        logo="a short felt piano sonic logo"),
-    'organic_pluck': dict(
-        label='C - organiczne szarpane',
-        styles=["plucked nylon guitar harmonics and kalimba", "pizzicato upright bass",
-                "brushed soft percussion and wooden clicks", "warm string pad swells"],
-        logo="a gentle plucked 4-note sonic logo"),
+        label='B - felt piano + pady + miekki puls',
+        styles=["intimate felt piano", "airy warm pads", "soft sub kick half-time", "wooden clicks",
+                "subtle tape saturation"],
+        logo="a short 5-note felt piano sonic logo rising F A C D F"),
+    'ambient_pulse': dict(
+        label='C - ambient, kalimba i pulsujacy arpeggiator',
+        styles=["kalimba and plucked wooden textures", "slowly evolving ambient pad", "soft analog arpeggio pulse",
+                "organic wooden percussion", "deep warm sub bass"],
+        logo="a gentle 5-note kalimba sonic logo"),
+}
+
+# plan odcinkow (s) wg briefu: ciecia na uderzeniach, odcinki >= 3 s (wymog ElevenLabs)
+PLAN = {
+    30: [
+        ('[Hook]', 0.0, 7.2, ["0-2.4 s: almost silent, sparse dry marimba notes only, airy",
+                              "at 2.4 s a soft sub hit and the warm pad opens (Fmaj9 then Dm9)",
+                              "minimal, leave space for sound effects"]),
+        ('[Groove]', 7.2, 16.2, ["half-time groove: sub kick on beat 1, wooden clap on beat 3, quiet shaker",
+                                 "chords Bbmaj7, Csus4 to C, Fmaj9, Dm9, one chord per bar",
+                                 "short repeating marimba rhythm figure, never busy"]),
+        ('[Breakdown]', 16.2, 19.2, ["groove ends at 16.8 s, then drums stop, pad Bbmaj7#11 and a rising riser",
+                                     "riser cuts hard to complete silence for the last quarter second"]),
+        ('[Drop]', 19.2, 26.4, ["the drop lands exactly on the downbeat: sub kick, warm bass, full pad Fmaj9 then Dm9",
+                                "rising marimba melody, at 23.4 s a bright chord",
+                                "at 24 s drums stop, calm resolution on Bbmaj7"]),
+        ('[Outro]', 26.4, 30.0, ["final section starts on the downbeat", "{logo}", "deep F sub note and full Fmaj9 pad",
+                                 "rings out and fades naturally to silence by 29.8 s"]),
+    ],
+    15: [
+        ('[Intro]', 0.0, 4.2, ["sparse dry marimba notes, at 2.4 s soft sub hit and half-time groove starts"]),
+        ('[Breakdown]', 4.2, 7.2, ["at 6.0 s drums stop, riser", "hard cut to silence at 6.96 s"]),
+        ('[Drop]', 7.2, 12.0, ["drop on the downbeat: sub kick, bass, full pad, rising marimba melody"]),
+        ('[Outro]', 12.0, 15.0, ["{logo}", "rings out, clean ending by 14.8 s"]),
+    ],
 }
 
 SFX_PROMPTS = [
-    ('drawer_open_ballbearing', 1.6, "close-up foley: a birch plywood drawer sliding open smoothly on full-extension "
-     "steel ball-bearing runners, soft rolling whirr, subtle ball rattle, hollow wooden box resonance, quiet studio"),
-    ('drawer_softclose', 1.8, "close-up foley: a plywood drawer pushed closed, the soft-close mechanism catches with a tiny "
-     "click and gently pulls it shut with a damped pneumatic hiss, ending with a soft muted wooden tap, quiet room"),
-    ('door_blumotion_close', 1.6, "close-up foley: small inset plywood cabinet door closing with a soft-close hinge, "
-     "damped hydraulic slow-down and a very quiet final tick, premium furniture, quiet room"),
-    ('plywood_panel_land', 1.2, "a single 18 mm birch plywood panel dropped flat onto a stack of plywood boards, "
-     "dull deep wooden thunk with a short air cushion puff, studio, no echo"),
-    ('panel_whoosh', 1.0, "a large flat wooden panel flying quickly past the camera, smooth airy whoosh with slight "
-     "flutter, cinematic, clean"),
-    ('cordless_screwdriver', 1.2, "short burst of a cordless screwdriver driving a wood screw into plywood, motor whine "
-     "with slight load, screw head seating, close-up workshop foley"),
-    ('reveal_sub_boom', 3.0, "elegant cinematic sub bass boom hit for a product reveal, deep, warm, clean, short tail"),
+    ('roll_ballbearing_S09', 0.9, "extreme close-up foley: a birch plywood drawer pulled out smoothly on full-extension steel "
+     "ball-bearing runners, fine rolling whirr of tiny steel balls, hollow wooden box resonance, quiet room, no music"),
+    ('stop_full_extension', 1.0, "a plywood drawer reaching full extension and hitting the runner end stop: a soft deep "
+     "wooden 'tunk' with a tiny metal click, close-up foley, quiet room"),
+    ('softclose_drawer', 1.8, "close-up foley: a plywood drawer pushed closed, the soft-close mechanism catches with a small "
+     "plastic click and slowly pulls it shut with a quiet damped hiss, ends with a soft muted felt 'thup'"),
+    ('blumotion_door', 1.6, "close-up foley: a small inset plywood cabinet door closing on a soft-close hinge, quiet air, "
+     "tiny metal catch, hydraulic slow-down and a gentle wooden 'tok' with a faint hinge click"),
+    ('panel_landing', 1.0, "an 18 mm birch plywood shelf landing precisely into place, dull deep wooden 'tok', "
+     "tight, close-up, studio, no echo"),
+    ('panel_fly_whoosh', 0.7, "a flat plywood panel flying quickly past camera, short smooth airy whoosh, clean"),
+    ('pop_parts', 0.6, "dozens of small wooden parts popping out of CNC-cut plywood sheets at once, tiny dry wooden "
+     "clicks spreading outward, satisfying, close-up"),
+    ('reveal_sub', 3.0, "elegant cinematic deep sub bass hit for a product reveal, warm, clean, short dark tail"),
 ]
 
 
@@ -204,61 +237,53 @@ def timing(bpm, reveal, endcard, duration):
     return dict(bpm=bpm, reveal=reveal, endcard=endcard, duration=duration)
 
 
+def _plan(tm):
+    L = 15 if tm['duration'] <= 16 else 30
+    return L, PLAN[L]
+
+
 def eleven25_payload(var, tm, seed, extra_notes=''):
     v = VARIANTS[var]
-    D = int(round(tm['duration'] * 1000))
-    r = int(round(tm['reveal'] * 1000))
-    e = int(round(tm['endcard'] * 1000))
-    hit = min(4600, max(3000, (e - r) // 3))
-    chunks_ms = [r, hit, e - r - hit, D - e]
-    if min(chunks_ms) < 3000:
-        raise ValueError(f'kazdy odcinek >= 3 s, a wyszlo {chunks_ms} - zmien reveal/endcard')
-    common = [BASE_STYLE, f"{tm['bpm']:.0f} BPM", "F major"] + v['styles']
+    L, plan = _plan(tm)
+    common = [BASE_STYLE] + v['styles']
     if extra_notes:
         common.append(extra_notes[:180])
-    chunks = [
-        dict(text='[Intro]', duration_ms=chunks_ms[0],
-             positive_styles=common + ["sparse, airy intro", "slowly building anticipation",
-                                       "soft ticking percussion", "filter slowly opening",
-                                       "short riser and a brief breath of silence right before the next section"],
-             negative_styles=NEGATIVE + ["full drums", "loud bass"]),
-        dict(text='[Reveal]', duration_ms=chunks_ms[1], context_adherence='high',
-             positive_styles=["product reveal moment on the very first downbeat", "elegant deep sub-bass boom hit",
-                              "full warm chord", "beat enters", "uplifting, confident"],
-             negative_styles=NEGATIVE),
-        dict(text='[Groove]', duration_ms=chunks_ms[2], context_adherence='high',
-             positive_styles=["light steady groove", "same instruments and tempo",
-                              "melodic arpeggios", "gentle variation, never busy",
-                              "short drum break right before the final section"],
-             negative_styles=NEGATIVE),
-        dict(text='[Outro]', duration_ms=chunks_ms[3], context_adherence='high',
-             positive_styles=["final resolving cadence on the downbeat", v['logo'], "end card",
-                              "warm sustained final chord ringing out", "clean natural ending"],
-             negative_styles=NEGATIVE + ["fade in of new instruments", "abrupt cut"]),
-    ]
+    chunks = []
+    for i, (tag, t0, t1, styles) in enumerate(plan):
+        st = [x.replace('{logo}', v['logo']) for x in styles]
+        c = dict(text=tag, duration_ms=int(round((t1 - t0) * 1000)),
+                 positive_styles=(common + st) if i == 0 else st + v['styles'][:2],
+                 negative_styles=list(NEGATIVE))
+        if i > 0:
+            c['context_adherence'] = 'high'
+        chunks.append(c)
+    tot = sum(c['duration_ms'] for c in chunks)
+    chunks[-1]['duration_ms'] += int(round(tm['duration'] * 1000)) - tot
+    if min(c['duration_ms'] for c in chunks) < 3000:
+        raise ValueError('kazdy odcinek musi miec >= 3 s')
     return {'composition_plan': {'chunks': chunks}, 'seed': int(seed), 'output_format': 'mp3_48000_320'}
 
 
 def eleven_v1_payload(var, tm, seed, extra_notes=''):
-    p = eleven25_payload(var, tm, seed, extra_notes)
-    secs = []
-    for c, name in zip(p['composition_plan']['chunks'], ['Intro', 'Reveal', 'Groove', 'End card']):
-        secs.append(dict(section_name=name, positive_local_styles=c['positive_styles'][-5:],
-                         negative_local_styles=c['negative_styles'][:6], duration_ms=c['duration_ms'], lines=[]))
     v = VARIANTS[var]
-    return {'composition_plan': {'positive_global_styles': [BASE_STYLE, f"{tm['bpm']:.0f} BPM"] + v['styles'],
+    L, plan = _plan(tm)
+    secs = [dict(section_name=tag.strip('[]'), positive_local_styles=[x.replace('{logo}', v['logo']) for x in st],
+                 negative_local_styles=NEGATIVE[:6], duration_ms=int(round((t1 - t0) * 1000)), lines=[])
+            for tag, t0, t1, st in plan]
+    return {'composition_plan': {'positive_global_styles': [BASE_STYLE] + v['styles'],
                                  'negative_global_styles': NEGATIVE, 'sections': secs},
-            'respect_sections_durations': True, 'output_format': 'mp3_44100_128'}
+            'respect_sections_durations': True, 'output_format': 'mp3_44100_192'}
 
 
 def prose_prompt(var, tm, extra_notes=''):
     v = VARIANTS[var]
-    s = (f"30-second instrumental music for a premium furniture commercial. {BASE_STYLE}. "
-         f"{', '.join(v['styles'])}. Tempo {tm['bpm']:.0f} BPM, F major. Structure: sparse airy intro building "
-         f"anticipation with soft ticking and a short riser; at {tm['reveal']:.1f} seconds a clear reveal accent - "
-         f"elegant deep sub-bass hit, full warm chord and the light groove begins; steady gentle groove; at "
-         f"{tm['endcard']:.1f} seconds a final resolving chord with {v['logo']}, ringing out to a clean ending at "
-         f"{tm['duration']:.0f} seconds. No vocals.")
+    L, plan = _plan(tm)
+    parts = []
+    for tag, t0, t1, st in plan:
+        parts.append(f"{t0:.1f}-{t1:.1f} s: " + '; '.join(x.replace('{logo}', v['logo']) for x in st))
+    s = (f"{L}-second instrumental music for a premium plywood furniture commercial. {BASE_STYLE}. "
+         f"Instruments: {', '.join(v['styles'])}. Every change lands on a beat (one bar = 2.4 s). Timeline: "
+         + ' | '.join(parts) + '. No vocals.')
     if extra_notes:
         s += ' Notes: ' + extra_notes[:300]
     return s
@@ -487,11 +512,9 @@ def main():
                     help='domyslnie: eleven25 -> wszystkie 3, inne modele -> 2 pierwsze')
     ap.add_argument('--seeds', nargs='+', type=int, default=[11, 23, 37])
     ap.add_argument('--brief', default=DEFAULT_BRIEF, help='research-brief.md (BPM, reveal, end card, notatki)')
-    ap.add_argument('--bpm', type=float)
-    ap.add_argument('--reveal', type=float, help='czas akcentu reveal [s]')
-    ap.add_argument('--endcard', type=float, help='poczatek end card [s]')
-    ap.add_argument('--duration', type=float, default=30.0)
-    ap.add_argument('--notes', default=None, help='dodatkowy opis stylu (nadpisuje notatki z briefu)')
+    ap.add_argument('--length', type=int, choices=[30, 15], default=30,
+                    help='30 = wersja glowna 16:9, 15 = cutdown 9:16 (plan odcinkow z briefu)')
+    ap.add_argument('--notes', default='', help='dodatkowy opis stylu dopisywany do promptu')
     ap.add_argument('--image', help='obraz (klatka renderu) jako inspiracja dla Lyria 3')
     ap.add_argument('--out', default=os.path.join(HERE, 'music'))
     ap.add_argument('--budget', type=float, default=3.0, help='max szacowany koszt [USD] bez --yes')
@@ -510,15 +533,14 @@ def main():
         return
 
     br = parse_brief(a.brief)
+    bpm = br.get('bpm') or 100.0
     if br:
-        print('research-brief:', {k: v for k, v in br.items() if k != 'music_notes'})
-    bpm = a.bpm or br.get('bpm') or 104.0
-    beat = 60.0 / bpm
-    reveal = a.reveal or br.get('reveal') or 16 * beat            # takt 5
-    endcard = a.endcard or br.get('endcard') or 44 * beat         # takt 12
-    tm = timing(bpm, reveal, endcard, a.duration)
-    notes = a.notes if a.notes is not None else br.get('music_notes', '')
-    print(f'timing: BPM {bpm:.1f}, reveal {reveal:.2f} s, end card {endcard:.2f} s, dlugosc {a.duration:.0f} s')
+        print(f"research-brief: {br['_source']} (BPM z briefu: {br.get('bpm')})")
+    if abs(bpm - 100.0) > 0.5:
+        print(f'[uwaga] brief podaje {bpm} BPM, plan odcinkow jest liczony dla 100 BPM (takt 2,4 s)')
+    tm = timing(100.0, 2.4, 26.4 if a.length == 30 else 12.0, float(a.length))
+    notes = a.notes
+    print(f'plan {a.length} s: ' + ' | '.join(f'{t} {t0:.1f}-{t1:.1f}' for t, t0, t1, _ in PLAN[a.length]))
 
     jobs = []
     if a.sfx:
@@ -537,6 +559,10 @@ def main():
         out_dir = os.path.join(HERE, 'sfx_ai')
     else:
         for mk in a.models:
+            if a.length == 15 and mk in ('lyria3', 'lyria2'):
+                print(f'[pominieto] {mk}: model zawsze daje 30 s - dla 15 s uzyj eleven25 / stable25 albo '
+                      f'zmontuj 15 s z wersji 30 s (edit.py: music.edit)')
+                continue
             vs = a.variants or (list(VARIANTS) if mk == 'eleven25' else list(VARIANTS)[:2])
             jobs += build_jobs([mk], vs, a.seeds, tm, notes, a.image)
         out_dir = a.out
@@ -560,7 +586,7 @@ def main():
             use_client = True
         except ImportError:
             print('fal-client nie jest zainstalowany -> HTTP queue API (pip3 install fal-client zalecane)')
-    done = execute(jobs, out_dir, use_client)
+    done = execute(jobs, out_dir, use_client, tag=f'{a.length}s')
     print(f'\nGotowe: {len(done)}/{len(jobs)} plikow w {out_dir}')
     with open(os.path.join(out_dir, 'fal_last_run.json'), 'w', encoding='utf-8') as f:
         json.dump({'timing': tm, 'results': done}, f, indent=1, ensure_ascii=False)

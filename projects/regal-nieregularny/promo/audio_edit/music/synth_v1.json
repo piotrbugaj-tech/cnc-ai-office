@@ -1,149 +1,612 @@
 {
- "bpm": 104.0,
- "beat_s": 0.5769230769230769,
- "bar_s": 2.3076923076923075,
- "bars": 13,
+ "version_s": 30,
+ "bpm": 100.0,
+ "fps": 25.0,
  "duration": 30.0,
- "reveal_bar": 5,
- "reveal_s": 9.2308,
- "end_bar": 12,
- "endcard_s": 25.3846,
- "bar_times": [
-  0.0,
-  2.3077,
-  4.6154,
-  6.9231,
-  9.2308,
-  11.5385,
-  13.8462,
-  16.1538,
-  18.4615,
-  20.7692,
-  23.0769,
-  25.3846,
-  27.6923
+ "bar_s": 2.4,
+ "sections_frames": {
+  "total_f": 750,
+  "hook": 0,
+  "reveal": 60,
+  "rytm_quiet_bars": [
+   120
+  ],
+  "rytm_bars": [
+   180,
+   240,
+   300,
+   360
+  ],
+  "groove": [
+   [
+    180,
+    420
+   ]
+  ],
+  "breakdown": [
+   420,
+   474,
+   480
+  ],
+  "drop": [
+   480,
+   600
+  ],
+  "landing_shift": 0,
+  "resolution": [
+   600,
+   660
+  ],
+  "logo": 660,
+  "fade_end": 744
+ },
+ "chords_frames": [
+  [
+   30,
+   60,
+   "Fmaj9"
+  ],
+  [
+   60,
+   120,
+   "Fmaj9"
+  ],
+  [
+   120,
+   180,
+   "Dm9"
+  ],
+  [
+   180,
+   240,
+   "Bbmaj7"
+  ],
+  [
+   240,
+   270,
+   "Csus4"
+  ],
+  [
+   270,
+   300,
+   "C"
+  ],
+  [
+   300,
+   360,
+   "Fmaj9"
+  ],
+  [
+   360,
+   420,
+   "Dm9"
+  ],
+  [
+   420,
+   474,
+   "Bbmaj7#11"
+  ],
+  [
+   480,
+   540,
+   "Fmaj9"
+  ],
+  [
+   540,
+   600,
+   "Dm9"
+  ],
+  [
+   600,
+   660,
+   "Bbmaj7"
+  ],
+  [
+   660,
+   744,
+   "Fmaj9full"
+  ]
  ],
- "kicks": [
-  9.2308,
-  9.2308,
-  10.3846,
-  11.5385,
-  12.6923,
-  13.125,
-  13.8462,
-  15.0,
-  16.1538,
-  17.3077,
-  17.7404,
-  18.4615,
-  19.6154,
-  20.7692,
-  21.9231,
-  22.3558,
-  23.0769,
-  24.2308,
-  24.6635,
-  25.3846
+ "reveal_s": 2.4,
+ "drop_s": 19.2,
+ "logo_s": 26.4,
+ "silence_s": [
+  18.96,
+  19.2
  ],
- "form": [
+ "kicks_s": [
+  2.4,
+  7.2,
+  9.6,
+  12.0,
+  14.4,
+  19.2,
+  21.6,
+  26.4
+ ],
+ "notes": [
   {
-   "bar": 1,
-   "beat": 0,
-   "beats": 4,
-   "chord": "Dm9"
+   "frame": 0.0,
+   "t": 0.0,
+   "midi": 53,
+   "stem": "motif"
   },
   {
-   "bar": 2,
-   "beat": 0,
-   "beats": 4,
-   "chord": "Bbmaj9"
+   "frame": 11.25,
+   "t": 0.45,
+   "midi": 57,
+   "stem": "motif"
   },
   {
-   "bar": 3,
-   "beat": 0,
-   "beats": 4,
-   "chord": "Fmaj9/A"
+   "frame": 22.5,
+   "t": 0.9,
+   "midi": 60,
+   "stem": "motif"
   },
   {
-   "bar": 4,
-   "beat": 0,
-   "beats": 2,
-   "chord": "Csus4"
+   "frame": 26.25,
+   "t": 1.05,
+   "midi": 62,
+   "stem": "motif"
   },
   {
-   "bar": 4,
-   "beat": 2,
-   "beats": 2,
-   "chord": "Cadd9"
+   "frame": 33.75,
+   "t": 1.35,
+   "midi": 65,
+   "stem": "motif"
   },
   {
-   "bar": 5,
-   "beat": 0,
-   "beats": 4,
-   "chord": "Fmaj9+"
+   "frame": 45.0,
+   "t": 1.8,
+   "midi": 67,
+   "stem": "motif"
   },
   {
-   "bar": 6,
-   "beat": 0,
-   "beats": 4,
-   "chord": "Dm9"
+   "frame": 52.5,
+   "t": 2.1,
+   "midi": 69,
+   "stem": "motif"
   },
   {
-   "bar": 7,
-   "beat": 0,
-   "beats": 4,
-   "chord": "Bbmaj9"
+   "frame": 56.25,
+   "t": 2.25,
+   "midi": 72,
+   "stem": "motif"
   },
   {
-   "bar": 8,
-   "beat": 0,
-   "beats": 2,
-   "chord": "Csus4"
+   "frame": 120.0,
+   "t": 4.8,
+   "midi": 41,
+   "stem": "groove_marimba"
   },
   {
-   "bar": 8,
-   "beat": 2,
-   "beats": 2,
-   "chord": "Cadd9"
+   "frame": 131.25,
+   "t": 5.25,
+   "midi": 45,
+   "stem": "groove_marimba"
   },
   {
-   "bar": 9,
-   "beat": 0,
-   "beats": 4,
-   "chord": "Fmaj9"
+   "frame": 142.5,
+   "t": 5.7,
+   "midi": 48,
+   "stem": "groove_marimba"
   },
   {
-   "bar": 10,
-   "beat": 0,
-   "beats": 4,
-   "chord": "Dm9"
+   "frame": 146.25,
+   "t": 5.85,
+   "midi": 50,
+   "stem": "groove_marimba"
   },
   {
-   "bar": 11,
-   "beat": 0,
-   "beats": 2,
-   "chord": "Bbmaj9"
+   "frame": 153.75,
+   "t": 6.15,
+   "midi": 53,
+   "stem": "groove_marimba"
   },
   {
-   "bar": 11,
-   "beat": 2,
-   "beats": 2,
-   "chord": "Csus4"
+   "frame": 165.0,
+   "t": 6.6,
+   "midi": 55,
+   "stem": "groove_marimba"
   },
   {
-   "bar": 12,
-   "beat": 0,
-   "beats": 4,
-   "chord": "F69"
+   "frame": 172.5,
+   "t": 6.9,
+   "midi": 57,
+   "stem": "groove_marimba"
   },
   {
-   "bar": 13,
-   "beat": 0,
-   "beats": 4,
-   "chord": "F69"
+   "frame": 176.25,
+   "t": 7.05,
+   "midi": 60,
+   "stem": "groove_marimba"
+  },
+  {
+   "frame": 180.0,
+   "t": 7.2,
+   "midi": 53,
+   "stem": "groove_marimba"
+  },
+  {
+   "frame": 191.25,
+   "t": 7.65,
+   "midi": 57,
+   "stem": "groove_marimba"
+  },
+  {
+   "frame": 202.5,
+   "t": 8.1,
+   "midi": 60,
+   "stem": "groove_marimba"
+  },
+  {
+   "frame": 206.25,
+   "t": 8.25,
+   "midi": 62,
+   "stem": "groove_marimba"
+  },
+  {
+   "frame": 213.75,
+   "t": 8.55,
+   "midi": 65,
+   "stem": "groove_marimba"
+  },
+  {
+   "frame": 225.0,
+   "t": 9.0,
+   "midi": 67,
+   "stem": "groove_marimba"
+  },
+  {
+   "frame": 232.5,
+   "t": 9.3,
+   "midi": 69,
+   "stem": "groove_marimba"
+  },
+  {
+   "frame": 236.25,
+   "t": 9.45,
+   "midi": 72,
+   "stem": "groove_marimba"
+  },
+  {
+   "frame": 240.0,
+   "t": 9.6,
+   "midi": 60,
+   "stem": "groove_marimba"
+  },
+  {
+   "frame": 251.25,
+   "t": 10.05,
+   "midi": 62,
+   "stem": "groove_marimba"
+  },
+  {
+   "frame": 262.5,
+   "t": 10.5,
+   "midi": 65,
+   "stem": "groove_marimba"
+  },
+  {
+   "frame": 266.25,
+   "t": 10.65,
+   "midi": 67,
+   "stem": "groove_marimba"
+  },
+  {
+   "frame": 273.75,
+   "t": 10.95,
+   "midi": 69,
+   "stem": "groove_marimba"
+  },
+  {
+   "frame": 285.0,
+   "t": 11.4,
+   "midi": 72,
+   "stem": "groove_marimba"
+  },
+  {
+   "frame": 292.5,
+   "t": 11.7,
+   "midi": 53,
+   "stem": "groove_marimba"
+  },
+  {
+   "frame": 296.25,
+   "t": 11.85,
+   "midi": 57,
+   "stem": "groove_marimba"
+  },
+  {
+   "frame": 300.0,
+   "t": 12.0,
+   "midi": 65,
+   "stem": "groove_marimba"
+  },
+  {
+   "frame": 311.25,
+   "t": 12.45,
+   "midi": 67,
+   "stem": "groove_marimba"
+  },
+  {
+   "frame": 322.5,
+   "t": 12.9,
+   "midi": 69,
+   "stem": "groove_marimba"
+  },
+  {
+   "frame": 326.25,
+   "t": 13.05,
+   "midi": 72,
+   "stem": "groove_marimba"
+  },
+  {
+   "frame": 333.75,
+   "t": 13.35,
+   "midi": 53,
+   "stem": "groove_marimba"
+  },
+  {
+   "frame": 345.0,
+   "t": 13.8,
+   "midi": 57,
+   "stem": "groove_marimba"
+  },
+  {
+   "frame": 352.5,
+   "t": 14.1,
+   "midi": 60,
+   "stem": "groove_marimba"
+  },
+  {
+   "frame": 356.25,
+   "t": 14.25,
+   "midi": 62,
+   "stem": "groove_marimba"
+  },
+  {
+   "frame": 360.0,
+   "t": 14.4,
+   "midi": 69,
+   "stem": "groove_marimba"
+  },
+  {
+   "frame": 371.25,
+   "t": 14.85,
+   "midi": 72,
+   "stem": "groove_marimba"
+  },
+  {
+   "frame": 382.5,
+   "t": 15.3,
+   "midi": 53,
+   "stem": "groove_marimba"
+  },
+  {
+   "frame": 386.25,
+   "t": 15.45,
+   "midi": 57,
+   "stem": "groove_marimba"
+  },
+  {
+   "frame": 393.75,
+   "t": 15.75,
+   "midi": 60,
+   "stem": "groove_marimba"
+  },
+  {
+   "frame": 405.0,
+   "t": 16.2,
+   "midi": 62,
+   "stem": "groove_marimba"
+  },
+  {
+   "frame": 412.5,
+   "t": 16.5,
+   "midi": 65,
+   "stem": "groove_marimba"
+  },
+  {
+   "frame": 416.25,
+   "t": 16.65,
+   "midi": 67,
+   "stem": "groove_marimba"
+  },
+  {
+   "frame": 502.5,
+   "t": 20.1,
+   "midi": 53,
+   "stem": "motif"
+  },
+  {
+   "frame": 506.25,
+   "t": 20.25,
+   "midi": 57,
+   "stem": "motif"
+  },
+  {
+   "frame": 510,
+   "t": 20.4,
+   "midi": 60,
+   "stem": "motif"
+  },
+  {
+   "frame": 513.75,
+   "t": 20.55,
+   "midi": 62,
+   "stem": "motif"
+  },
+  {
+   "frame": 517.5,
+   "t": 20.7,
+   "midi": 62,
+   "stem": "motif"
+  },
+  {
+   "frame": 521.25,
+   "t": 20.85,
+   "midi": 65,
+   "stem": "motif"
+  },
+  {
+   "frame": 525,
+   "t": 21.0,
+   "midi": 67,
+   "stem": "motif"
+  },
+  {
+   "frame": 528.75,
+   "t": 21.15,
+   "midi": 67,
+   "stem": "motif"
+  },
+  {
+   "frame": 532.5,
+   "t": 21.3,
+   "midi": 69,
+   "stem": "motif"
+  },
+  {
+   "frame": 536.25,
+   "t": 21.45,
+   "midi": 69,
+   "stem": "motif"
+  },
+  {
+   "frame": 540,
+   "t": 21.6,
+   "midi": 72,
+   "stem": "motif"
+  },
+  {
+   "frame": 543.75,
+   "t": 21.75,
+   "midi": 72,
+   "stem": "motif"
+  },
+  {
+   "frame": 547.5,
+   "t": 21.9,
+   "midi": 74,
+   "stem": "motif"
+  },
+  {
+   "frame": 555,
+   "t": 22.2,
+   "midi": 77,
+   "stem": "motif"
+  },
+  {
+   "frame": 558.75,
+   "t": 22.35,
+   "midi": 62,
+   "stem": "motif"
+  },
+  {
+   "frame": 562.5,
+   "t": 22.5,
+   "midi": 65,
+   "stem": "motif"
+  },
+  {
+   "frame": 566.25,
+   "t": 22.65,
+   "midi": 69,
+   "stem": "motif"
+  },
+  {
+   "frame": 570,
+   "t": 22.8,
+   "midi": 72,
+   "stem": "motif"
+  },
+  {
+   "frame": 573.75,
+   "t": 22.95,
+   "midi": 76,
+   "stem": "motif"
+  },
+  {
+   "frame": 577.5,
+   "t": 23.1,
+   "midi": 77,
+   "stem": "motif"
+  },
+  {
+   "frame": 581.25,
+   "t": 23.25,
+   "midi": 81,
+   "stem": "motif"
+  },
+  {
+   "frame": 585,
+   "t": 23.4,
+   "midi": 77,
+   "stem": "motif"
+  },
+  {
+   "frame": 585,
+   "t": 23.4,
+   "midi": 81,
+   "stem": "motif"
+  },
+  {
+   "frame": 585,
+   "t": 23.4,
+   "midi": 84,
+   "stem": "motif"
+  },
+  {
+   "frame": 607.5,
+   "t": 24.3,
+   "midi": 74,
+   "stem": "groove_marimba"
+  },
+  {
+   "frame": 622.5,
+   "t": 24.9,
+   "midi": 69,
+   "stem": "groove_marimba"
+  },
+  {
+   "frame": 641.25,
+   "t": 25.65,
+   "midi": 65,
+   "stem": "groove_marimba"
+  },
+  {
+   "frame": 660.0,
+   "t": 26.4,
+   "midi": 65,
+   "stem": "logo"
+  },
+  {
+   "frame": 671.25,
+   "t": 26.85,
+   "midi": 69,
+   "stem": "logo"
+  },
+  {
+   "frame": 682.5,
+   "t": 27.3,
+   "midi": 72,
+   "stem": "logo"
+  },
+  {
+   "frame": 686.25,
+   "t": 27.45,
+   "midi": 74,
+   "stem": "logo"
+  },
+  {
+   "frame": 693.75,
+   "t": 27.75,
+   "midi": 77,
+   "stem": "logo"
   }
  ],
- "lufs": -14.01,
- "true_peak_dbtp": -1.15,
+ "lufs": -14.0,
+ "true_peak_dbtp": -3.14,
  "seed": 1
 }

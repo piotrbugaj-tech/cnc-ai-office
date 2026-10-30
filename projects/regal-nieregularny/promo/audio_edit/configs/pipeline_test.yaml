@@ -1,0 +1,80 @@
+# TEST TECHNICZNY pipeline'u (atrapa): animacja z repo cnc + klatka lookdev + plansza RYTM.
+#   python3 edit.py configs/pipeline_test.yaml
+work_dir: ../test/work_test
+versions:
+  16x9:
+    size: [1920, 1080]
+    fps: 25
+    shots:
+      - {id: A1, src: /home/user/cnc/output/animacja/regal_animacja.mp4, f: [0, 72]}           # 3,0 s
+      - {id: L1, src: /home/user/cnc/output/render/01_widok_3-4_zamkniety.png, dur: 1.6, events: false}          # 1,6 s
+      - {id: A2, src: /home/user/cnc/output/animacja/regal_animacja.mp4, f: [168, 216]}       # 2,0 s
+      - id: END
+        type: endcard
+        dur_f: 60
+        bg: "#EFEAE2"
+        transition: {type: dissolve, frames: 10}
+        elements:
+          - {type: glyph, model: ../../data/model.json, height: 240, cx: 960, cy: 380, stroke: 2, f: [2, 32]}
+          - {type: text, text: RYTM, style: end_name, y: 600, f: [12, 26]}
+          - {type: text, text: "Precyzja w każdej warstwie.", style: end_tag, y: 690, f: [20, 34]}
+          - {type: text, text: "Regał ze sklejki brzozowej · 190 × 202 × 40 cm", style: end_desc, y: 750, f: [26, 38]}
+          - {type: text, text: "CNC Furniture Studio", style: end_brand, y: 980, f: [30, 42]}
+    titles:
+      - {text: "Bez boków.", style: title, x: 144, y: 470, f: [80, 112], glow: true}
+      - {text: "Cichy domyk.", style: title, x: 144, y: 900, f: [120, 160]}
+    grade: {lut: auto, vignette: 0.09, grain: 5}
+    audio:
+      music:
+        file: ../music/synth_v1.wav
+        edit:                          # montaz muzyki: hook+odslona, potem sygnal RYTM na planszy (6,2 s)
+          - {src_in: 0.0, src_out: 6.2, at: 0.0, xfade: 0.03}
+          - {src_in: 26.4, src_out: 29.0, at: 6.2, xfade: 0.01}
+        lufs: -18
+      events: anim_events_placeholder.json
+      event_notes: true
+      sfx:
+        - {synth: sub_boom, params: {duration: 2.0}, at: "L1.start", anchor: hit, gain_offset_db: -4}
+        - {synth: air, params: {duration: 1.0}, at: "END.start", anchor: peak}
+        - {sample: brief_thup_f285, at: "f:150", anchor: impact, pan: 0.1}
+      duck: {depth_db: 4, attack: 0.01, release: 0.3}
+      master: {lufs: -14, true_peak: -1.5, comp_ratio: 1.5}
+    export: {output: ../test/pipeline_test.mp4, crf: 16, preset: slow}
+  9x16:
+    size: [1080, 1920]
+    fps: 25
+    sharpen: true
+    shots:
+      - {id: A1, src: /home/user/cnc/output/animacja/regal_animacja.mp4, f: [0, 72], cx: 0.47}
+      - {id: L1, src: /home/user/cnc/output/render/01_widok_3-4_zamkniety.png, dur: 1.6, cx: [0.50, 0.46], events: false}
+      - {id: A2, src: /home/user/cnc/output/animacja/regal_animacja.mp4, f: [168, 216], cx: 0.5}
+      - id: END
+        type: endcard
+        dur_f: 60
+        bg: "#EFEAE2"
+        transition: {type: dissolve, frames: 10}
+        elements:
+          - {type: glyph, model: ../../data/model.json, height: 400, cx: 540, cy: 560, stroke: 2, f: [2, 32]}
+          - {type: text, text: RYTM, style: end_name, x: 540, y: 900, f: [12, 26]}
+          - {type: text, text: "Precyzja w każdej warstwie.", style: end_tag, x: 540, y: 990, f: [20, 34]}
+          - {type: text, text: "Regał ze sklejki brzozowej\n190 × 202 × 40 cm", style: end_desc, x: 540, y: 1060, f: [26, 38]}
+          - {type: text, text: "CNC Furniture Studio", style: end_brand, x: 540, y: 1180, f: [30, 42]}
+    titles:
+      - {text: "Bez boków.", style: title, x: 540, y: 420, align: center, f: [80, 112], glow: true}
+      - {text: "Cichy domyk.", style: title, x: 540, y: 420, align: center, f: [120, 160]}
+    grade: {lut: auto, vignette: 0.09, grain: 5}
+    audio:
+      music:
+        file: ../music/synth_v1.wav
+        edit:
+          - {src_in: 0.0, src_out: 6.2, at: 0.0, xfade: 0.03}
+          - {src_in: 26.4, src_out: 29.0, at: 6.2, xfade: 0.01}
+        lufs: -18
+      events: anim_events_placeholder.json
+      pan_max: 0.15
+      sfx:
+        - {synth: sub_boom, params: {duration: 2.0}, at: "L1.start", anchor: hit, gain_offset_db: -4}
+        - {sample: brief_thup_f285, at: "f:150", anchor: impact}
+      duck: {depth_db: 4, attack: 0.01, release: 0.3}
+      master: {lufs: -14, true_peak: -1.5, comp_ratio: 1.5}
+    export: {output: ../test/pipeline_test_9x16.mp4, crf: 17, preset: slow}

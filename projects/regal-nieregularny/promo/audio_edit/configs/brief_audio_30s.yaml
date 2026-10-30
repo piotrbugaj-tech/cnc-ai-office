@@ -1,0 +1,17 @@
+# Animatik dzwiekowy 30 s wg research-brief.md: muzyka syntezowana (lozko bez stemu 'motif')
+# + nuty i Foley z events.json (tu: ATRAPA test/brief_events_mock.json; docelowo ../../renders/events.json).
+# python3 mixer.py configs/brief_audio_30s.yaml
+duration: 30.0
+output: ../test/brief_soundtrack_mock_30s.wav
+audio:
+  music:
+    stems_dir: ../music/synth_v1_stems
+    use: [pads, logo, groove_marimba, drums, bass, fx, reverb]   # 'motif' zastapiony nutami z events.json
+    lufs: -18            # muzyka pod Foley ~ -18 LUFS (brief 6.3)
+  event_notes: true      # shelf_pass / ladowania polek / fronty -> marimba
+  events: {file: ../test/brief_events_mock.json}
+  duck: {depth_db: 4, attack: 0.01, release: 0.3, threshold_db: -42}
+  silence: [[18.96, 19.2]]   # 'proznia' przed dropem (f474-480)
+  pan_max: 0.3
+  room_tone: {sample: room_tone_30s, level_db: -48}
+  master: {lufs: -14, true_peak: -1.5, comp_ratio: 1.5}

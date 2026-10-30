@@ -31,20 +31,19 @@
     "suggested_gain_db": -15,
     "peak_dbfs": -1.0
   },
-  "drawer_open_slow": {
-    "file": "samples/drawer_open_slow.wav",
+  "drawer_open_full_S09": {
+    "file": "samples/drawer_open_full_S09.wav",
     "type": "drawer_open",
     "seed": 3,
     "params": {
-      "duration": 1.45,
-      "intensity": 0.8,
-      "end_hit": 0.2
+      "duration": 0.88,
+      "end_hit": 1.0
     },
-    "duration": 2.4375,
+    "duration": 1.8675,
     "anchors": {
       "start": 0.04,
       "sync": 0.04,
-      "end": 1.49
+      "end": 0.92
     },
     "suggested_gain_db": -15,
     "peak_dbfs": -1.0
@@ -64,25 +63,25 @@
       "closed": 0.92,
       "sync": 0.92
     },
-    "suggested_gain_db": -14,
+    "suggested_gain_db": -11,
     "peak_dbfs": -1.0
   },
-  "drawer_close_b": {
-    "file": "samples/drawer_close_b.wav",
+  "drawer_close_S10": {
+    "file": "samples/drawer_close_S10.wav",
     "type": "drawer_close",
     "seed": 5,
     "params": {
-      "push": 0.5,
-      "damp": 0.62
+      "push": 0.48,
+      "damp": 0.92
     },
-    "duration": 2.1575,
+    "duration": 2.4375,
     "anchors": {
       "start": 0.04,
-      "engage": 0.54,
-      "closed": 1.16,
-      "sync": 1.16
+      "engage": 0.52,
+      "closed": 1.44,
+      "sync": 1.44
     },
-    "suggested_gain_db": -14,
+    "suggested_gain_db": -11,
     "peak_dbfs": -1.0
   },
   "drawer_close_gentle": {
@@ -102,7 +101,7 @@
       "closed": 1.39,
       "sync": 1.39
     },
-    "suggested_gain_db": -14,
+    "suggested_gain_db": -11,
     "peak_dbfs": -1.0
   },
   "door_open_a": {
@@ -118,7 +117,7 @@
       "sync": 0.04,
       "end": 0.74
     },
-    "suggested_gain_db": -20,
+    "suggested_gain_db": -23,
     "peak_dbfs": -1.0
   },
   "door_open_creak": {
@@ -135,26 +134,26 @@
       "sync": 0.04,
       "end": 0.94
     },
-    "suggested_gain_db": -20,
+    "suggested_gain_db": -23,
     "peak_dbfs": -1.0
   },
-  "door_close_a": {
-    "file": "samples/door_close_a.wav",
+  "door_close_DZ02": {
+    "file": "samples/door_close_DZ02.wav",
     "type": "door_close",
     "seed": 9,
     "params": {
-      "push": 0.4,
-      "damp": 0.55
+      "push": 0.72,
+      "damp": 0.48
     },
-    "duration": 1.9375,
+    "duration": 2.1875,
     "anchors": {
       "start": 0.04,
-      "engage": 0.44,
-      "closed": 0.99,
-      "click": 0.99,
-      "sync": 0.99
+      "engage": 0.76,
+      "closed": 1.24,
+      "click": 1.24,
+      "sync": 1.24
     },
-    "suggested_gain_db": -15,
+    "suggested_gain_db": -11,
     "peak_dbfs": -1.0
   },
   "door_close_b": {
@@ -173,7 +172,7 @@
       "click": 1.29,
       "sync": 1.29
     },
-    "suggested_gain_db": -15,
+    "suggested_gain_db": -11,
     "peak_dbfs": -1.0
   },
   "whoosh_short_lr": {
@@ -193,7 +192,7 @@
       "sync": 0.279,
       "end": 0.45
     },
-    "suggested_gain_db": -17,
+    "suggested_gain_db": -23,
     "peak_dbfs": -1.0
   },
   "whoosh_short_rl": {
@@ -213,7 +212,7 @@
       "sync": 0.31,
       "end": 0.5
     },
-    "suggested_gain_db": -17,
+    "suggested_gain_db": -23,
     "peak_dbfs": -1.0
   },
   "whoosh_long_panel": {
@@ -233,7 +232,7 @@
       "sync": 0.558,
       "end": 0.9
     },
-    "suggested_gain_db": -17,
+    "suggested_gain_db": -23,
     "peak_dbfs": -1.0
   },
   "whoosh_big_drop": {
@@ -253,7 +252,7 @@
       "sync": 0.682,
       "end": 1.1
     },
-    "suggested_gain_db": -17,
+    "suggested_gain_db": -23,
     "peak_dbfs": -1.0
   },
   "land_light_small": {
@@ -274,7 +273,7 @@
       "impact": 0.04,
       "sync": 0.04
     },
-    "suggested_gain_db": -11,
+    "suggested_gain_db": -13,
     "peak_dbfs": -1.0
   },
   "land_medium_shelf": {
@@ -294,7 +293,7 @@
       "impact": 0.04,
       "sync": 0.04
     },
-    "suggested_gain_db": -11,
+    "suggested_gain_db": -13,
     "peak_dbfs": -1.0
   },
   "land_heavy_long": {
@@ -315,7 +314,7 @@
       "impact": 0.04,
       "sync": 0.04
     },
-    "suggested_gain_db": -11,
+    "suggested_gain_db": -13,
     "peak_dbfs": -1.0
   },
   "land_floor_medium": {
@@ -335,7 +334,7 @@
       "impact": 0.04,
       "sync": 0.04
     },
-    "suggested_gain_db": -11,
+    "suggested_gain_db": -13,
     "peak_dbfs": -1.0
   },
   "screw_short": {
@@ -352,7 +351,7 @@
       "end": 0.64,
       "seat": 0.64
     },
-    "suggested_gain_db": -18,
+    "suggested_gain_db": -17,
     "peak_dbfs": -1.0
   },
   "screw_long": {
@@ -370,7 +369,7 @@
       "end": 1.24,
       "seat": 1.24
     },
-    "suggested_gain_db": -18,
+    "suggested_gain_db": -17,
     "peak_dbfs": -1.0
   },
   "wood_tap_soft": {
@@ -385,7 +384,7 @@
       "impact": 0.04,
       "sync": 0.04
     },
-    "suggested_gain_db": -18,
+    "suggested_gain_db": -19,
     "peak_dbfs": -1.0
   },
   "sub_boom_reveal": {
@@ -434,24 +433,25 @@
       "end": 2.0,
       "sync": 2.0
     },
-    "suggested_gain_db": -16,
+    "suggested_gain_db": -13,
     "peak_dbfs": -1.0
   },
-  "riser_4s": {
-    "file": "samples/riser_4s.wav",
+  "riser_brief_2p16s": {
+    "file": "samples/riser_brief_2p16s.wav",
     "type": "riser",
     "seed": 25,
     "params": {
-      "duration": 4.0,
-      "tonal": 0.6
+      "duration": 2.16,
+      "tonal": 0.6,
+      "root_hz": 220.0
     },
-    "duration": 4.0,
+    "duration": 2.16,
     "anchors": {
       "start": 0.0,
-      "end": 4.0,
-      "sync": 4.0
+      "end": 2.16,
+      "sync": 2.16
     },
-    "suggested_gain_db": -16,
+    "suggested_gain_db": -13,
     "peak_dbfs": -1.0
   },
   "air_transition_a": {
@@ -468,7 +468,7 @@
       "sync": 0.495,
       "end": 1.1
     },
-    "suggested_gain_db": -20,
+    "suggested_gain_db": -25,
     "peak_dbfs": -1.0
   },
   "air_transition_b": {
@@ -486,7 +486,7 @@
       "sync": 0.72,
       "end": 1.6
     },
-    "suggested_gain_db": -20,
+    "suggested_gain_db": -25,
     "peak_dbfs": -1.0
   },
   "room_tone_30s": {
@@ -503,6 +503,316 @@
       "sync": 0.0
     },
     "suggested_gain_db": 0,
-    "peak_dbfs": -35.07
+    "peak_dbfs": -35.74
+  },
+  "brief_roll_S09_f188-210": {
+    "file": "samples/brief_roll_S09_f188-210.wav",
+    "type": "roll",
+    "seed": 30,
+    "params": {
+      "duration": 0.88
+    },
+    "duration": 1.7175,
+    "anchors": {
+      "start": 0.04,
+      "sync": 0.04,
+      "end": 0.92
+    },
+    "suggested_gain_db": -15,
+    "peak_dbfs": -1.0
+  },
+  "brief_drawer_stop_f210": {
+    "file": "samples/brief_drawer_stop_f210.wav",
+    "type": "drawer_stop",
+    "seed": 31,
+    "params": {},
+    "duration": 1.0375,
+    "anchors": {
+      "impact": 0.04,
+      "sync": 0.04
+    },
+    "suggested_gain_db": -11,
+    "peak_dbfs": -1.0
+  },
+  "brief_catch_silent_f262": {
+    "file": "samples/brief_catch_silent_f262.wav",
+    "type": "catch",
+    "seed": 32,
+    "params": {
+      "mech": "drawer"
+    },
+    "duration": 0.7175,
+    "anchors": {
+      "impact": 0.04,
+      "sync": 0.04
+    },
+    "suggested_gain_db": -23,
+    "peak_dbfs": -1.0
+  },
+  "brief_damper_f262-285": {
+    "file": "samples/brief_damper_f262-285.wav",
+    "type": "damper",
+    "seed": 33,
+    "params": {
+      "duration": 0.92
+    },
+    "duration": 1.5575,
+    "anchors": {
+      "start": 0.04,
+      "sync": 0.04,
+      "end": 0.96
+    },
+    "suggested_gain_db": -33,
+    "peak_dbfs": -1.0
+  },
+  "brief_thup_f285": {
+    "file": "samples/brief_thup_f285.wav",
+    "type": "thup",
+    "seed": 34,
+    "params": {},
+    "duration": 1.1375,
+    "anchors": {
+      "impact": 0.04,
+      "sync": 0.04
+    },
+    "suggested_gain_db": -8,
+    "peak_dbfs": -1.0
+  },
+  "brief_door_air_f300-318": {
+    "file": "samples/brief_door_air_f300-318.wav",
+    "type": "door_air",
+    "seed": 35,
+    "params": {
+      "duration": 0.72
+    },
+    "duration": 1.218,
+    "anchors": {
+      "start": 0.0,
+      "sync": 0.0,
+      "end": 0.72
+    },
+    "suggested_gain_db": -37,
+    "peak_dbfs": -1.0
+  },
+  "brief_catch_blumotion_f318": {
+    "file": "samples/brief_catch_blumotion_f318.wav",
+    "type": "catch",
+    "seed": 36,
+    "params": {
+      "mech": "door"
+    },
+    "duration": 0.7175,
+    "anchors": {
+      "impact": 0.04,
+      "sync": 0.04
+    },
+    "suggested_gain_db": -23,
+    "peak_dbfs": -1.0
+  },
+  "brief_tok_f330": {
+    "file": "samples/brief_tok_f330.wav",
+    "type": "tok",
+    "seed": 37,
+    "params": {},
+    "duration": 1.1375,
+    "anchors": {
+      "impact": 0.04,
+      "sync": 0.04
+    },
+    "suggested_gain_db": -10,
+    "peak_dbfs": -1.0
+  },
+  "brief_caliper_F6": {
+    "file": "samples/brief_caliper_F6.wav",
+    "type": "caliper",
+    "seed": 38,
+    "params": {
+      "midi": 89
+    },
+    "duration": 0.54,
+    "anchors": {
+      "impact": 0.04,
+      "sync": 0.04
+    },
+    "suggested_gain_db": -25,
+    "peak_dbfs": -1.0
+  },
+  "brief_caliper_A6": {
+    "file": "samples/brief_caliper_A6.wav",
+    "type": "caliper",
+    "seed": 39,
+    "params": {
+      "midi": 93
+    },
+    "duration": 0.54,
+    "anchors": {
+      "impact": 0.04,
+      "sync": 0.04
+    },
+    "suggested_gain_db": -25,
+    "peak_dbfs": -1.0
+  },
+  "brief_caliper_C7": {
+    "file": "samples/brief_caliper_C7.wav",
+    "type": "caliper",
+    "seed": 40,
+    "params": {
+      "midi": 96
+    },
+    "duration": 0.54,
+    "anchors": {
+      "impact": 0.04,
+      "sync": 0.04
+    },
+    "suggested_gain_db": -25,
+    "peak_dbfs": -1.0
+  },
+  "brief_pops_140_f465": {
+    "file": "samples/brief_pops_140_f465.wav",
+    "type": "pops",
+    "seed": 41,
+    "params": {},
+    "duration": 0.58,
+    "anchors": {
+      "start": 0.04,
+      "sync": 0.04,
+      "end": 0.28
+    },
+    "suggested_gain_db": -23,
+    "peak_dbfs": -1.0
+  },
+  "brief_levitate_f480": {
+    "file": "samples/brief_levitate_f480.wav",
+    "type": "levitate",
+    "seed": 42,
+    "params": {},
+    "duration": 0.57,
+    "anchors": {
+      "start": 0.0,
+      "sync": 0.0
+    },
+    "suggested_gain_db": -15,
+    "peak_dbfs": -1.0
+  },
+  "brief_fly_0p56": {
+    "file": "samples/brief_fly_0p56.wav",
+    "type": "fly",
+    "seed": 43,
+    "params": {},
+    "duration": 0.66,
+    "anchors": {
+      "start": 0.0,
+      "peak": 0.336,
+      "end": 0.56,
+      "sync": 0.56
+    },
+    "suggested_gain_db": -29,
+    "peak_dbfs": -1.0
+  },
+  "brief_divider_tick": {
+    "file": "samples/brief_divider_tick.wav",
+    "type": "divider_tick",
+    "seed": 44,
+    "params": {},
+    "duration": 0.6875,
+    "anchors": {
+      "impact": 0.04,
+      "sync": 0.04
+    },
+    "suggested_gain_db": -21,
+    "peak_dbfs": -1.0
+  },
+  "brief_szuff_backs_f551": {
+    "file": "samples/brief_szuff_backs_f551.wav",
+    "type": "szuff",
+    "seed": 45,
+    "params": {},
+    "duration": 0.6875,
+    "anchors": {
+      "start": 0.04,
+      "sync": 0.19
+    },
+    "suggested_gain_db": -29,
+    "peak_dbfs": -1.0
+  },
+  "brief_fabric_f211": {
+    "file": "samples/brief_fabric_f211.wav",
+    "type": "fabric",
+    "seed": 46,
+    "params": {},
+    "duration": 0.8575,
+    "anchors": {
+      "start": 0.0,
+      "sync": 0.0
+    },
+    "suggested_gain_db": -33,
+    "peak_dbfs": -1.0
+  },
+  "brief_front_clip": {
+    "file": "samples/brief_front_clip.wav",
+    "type": "front_clip",
+    "seed": 47,
+    "params": {},
+    "duration": 1.1375,
+    "anchors": {
+      "impact": 0.04,
+      "sync": 0.04
+    },
+    "suggested_gain_db": -15,
+    "peak_dbfs": -1.0
+  },
+  "brief_crane_air_S01": {
+    "file": "samples/brief_crane_air_S01.wav",
+    "type": "crane_air",
+    "seed": 48,
+    "params": {},
+    "duration": 2.4,
+    "anchors": {
+      "start": 0.0,
+      "sync": 0.0
+    },
+    "suggested_gain_db": -39,
+    "peak_dbfs": -1.0
+  },
+  "brief_birds_far": {
+    "file": "samples/brief_birds_far.wav",
+    "type": "birds",
+    "seed": 49,
+    "params": {},
+    "duration": 4.8,
+    "anchors": {
+      "start": 0.0,
+      "sync": 0.0
+    },
+    "suggested_gain_db": -41,
+    "peak_dbfs": -1.0
+  },
+  "brief_marimba_F4": {
+    "file": "samples/brief_marimba_F4.wav",
+    "type": "marimba",
+    "seed": 50,
+    "params": {
+      "midi": 65
+    },
+    "duration": 5.0716,
+    "anchors": {
+      "impact": 0.04,
+      "sync": 0.04
+    },
+    "suggested_gain_db": -13,
+    "peak_dbfs": -1.0
+  },
+  "brief_knob_tick": {
+    "file": "samples/brief_knob_tick.wav",
+    "type": "knob_tick",
+    "seed": 51,
+    "params": {},
+    "duration": 0.6175,
+    "anchors": {
+      "impact": 0.04,
+      "sync": 0.04
+    },
+    "suggested_gain_db": -27,
+    "peak_dbfs": -1.0
   }
 }

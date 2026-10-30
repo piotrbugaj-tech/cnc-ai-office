@@ -1,0 +1,411 @@
+{
+ "version_s": 15,
+ "bpm": 100.0,
+ "fps": 25.0,
+ "duration": 15.0,
+ "bar_s": 2.4,
+ "sections_frames": {
+  "total_f": 375,
+  "hook": 0,
+  "reveal": 60,
+  "rytm_quiet_bars": [],
+  "rytm_bars": [
+   60,
+   120
+  ],
+  "groove": [
+   [
+    60,
+    150
+   ]
+  ],
+  "breakdown": [
+   150,
+   174,
+   180
+  ],
+  "drop": [
+   180,
+   300
+  ],
+  "landing_shift": -300,
+  "resolution": null,
+  "logo": 300,
+  "fade_end": 369
+ },
+ "chords_frames": [
+  [
+   30,
+   60,
+   "Fmaj9"
+  ],
+  [
+   60,
+   120,
+   "Bbmaj7"
+  ],
+  [
+   120,
+   150,
+   "C"
+  ],
+  [
+   150,
+   174,
+   "Bbmaj7#11"
+  ],
+  [
+   180,
+   240,
+   "Fmaj9"
+  ],
+  [
+   240,
+   300,
+   "Dm9"
+  ],
+  [
+   300,
+   369,
+   "Fmaj9full"
+  ]
+ ],
+ "reveal_s": 2.4,
+ "drop_s": 7.2,
+ "logo_s": 12.0,
+ "silence_s": [
+  6.96,
+  7.2
+ ],
+ "kicks_s": [
+  2.4,
+  2.4,
+  4.8,
+  7.2,
+  9.6,
+  12.0
+ ],
+ "notes": [
+  {
+   "frame": 0.0,
+   "t": 0.0,
+   "midi": 53,
+   "stem": "motif"
+  },
+  {
+   "frame": 11.25,
+   "t": 0.45,
+   "midi": 57,
+   "stem": "motif"
+  },
+  {
+   "frame": 22.5,
+   "t": 0.9,
+   "midi": 60,
+   "stem": "motif"
+  },
+  {
+   "frame": 26.25,
+   "t": 1.05,
+   "midi": 62,
+   "stem": "motif"
+  },
+  {
+   "frame": 33.75,
+   "t": 1.35,
+   "midi": 65,
+   "stem": "motif"
+  },
+  {
+   "frame": 45.0,
+   "t": 1.8,
+   "midi": 67,
+   "stem": "motif"
+  },
+  {
+   "frame": 52.5,
+   "t": 2.1,
+   "midi": 69,
+   "stem": "motif"
+  },
+  {
+   "frame": 56.25,
+   "t": 2.25,
+   "midi": 72,
+   "stem": "motif"
+  },
+  {
+   "frame": 60.0,
+   "t": 2.4,
+   "midi": 53,
+   "stem": "groove_marimba"
+  },
+  {
+   "frame": 71.25,
+   "t": 2.85,
+   "midi": 57,
+   "stem": "groove_marimba"
+  },
+  {
+   "frame": 82.5,
+   "t": 3.3,
+   "midi": 60,
+   "stem": "groove_marimba"
+  },
+  {
+   "frame": 86.25,
+   "t": 3.45,
+   "midi": 62,
+   "stem": "groove_marimba"
+  },
+  {
+   "frame": 93.75,
+   "t": 3.75,
+   "midi": 65,
+   "stem": "groove_marimba"
+  },
+  {
+   "frame": 105.0,
+   "t": 4.2,
+   "midi": 67,
+   "stem": "groove_marimba"
+  },
+  {
+   "frame": 112.5,
+   "t": 4.5,
+   "midi": 69,
+   "stem": "groove_marimba"
+  },
+  {
+   "frame": 116.25,
+   "t": 4.65,
+   "midi": 72,
+   "stem": "groove_marimba"
+  },
+  {
+   "frame": 120.0,
+   "t": 4.8,
+   "midi": 60,
+   "stem": "groove_marimba"
+  },
+  {
+   "frame": 131.25,
+   "t": 5.25,
+   "midi": 62,
+   "stem": "groove_marimba"
+  },
+  {
+   "frame": 142.5,
+   "t": 5.7,
+   "midi": 65,
+   "stem": "groove_marimba"
+  },
+  {
+   "frame": 146.25,
+   "t": 5.85,
+   "midi": 67,
+   "stem": "groove_marimba"
+  },
+  {
+   "frame": 153.75,
+   "t": 6.15,
+   "midi": 69,
+   "stem": "groove_marimba"
+  },
+  {
+   "frame": 165.0,
+   "t": 6.6,
+   "midi": 72,
+   "stem": "groove_marimba"
+  },
+  {
+   "frame": 172.5,
+   "t": 6.9,
+   "midi": 53,
+   "stem": "groove_marimba"
+  },
+  {
+   "frame": 176.25,
+   "t": 7.05,
+   "midi": 57,
+   "stem": "groove_marimba"
+  },
+  {
+   "frame": 202.5,
+   "t": 8.1,
+   "midi": 53,
+   "stem": "motif"
+  },
+  {
+   "frame": 206.25,
+   "t": 8.25,
+   "midi": 57,
+   "stem": "motif"
+  },
+  {
+   "frame": 210,
+   "t": 8.4,
+   "midi": 60,
+   "stem": "motif"
+  },
+  {
+   "frame": 213.75,
+   "t": 8.55,
+   "midi": 62,
+   "stem": "motif"
+  },
+  {
+   "frame": 217.5,
+   "t": 8.7,
+   "midi": 62,
+   "stem": "motif"
+  },
+  {
+   "frame": 221.25,
+   "t": 8.85,
+   "midi": 65,
+   "stem": "motif"
+  },
+  {
+   "frame": 225,
+   "t": 9.0,
+   "midi": 67,
+   "stem": "motif"
+  },
+  {
+   "frame": 228.75,
+   "t": 9.15,
+   "midi": 67,
+   "stem": "motif"
+  },
+  {
+   "frame": 232.5,
+   "t": 9.3,
+   "midi": 69,
+   "stem": "motif"
+  },
+  {
+   "frame": 236.25,
+   "t": 9.45,
+   "midi": 69,
+   "stem": "motif"
+  },
+  {
+   "frame": 240,
+   "t": 9.6,
+   "midi": 72,
+   "stem": "motif"
+  },
+  {
+   "frame": 243.75,
+   "t": 9.75,
+   "midi": 72,
+   "stem": "motif"
+  },
+  {
+   "frame": 247.5,
+   "t": 9.9,
+   "midi": 74,
+   "stem": "motif"
+  },
+  {
+   "frame": 255,
+   "t": 10.2,
+   "midi": 77,
+   "stem": "motif"
+  },
+  {
+   "frame": 258.75,
+   "t": 10.35,
+   "midi": 62,
+   "stem": "motif"
+  },
+  {
+   "frame": 262.5,
+   "t": 10.5,
+   "midi": 65,
+   "stem": "motif"
+  },
+  {
+   "frame": 266.25,
+   "t": 10.65,
+   "midi": 69,
+   "stem": "motif"
+  },
+  {
+   "frame": 270,
+   "t": 10.8,
+   "midi": 72,
+   "stem": "motif"
+  },
+  {
+   "frame": 273.75,
+   "t": 10.95,
+   "midi": 76,
+   "stem": "motif"
+  },
+  {
+   "frame": 277.5,
+   "t": 11.1,
+   "midi": 77,
+   "stem": "motif"
+  },
+  {
+   "frame": 281.25,
+   "t": 11.25,
+   "midi": 81,
+   "stem": "motif"
+  },
+  {
+   "frame": 285,
+   "t": 11.4,
+   "midi": 77,
+   "stem": "motif"
+  },
+  {
+   "frame": 285,
+   "t": 11.4,
+   "midi": 81,
+   "stem": "motif"
+  },
+  {
+   "frame": 285,
+   "t": 11.4,
+   "midi": 84,
+   "stem": "motif"
+  },
+  {
+   "frame": 300.0,
+   "t": 12.0,
+   "midi": 65,
+   "stem": "logo"
+  },
+  {
+   "frame": 311.25,
+   "t": 12.45,
+   "midi": 69,
+   "stem": "logo"
+  },
+  {
+   "frame": 322.5,
+   "t": 12.9,
+   "midi": 72,
+   "stem": "logo"
+  },
+  {
+   "frame": 326.25,
+   "t": 13.05,
+   "midi": 74,
+   "stem": "logo"
+  },
+  {
+   "frame": 333.75,
+   "t": 13.35,
+   "midi": 77,
+   "stem": "logo"
+  }
+ ],
+ "lufs": -14.0,
+ "true_peak_dbtp": -2.85,
+ "seed": 1
+}

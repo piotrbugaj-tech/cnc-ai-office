@@ -32,14 +32,19 @@ def cell_box(x0, x1, y0, y1):
     return x0 * 0.01 + T / 2, x1 * 0.01 - T / 2, y0 * 0.01 + T, y1 * 0.01
 
 
-def _obj(S, name, me, loc=(0, 0, 0), rot=None, coll=None):
+def _obj(S, name, me, loc=(0, 0, 0), rot=None, coll=None, parent=None):
+    """Obiekt rekwizytu; `loc`/`rot` w układzie mebla (REGAL). `parent` = rig (np. DRW_S09) – obiekt jedzie
+    z szufladą (macierz liczona z pozycji spoczynkowej rigu)."""
     ob = bpy.data.objects.new(name, me)
     (coll or S.colls["REKWIZYTY"]).objects.link(ob)
-    ob.parent = S.root
-    ob.matrix_parent_inverse = Matrix.Identity(4)
     mat = Matrix.Translation(loc)
     if rot is not None:
         mat = mat @ rot
+    ob.parent = parent or S.root
+    ob.matrix_parent_inverse = Matrix.Identity(4)
+    if parent is not None:
+        pF = S.rest_F(parent)
+        mat = pF.inverted() @ mat
     ob.matrix_basis = mat
     S.props.append(ob)
     return ob
@@ -357,4 +362,202 @@ def build(S, seed=3):
     # F: stos książek w niskiej wnęce
     books_stack(S, rnd, (20, 60, 70, 90), n=3, x_left=cell_box(20, 60, 70, 90)[0] + 0.07, y_c=0.21, prefix="F",
                 rot_deg=[-2, 1, 4])
+    S.mats["clay"] = cer_terra
+    build_extra(S, rnd)
+    n_shelf = len(S.props)
+    S.contents = build_contents(S, rnd)
+    S.n_props_shelf = n_shelf
     return S.props
+
+# --------------------------------------------------------------------------- grupy G–K i zawartość mebli
+def framed_print(S, name, loc, w=0.16, h=0.22, lean_deg=6.0, frame_w=0.012, depth=0.015):
+    """Grafika w ramce (kremowy papier, koło terakota Ø70) oparta o ścianę. `loc` = środek dolnej tylnej krawędzi."""
+    bm = bmesh.new()
+
+    def bx(x0, x1, y0, y1, z0, z1, mi):
+        r = bmesh.ops.create_cube(bm, size=1.0)
+        vs = r["verts"]
+        bmesh.ops.scale(bm, vec=(x1 - x0, y1 - y0, z1 - z0), verts=vs)
+        bmesh.ops.translate(bm, vec=((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2), verts=vs)
+        for f in {f for v in vs for f in v.link_faces}:
+            f.material_index = mi
+
+    fw = frame_w
+    bx(-w / 2, w / 2, -depth, 0, 0, fw, 0)
+    bx(-w / 2, w / 2, -depth, 0, h - fw, h, 0)
+    bx(-w / 2, -w / 2 + fw, -depth, 0, fw, h - fw, 0)
+    bx(w / 2 - fw, w / 2, -depth, 0, fw, h - fw, 0)
+    bx(-w / 2 + fw, w / 2 - fw, -depth * 0.55, -depth * 0.45, fw, h - fw, 1)    # papier (passe-partout)
+    me = bpy.data.meshes.new(name)
+    bm.to_mesh(me)
+    bm.free()
+    me.materials.append(M.ceramic("Rama_dab", "B89A72", rough=0.55, speckle=0.0, glaze=0.0))
+    me.materials.append(print_material())
+    rot = Matrix.Rotation(-math.radians(lean_deg), 4, "X")
+    ob = _obj(S, name, me, loc, rot)
+    mod = ob.modifiers.new("faza", "BEVEL")
+    mod.width = 0.0008
+    mod.segments = 2
+    return ob
+
+
+def print_material(name="Grafika_kolo_terakota"):
+    """Papier kremowy z kołem terakota Ø70 mm (proceduralnie, współrzędne obiektu ramki)."""
+    m, nt, nb = M.new_material(name)
+    tc = nb.n("ShaderNodeTexCoord", (-800, 0))
+    o = nb.separate(tc.outputs["Object"], (-600, 0))
+    dx = nb.math("SUBTRACT", o[0], 0.0)
+    dz = nb.math("SUBTRACT", o[2], 0.125)
+    r = nb.math("SQRT", nb.math("ADD", nb.math("MULTIPLY", dx, dx), nb.math("MULTIPLY", dz, dz)))
+    circ = nb.maprange(r, 0.0345, 0.0355, 1.0, 0.0, (-300, 0))
+    grain = nb.noise(tc.outputs["Object"], scale=600.0, detail=2.0, loc=(-500, -250))
+    paper = nb.mix(nb.maprange(grain.outputs["Fac"], 0.3, 0.7, 0.0, 0.08), M.hex_lin("F1EBDF"), M.hex_lin("D9CFBD"))
+    col = nb.mix(circ, paper, M.hex_lin("B5593D"), (-100, 0))
+    b = M.principled(nb)
+    nb.link(col, b.inputs["Base Color"])
+    b.inputs["Roughness"].default_value = 0.85
+    M.out_node(nb, b.outputs[0])
+    return m
+
+
+def folded_cloth(S, name, loc, size=(0.16, 0.24, 0.048), color="E3D9C4", parent=None, rnd=None):
+    """Złożona tkanina: 4 zaokrąglone warstwy z drobnymi przesunięciami (fałdy)."""
+    rnd = rnd or random.Random(1)
+    sx, sy, sz = size
+    n = 4
+    bm = bmesh.new()
+    for i in range(n):
+        r = bmesh.ops.create_cube(bm, size=1.0)
+        vs = r["verts"]
+        th = sz / n
+        bmesh.ops.scale(bm, vec=(sx - rnd.uniform(0, 0.004), sy - rnd.uniform(0, 0.006), th * 0.98), verts=vs)
+        bmesh.ops.translate(bm, vec=(rnd.uniform(-0.002, 0.002), rnd.uniform(-0.003, 0.003), th * (i + 0.5)),
+                            verts=vs)
+    me = bpy.data.meshes.new(name)
+    bm.to_mesh(me)
+    bm.free()
+    me.materials.append(M.cloth_cover(f"tkanina_{name}", color, rough=0.85))
+    ob = _obj(S, name, me, loc, parent=parent)
+    mod = ob.modifiers.new("faza", "BEVEL")
+    mod.width = sz / n * 0.45
+    mod.segments = 3
+    me.polygons.foreach_set("use_smooth", [True] * len(me.polygons))
+    return ob
+
+
+def pencil(S, name, loc, length=0.175, d=0.007, color="B5593D", parent=None):
+    """Ołówek sześciokątny wzdłuż X: lakierowany korpus + zatemperowany czubek (drewno + grafit)."""
+    tip = 0.018
+    body = bpy.data.meshes.new(name)
+    bm = bmesh.new()
+    bmesh.ops.create_cone(bm, cap_ends=True, segments=6, radius1=d / 2, radius2=d / 2, depth=length - tip)
+    bmesh.ops.rotate(bm, verts=bm.verts, cent=(0, 0, 0), matrix=Matrix.Rotation(math.radians(90), 3, "Y"))
+    for f in bm.faces:
+        f.material_index = 0
+    r = bmesh.ops.create_cone(bm, cap_ends=True, segments=6, radius1=d / 2, radius2=0.0006, depth=tip)
+    bmesh.ops.rotate(bm, verts=r["verts"], cent=(0, 0, 0), matrix=Matrix.Rotation(math.radians(90), 3, "Y"))
+    bmesh.ops.translate(bm, verts=r["verts"], vec=((length - tip) / 2 + tip / 2, 0, 0))
+    for f in {f for v in r["verts"] for f in v.link_faces}:
+        f.material_index = 1
+    bm.to_mesh(body)
+    bm.free()
+    body.materials.append(M.plastic(f"lakier_{name}", M.hex_lin(color)[:3], rough=0.35))
+    body.materials.append(M.plastic("drewno_olowka", M.hex_lin("D8B88E")[:3], rough=0.7))
+    rot = Matrix.Rotation(math.radians(30), 4, "X")
+    return _obj(S, name, body, (loc[0], loc[1], loc[2] + d * 0.433), rot, parent=parent)
+
+
+def build_extra(S, rnd):
+    cer_terra = M.ceramic("Kamionka_terakota", "B5593D", rough=0.65, speckle=0.12, glaze=0.0)
+    cer_sage = M.ceramic("Kamionka_szalwia", "7F8A6E", rough=0.6, speckle=0.3)
+    cer_clay = S.mats.get("clay") or M.ceramic("Glina_terakota_2", "B07A5C", rough=0.75, speckle=0.15, glaze=0.0)
+    # G: #08 – 5 albumów pionowo przy prawej przegrodzie
+    xa, xb, za, zb = cell_box(70, 100, 30, 60)
+    x = xb - 0.002
+    cols = ["34404F", "D2C3A5", "7F8A6E", "3B3936", "E3D9C4"]
+    for i, ccol in enumerate(cols):
+        w = rnd.uniform(0.020, 0.030)
+        h = min(zb - za - 0.014, rnd.uniform(0.245, 0.266))
+        d = rnd.uniform(0.21, 0.25)
+        _book(S, f"prop_album_G{i}", w, h, d, ccol, (x - w / 2, 0.06 + d / 2, za))
+        x -= w + 0.0008
+    # H: #15 – walcowy wazon terakota Ø90×200 + 2 książki płasko
+    xa, xb, za, zb = cell_box(120, 150, 60, 90)
+    cylinder_vase(S, "prop_wazon_H", (xa + 0.075, 0.21, za), r=0.045, h=0.20, mat=cer_terra)
+    books_stack(S, rnd, (120, 150, 60, 90), n=2, x_left=xb - 0.205, y_c=0.2, prefix="H", rot_deg=[1, -3])
+    # I: #26 – grafika w ramce oparta o ścianę
+    xa, xb, za, zb = cell_box(110, 130, 90, 120)
+    yw = getattr(S, "wall_y", S.D + 0.0095)
+    lean = 6.0
+    y_bottom = yw - 0.22 * math.sin(math.radians(lean)) - 0.0005
+    framed_print(S, "prop_grafika_I", ((xa + xb) / 2, y_bottom, za), lean_deg=lean)
+    # J: #31 – 4 paperbacki płasko + kubek szałwia
+    xa, xb, za, zb = cell_box(70, 100, 120, 140)
+    top = za
+    pcols = ["E3D9C4", "B5593D", "D2C3A5", "34404F"]
+    for i, ccol in enumerate(pcols):
+        th = rnd.uniform(0.012, 0.02)
+        L, D = 0.178 - i * 0.004, 0.11 - i * 0.002
+        ang = math.radians(rnd.uniform(-5, 5))
+        rot = Matrix.Rotation(ang, 4, "Z") @ Matrix.Rotation(math.radians(-90), 4, "Y")
+        ob = _book(S, f"prop_paperback_J{i}", th, L, D, ccol, (0, 0, 0))
+        ob.matrix_basis = Matrix.Translation((xa + 0.03 + L / 2, 0.2, top + th / 2)) @ rot @ \
+            Matrix.Translation((0, 0, -L / 2))
+        top += th
+    cylinder_vase(S, "prop_kubek_J", (xb - 0.055, 0.17, za), r=0.034, h=0.085, mat=cer_sage)
+    # K: #46 – mała misa terakota Ø120
+    xa, xb, za, zb = cell_box(150, 170, 150, 170)
+    bowl(S, "prop_misa_K", ((xa + xb) / 2, 0.2, za), r=0.06, h=0.045, foot=0.03, mat=cer_clay)
+
+
+def build_contents(S, rnd):
+    """Zawartość mebli do ujęć funkcyjnych: S09 tkaniny, S10 flat-lay, DZ02 misy + słoik (rodzic = rig)."""
+    out = []
+    # S09: 3 złożone tkaniny 240×160×(40–55) – krem, szałwia, terakota
+    d = S.drawers.get("S09")
+    if d:
+        bx, by, bz, Wb, Lb, Hb = d.box
+        zb = bz + 0.0165
+        x0 = bx + 0.018 + 0.012
+        for i, (ccol, hh) in enumerate((("E3D9C4", 0.050), ("7F8A6E", 0.044), ("B5593D", 0.054))):
+            out.append(folded_cloth(S, f"prop_tkanina_S09_{i}", (x0 + 0.08 + i * 0.172, by + 0.018 + 0.135, zb),
+                                    (0.16, 0.24, hh), ccol, parent=d.rig, rnd=rnd))
+    # S10: notes A5 szałwia, 3 ołówki, linijka brzozowa – równolegle do X
+    d = S.drawers.get("S10")
+    if d:
+        bx, by, bz, Wb, Lb, Hb = d.box
+        zb = bz + 0.0165
+        xi0 = bx + 0.018
+        # notes A5 leży okładką do góry: książka (gr. 10, wys. 210, gł. 148) położona na boku, grzbiet wzdłuż Y
+        me = book_mesh("prop_notes_S10", 0.010, 0.21, 0.148, stripe=(0.0, 1.0))
+        me.materials.append(M.cloth_cover("okladka_notes", "7F8A6E", rough=0.8))
+        me.materials.append(S.mats["paper"])
+        me.materials.append(M.cloth_cover("gumka_notes", "3B3936", rough=0.5))
+        cx, cy = xi0 + 0.012 + 0.074, by + 0.018 + 0.202
+        rot = Matrix.Rotation(math.radians(90), 4, "Z") @ Matrix.Rotation(math.radians(-90), 4, "Y")
+        mat = Matrix.Translation((cx, cy, zb + 0.005)) @ rot @ Matrix.Translation((0, 0, -0.105))
+        ob = _obj(S, "prop_notes_S10", me, (0, 0, 0), parent=d.rig)
+        ob.matrix_basis = S.rest_F(d.rig).inverted() @ mat
+        out.append(ob)
+        for i, ccol in enumerate(("B5593D", "3B3936", "D8B88E")):
+            out.append(pencil(S, f"prop_olowek_S10_{i}", (xi0 + 0.022 + 0.0875, by + 0.018 + 0.017 + i * 0.015, zb),
+                              color=ccol, parent=d.rig))
+        rul = bpy.data.meshes.new("linijka")
+        rbm = bmesh.new()
+        rbm.loops.layers.uv.new("UVMap")
+        bmesh.ops.create_cube(rbm, size=1.0, calc_uvs=True)
+        bmesh.ops.scale(rbm, vec=(0.2, 0.025, 0.003), verts=rbm.verts)
+        bmesh.ops.translate(rbm, vec=(0, 0, 0.0015), verts=rbm.verts)
+        rbm.to_mesh(rul)
+        rbm.free()
+        rul.materials.append(S.mats.get("ruler") or M.plywood("Linijka_brzoza", t_mm=3.0, plies=1, edge_contrast=0.0))
+        out.append(_obj(S, "prop_linijka_S10", rul, (xi0 + 0.0101 + 0.1, by + 0.018 + 0.072, zb), parent=d.rig))
+    # DZ02: dwie misy szałwia jedna na drugiej + słoik terakota (szafka, za drzwiczkami)
+    cer_sage = bpy.data.materials.get("Kamionka_szalwia") or M.ceramic("Kamionka_szalwia", "7F8A6E")
+    cer_terra = bpy.data.materials.get("Kamionka_terakota") or M.ceramic("Kamionka_terakota", "B5593D")
+    xa, xb, za, zb = cell_box(130, 170, 90, 120)
+    out.append(bowl(S, "prop_misa_DZ02_a", (xa + 0.12, 0.2, za), r=0.085, h=0.05, foot=0.04, mat=cer_sage))
+    out.append(bowl(S, "prop_misa_DZ02_b", (xa + 0.12, 0.2, za + 0.012), r=0.075, h=0.045, foot=0.035,
+                    mat=cer_sage))
+    out.append(cylinder_vase(S, "prop_sloik_DZ02", (xb - 0.09, 0.22, za), r=0.045, h=0.14, mat=cer_terra))
+    return out

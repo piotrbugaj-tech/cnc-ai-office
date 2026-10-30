@@ -180,20 +180,20 @@ def out_node(nb, shader, loc=(1000, 0)):
 
 
 # --------------------------------------------------------------------------- sklejka brzozowa
-BIRCH = dict(
-    face_light=hex_lin("E5CB9C"),   # jasne partie lica (po oleju) – górna granica briefu
-    face_mid=hex_lin("DABD8B"),     # dolna granica briefu (#D8BE92)
-    face_dark=hex_lin("C6A26E"),    # ciemniejsze pasma figury rotary-cut
+BIRCH = dict(                        # paleta wg research-brief.md 3.2 (sRGB HEX, po oleju)
+    face_light=hex_lin("E6CDA2"),   # lico – jasne partie
+    face_mid=hex_lin("E0C59A"),     # lico – baza (#E3CBA5)
+    face_dark=hex_lin("CFB083"),    # słoje / figura rotary-cut
     pore=hex_lin("8E6A42"),         # plamki rdzeniowe (pith flecks)
-    ply_light=hex_lin("DEC392"),    # warstwa wzdłużna na krawędzi
-    ply_dark=hex_lin("B99158"),     # warstwa poprzeczna (czoło włókien) – wyraźnie ciemniejsza
-    glue=hex_lin("6A4B2C"),         # spoina klejowa
+    ply_light=hex_lin("E6D2AE"),    # krawędź: warstwa wzdłużna (#EAD8B9)
+    ply_dark=hex_lin("C6A374"),     # krawędź: warstwa poprzeczna (#CDAE82, nieco ciemniej dla czytelności)
+    glue=hex_lin("6F5338"),         # spoina klejowa (#7B5E43)
 )
 
 
 def plywood(name="Sklejka_brzoza_18", t_mm=18.0, plies=13, tint=(1.0, 1.0, 1.0), face_rough=0.40,
             coat=0.12, anis=0.25, edge_contrast=1.0, variation=1.0, uv_name="UVMap", grade="BB",
-            per_object_pattern=True):
+            per_object_pattern=True, fade_near=2.2, fade_far=5.0):
     """Sklejka brzozowa olejowana. `tint` mnoży kolor (np. fronty minimalnie jaśniejsze),
     `variation` – siła różnic tonu między arkuszami, `grade` "BB" (lica) / "CP" (plecy – więcej plam),
     `per_object_pattern=False` – figura zależy tylko od UV (fronty z UV w układzie świata = ciągłe usłojenie
@@ -220,12 +220,12 @@ def plywood(name="Sklejka_brzoza_18", t_mm=18.0, plies=13, tint=(1.0, 1.0, 1.0),
     # figura rotary-cut: faliste pasma w poprzek usłojenia (okres ~2,5–3 cm), silnie zniekształcone
     warp = nb.noise(nb.combine(nb.math("MULTIPLY", g2, 2.2), nb.math("MULTIPLY", c2, 11.0), pr),
                     scale=1.0, detail=4.0, rough=0.55, loc=(-1500, -250))
-    phase = nb.math("ADD", nb.math("MULTIPLY", c2, 2 * math.pi / 0.028),
-                    nb.math("MULTIPLY", warp.outputs["Fac"], 15.0), (-1300, -250))
+    phase = nb.math("ADD", nb.math("MULTIPLY", c2, 2 * math.pi / 0.034),
+                    nb.math("MULTIPLY", warp.outputs["Fac"], 22.0), (-1300, -250))
     phase = nb.math("ADD", phase, nb.math("MULTIPLY", nb.math("SINE", nb.math("MULTIPLY", g2, 3.7)), 1.6),
                     (-1150, -250))
     band = nb.maprange(nb.math("SINE", phase), -1.0, 1.0, 0.0, 1.0, (-1000, -250))
-    band = nb.math("POWER", band, 2.6, (-850, -250))          # ciemne pasma węższe niż jasne
+    band = nb.math("POWER", band, 1.7, (-850, -250))          # miękkie, chmurkowe pasma (brzoza, nie sosna)
     figmask = nb.noise(nb.combine(nb.math("MULTIPLY", g2, 1.4), nb.math("MULTIPLY", c2, 4.5), pr), scale=1.0,
                        detail=2.0, loc=(-1000, -450))
     fig = nb.math("MULTIPLY", band, nb.maprange(figmask.outputs["Fac"], 0.38, 0.66, 0.15, 1.0), (-700, -300))
@@ -239,7 +239,7 @@ def plywood(name="Sklejka_brzoza_18", t_mm=18.0, plies=13, tint=(1.0, 1.0, 1.0),
     pore_m = nb.maprange(fl.outputs["Fac"], 0.745, 0.80, 0.0, 1.0, (-800, -900))
 
     face = nb.mix(tone_m, BIRCH["face_light"], BIRCH["face_mid"], (-500, -100))
-    face = nb.mix(nb.math("MULTIPLY", fig, 0.8), face, BIRCH["face_dark"], (-350, -200))
+    face = nb.mix(nb.math("MULTIPLY", fig, 0.6), face, BIRCH["face_dark"], (-350, -200))
     sv = nb.math("ADD", 1.0, nb.math("MULTIPLY", nb.math("SUBTRACT", fine_m, 0.5), 0.12), (-500, -500))
     face = nb.mix(1.0, face, nb.combine(sv, sv, sv), (-200, -300), blend="MULTIPLY")
     face = nb.mix(nb.math("MULTIPLY", pore_m, 0.75), face, BIRCH["pore"], (-100, -350))
@@ -282,17 +282,25 @@ def plywood(name="Sklejka_brzoza_18", t_mm=18.0, plies=13, tint=(1.0, 1.0, 1.0),
     # tekstura wewnątrz warstwy: wzdłużne smugi (jasne) / punktowe pory czoła (ciemne)
     streak = nb.noise(nb.combine(nb.math("MULTIPLY", along, 25.0), nb.math("MULTIPLY", oz, 3000.0), rnd),
                       scale=1.0, detail=2.0, loc=(-850, 850))
-    endg = nb.noise(tc.outputs["Object"], scale=2200.0, detail=1.0, loc=(-850, 1050))
+    endg = nb.noise(tc.outputs["Object"], scale=3600.0, detail=2.0, rough=0.45, loc=(-850, 1050))
     tex = nb.mixf(parity, streak.outputs["Fac"], endg.outputs["Fac"], (-600, 900))
     tex_m = nb.maprange(tex, 0.35, 0.75, -1.0, 1.0, (-450, 900))
 
     ply_col = nb.mix(parity, BIRCH["ply_light"], BIRCH["ply_dark"], (-450, 600))
     # jasność warstwy: ±6 % + tekstura
     var = nb.math("ADD", nb.math("MULTIPLY", nb.math("SUBTRACT", wn.outputs["Value"], 0.5), 0.22),
-                  nb.math("MULTIPLY", tex_m, nb.mixf(parity, 0.09, 0.16)), (-300, 800))
+                  nb.math("MULTIPLY", tex_m, nb.mixf(parity, 0.08, 0.10)), (-300, 800))
     var = nb.math("ADD", var, 1.0, (-150, 800))
     ply_col = nb.mix(1.0, ply_col, nb.combine(var, var, var), (-150, 600), blend="MULTIPLY")
-    edge = nb.mix(nb.math("MULTIPLY", glue, 0.85 * edge_contrast), ply_col, BIRCH["glue"], (0, 500))
+    # wygaszanie kontrastu warstw z odległością kamery (anti-moiré w szerokich planach):
+    # do `fade_near` m pełny kontrast, od `fade_far` m – 35 % (krawędź czyta się wtedy jako ciepły, ciemniejszy pas)
+    cam = nb.n("ShaderNodeCameraData", (-850, 1250))
+    fade = nb.maprange(cam.outputs["View Distance"], fade_near, fade_far, 1.0, 0.35, (-650, 1250))
+    avg_col = nb.mix(0.5, BIRCH["ply_light"], BIRCH["ply_dark"], (-450, 1250))
+    avg_col = nb.mix(0.10, avg_col, BIRCH["glue"], (-300, 1250))
+    ply_col = nb.mix(fade, avg_col, ply_col, (-150, 1100))
+    edge = nb.mix(nb.math("MULTIPLY", nb.math("MULTIPLY", glue, 0.85 * edge_contrast), fade), ply_col,
+                  BIRCH["glue"], (0, 500))
 
     # ---------------- maska lico / krawędź (|N.z| w układzie obiektu, miękko na fazie)
     nz = nb.separate(tc.outputs["Normal"], (-700, 100))[2]
@@ -374,7 +382,7 @@ def plastic(name, color, rough=0.45, sss=0.0):
     return m
 
 
-def knob_pla(name="Galka_PLA_bialy", layer_mm=0.2, axis="Z"):
+def knob_pla(name="Galka_PLA_bialy", layer_mm=0.2, axis="Z", sss=0.0, seam=True):
     """Biały matowy PLA/PETG z drukarki 3D: lekki subsurface, linie warstw co 0,2 mm wzdłuż osi gałki
     (lokalna oś Z obiektu = oś druku), delikatna nierówność ekstruzji."""
     m, nt, nb = new_material(name)
@@ -390,12 +398,17 @@ def knob_pla(name="Galka_PLA_bialy", layer_mm=0.2, axis="Z"):
     bump = nb.n("ShaderNodeBump", (-100, -200))
     bump.inputs["Strength"].default_value = 0.5
     bump.inputs["Distance"].default_value = 0.00003
+    if seam:   # pionowy "szew" druku (punkt zmiany warstwy) – wąski pas na stałym kącie
+        o2 = nb.separate(tc.outputs["Object"], (-1000, -500))
+        ang = nb.math("ARCTAN2", o2[1], o2[0], (-800, -500))
+        sm = nb.maprange(nb.math("ABSOLUTE", nb.math("SUBTRACT", ang, 2.1)), 0.0, 0.035, 0.6, 0.0, (-600, -500))
+        lines = nb.math("ADD", lines, sm, (-250, -100))
     nb.link(lines, bump.inputs["Height"])
     b = principled(nb)
-    col = hex_lin("F2F0EA")
+    col = hex_lin("F3F1EC")
     b.inputs["Base Color"].default_value = col
-    b.inputs["Roughness"].default_value = 0.42
-    set_in(b, "Subsurface Weight", 0.35)
+    b.inputs["Roughness"].default_value = 0.45
+    set_in(b, "Subsurface Weight", sss)
     set_in(b, "Subsurface Radius", (1.0, 0.9, 0.75))
     set_in(b, "Subsurface Scale", 0.0012)
     set_in(b, "Specular IOR Level", 0.45)

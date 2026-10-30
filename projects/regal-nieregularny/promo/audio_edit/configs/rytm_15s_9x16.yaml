@@ -1,0 +1,43 @@
+# RYTM - cutdown 9:16, 15,00 s = 375 kl. (research-brief.md 8.1), wylacznie z renderow 2560x1440.
+# Kolumna 810x1440 -> 1080x1920, cx kluczowany per ujecie; unsharp 5:5:0.4 po upscalu.
+#   python3 edit.py configs/rytm_15s_9x16.yaml [--draft]
+work_dir: ../test/work      # posrednie FFV1 (katalog test/ jest w .gitignore)
+versions:
+  rytm_15s_9x16:
+    size: [1080, 1920]
+    fps: 25
+    sharpen: true
+    shots:
+      - {id: V1, src: ../../renders/S01/####.png, f: [0, 60], cx: 0.45}
+      - {id: V2, src: ../../renders/S03/####.png, f: [180, 225], cx: [[0, 0.50], [1.2, 0.46], [1.8, 0.47]]}
+      - {id: V3, src: ../../renders/S04/####.png, f: [255, 300], cx: 0.50}
+      - {id: V4, src: ../../renders/S07/####.png, f: [450, 480], cx: 0.50}
+      - {id: V5, src: ../../renders/S08/####.png, f: [480, 600], cx: [0.50, 0.505]}
+      - id: V6
+        type: endcard
+        dur_f: 75
+        f: [660, 735]                                 # okno zdarzen: sting RYTM f660 -> 12,0 s
+        bg: "#EFEAE2"
+        elements:
+          - {type: glyph, model: ../../data/model.json, height: 400, cx: 540, cy: 560, stroke: 3, f: [2, 32]}
+          - {type: text, text: RYTM, style: end_name, x: 540, y: 900, f: [10, 24]}
+          - {type: text, text: "Precyzja w każdej warstwie.", style: end_tag, x: 540, y: 990, f: [18, 32]}
+          - {type: text, text: "Regał ze sklejki brzozowej\n190 × 202 × 40 cm", style: end_desc, x: 540, y: 1060, f: [24, 36]}
+          - {type: text, text: "CNC Furniture Studio", style: end_brand, x: 540, y: 1180, f: [30, 42]}
+    titles:                                           # strefa bezpieczna: y 270-1250, x 65-1015
+      - {text: "Bez boków.", style: title, x: 540, y: 420, align: center, f: [10, 58]}
+      - {text: "Pełny wysuw.", style: title, x: 540, y: 420, align: center, f: [66, 104]}
+      - {text: "Cichy domyk.", style: title, x: 540, y: 420, align: center, f: [118, 148]}
+      - {text: "140 elementów.", style: title, x: 540, y: 420, align: center, f: [152, 174], glow: true}
+    grade: {lut: auto, vignette: 0.09, grain: 5}
+    audio:
+      music: {stems_dir: ../music/synth_v1_15s_stems, use: [pads, groove_marimba, drums, bass, fx, reverb], lufs: -18}
+      event_notes: true
+      event_music_fx: false
+      events: ../../renders/events.json               # zdarzenia przeliczane per ujecie (np. f480 -> 7,2 s)
+      duck: {depth_db: 4, attack: 0.01, release: 0.3, threshold_db: -42}
+      # proznia 6,96-7,2 s przychodzi z events.json (silence f474-480 w oknie V4)
+      pan_max: 0.15
+      room_tone: {sample: room_tone_30s, level_db: -48}
+      master: {lufs: -14, true_peak: -1.5, comp_ratio: 1.5}
+    export: {output: ../out/rytm_15s_9x16.mp4, crf: 17, preset: slow}

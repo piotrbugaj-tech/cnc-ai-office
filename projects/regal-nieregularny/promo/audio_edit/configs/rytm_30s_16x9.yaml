@@ -1,0 +1,57 @@
+# RYTM - wersja glowna 16:9, 30,00 s = 750 kl. (research-brief.md 5 / 7 / 6.3)
+# Ujecia: sekwencje PNG z Blendera, numery plikow = GLOBALNE klatki f (zakladki +-3 kl. sa pomijane przez 'f').
+# Sciezki renderow sa ZALOZENIEM (../../renders/<ID>/####.png) - popraw 'src', gdy agent 3D poda swoje.
+#   python3 edit.py configs/rytm_30s_16x9.yaml                 # final
+#   python3 edit.py configs/rytm_30s_16x9.yaml --draft         # podglad 960x540
+#   python3 edit.py configs/rytm_30s_16x9.yaml --audio-only --events test/brief_events_mock.json
+work_dir: ../test/work      # posrednie FFV1 (katalog test/ jest w .gitignore)
+versions:
+  rytm_30s_16x9:
+    size: [1920, 1080]
+    fps: 25
+    shots:
+      - {id: S01, src: ../../renders/S01/####.png, f: [0, 60]}
+      - {id: S02, src: ../../renders/S02/####.png, f: [60, 180]}
+      - {id: S03, src: ../../renders/S03/####.png, f: [180, 225]}
+      - {id: S04, src: ../../renders/S04/####.png, f: [225, 300]}
+      - {id: S05, src: ../../renders/S05/####.png, f: [300, 345]}
+      - {id: S06, src: ../../renders/S06/####.png, f: [345, 420]}
+      - {id: S07, src: ../../renders/S07/####.png, f: [420, 480]}
+      - {id: S08, src: ../../renders/S08/####.png, f: [480, 600]}
+      - {id: S09, src: ../../renders/S09/####.png, f: [600, 670], event_tail_s: 0.0}   # +10 kl. na przenikanie
+      - id: S10
+        type: endcard
+        dur_f: 90
+        f: [660, 750]                                 # okno zdarzen (sting RYTM f660...) - obraz z Pillow
+        bg: "#EFEAE2"
+        transition: {type: dissolve, frames: 10}     # f660-670
+        elements:                                     # f wzgledem startu planszy (f660)
+          - {type: glyph, model: ../../data/model.json, height: 240, cx: 960, cy: 380, stroke: 2, f: [2, 32]}
+          - {type: text, text: RYTM, style: end_name, y: 600, f: [12, 26]}
+          - {type: text, text: "Precyzja w każdej warstwie.", style: end_tag, y: 690, f: [24, 38]}
+          - {type: text, text: "Regał ze sklejki brzozowej · 190 × 202 × 40 cm", style: end_desc, y: 750, f: [30, 42]}
+          - {type: text, text: "CNC Furniture Studio", style: end_brand, y: 980, f: [36, 48]}
+    titles:                                           # f = klatki montazu (= globalne w tej wersji)
+      - {text: "Bez boków.", style: title, x: 144, y: 470, f: [96, 176]}
+      - {text: "Pełny wysuw.", style: title, x: 144, y: 900, f: [196, 224]}
+      - {text: "Cichy domyk.", style: title, x: 144, y: 540, f: [262, 296]}
+      - {text: "140 elementów. 8 arkuszy.", style: title, x: 144, y: 960, f: [428, 474], glow: true}
+    dims:                                             # S06 - docelowo pozycje z events.json (world_to_camera_view)
+      - {text: "18 mm", p1: [1114, 907], p2: [1344, 907], f: [360, 416]}
+      - {text: "2 mm", p1: [480, 540], p2: [480, 562], f: [375, 406], text_pos: [500, 500]}
+      - {text: "13 warstw", p1: [1306, 432], p2: [1420, 380], f: [390, 416], text_pos: [1430, 350]}
+    grade: {lut: auto, vignette: 0.09, grain: 5}
+    audio:
+      # A) muzyka z fal.ai (po wygenerowaniu na Macu):  music: {file: ../music/fal_eleven25_nordic_marimba_s11_30s_XXXX_48k.wav, lufs: -18}
+      #    + event_notes: true + event_music_fx: true (sub na reveal, riser z events.json na wierzchu muzyki AI).
+      # B) fallback: synteza (lozko bez 'motif', nuty z events.json):
+      music: {stems_dir: ../music/synth_v1_stems, use: [pads, groove_marimba, drums, bass, fx, reverb], lufs: -18}
+      event_notes: true          # nuty z events.json: shelf_pass, ladowania polek, fronty, akord f585, sting RYTM
+      event_music_fx: false      # reveal/riser z events.json: false, bo sa juz w stemie 'fx' syntezy (true dla muzyki AI)
+      events: ../../renders/events.json
+      duck: {depth_db: 4, attack: 0.01, release: 0.3, threshold_db: -42}
+      # 'proznia' f474-480 przychodzi z events.json (typ 'silence'); recznie: silence: [["f:474", "f:480"]]
+      pan_max: 0.3
+      room_tone: {sample: room_tone_30s, level_db: -48}
+      master: {lufs: -14, true_peak: -1.5, comp_ratio: 1.5}
+    export: {output: ../out/rytm_30s_16x9.mp4, crf: 16, preset: slow, prores: true}

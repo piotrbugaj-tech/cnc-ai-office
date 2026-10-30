@@ -24,14 +24,19 @@ Hierarchia mebla (każdy element = obiekt o nazwie z model.json):
 
 Główne API (szczegóły w docstringach):
   build_all(...)                    – wszystko naraz (mebel + otoczenie + rekwizyty + światło)
-  load_model(), clean_scene(), build_furniture(), build_room(), build_props(),
-  light_rig_window(), light_rig_studio(), set_look()
-  set_drawer(code, frac), set_door(code, angle_deg)
-  animate_drawer_open/close(...), animate_door_open/close(...)   – keyframe'y z krzywymi soft‑close + zdarzenia
-  assembly_units(), assembly_start(mode), set_assembly(name, t), animate_assembly(...)
+  load_model(), clean_scene(), build_furniture(front_grain="model"), build_room("scandi"|"studio"), build_props(),
+  light_rig_window(side="right", preset="poranek"), apply_light_preset("poranek"|"zlota", frame=None),
+  light_rig_studio(), set_look("window"|"studio")
+  set_drawer(code, frac), set_door(code, angle_deg), reset_rigs(), rest_F(obj)
+  animate_drawer_open/close(...), animate_door_open/close(...)   – gotowe krzywe soft‑close + zdarzenia
+  key_drawer_curve(code, [(f, mm)]), key_door_curve(code, [(f, deg)]), hermite_samples(...), hold_state(...)
+                                    – dowolne krzywe (np. dokładnie z briefu) z zapisem prędkości do events.json
+  assembly_units(), assembly_start(mode), set_assembly(name, t), animate_assembly(...)  (montaż jednostkami;
+                                      montaż formatkami z prawdziwego rozkroju – flatpack.py)
   make_camera(...), animate_camera(...), camera_path(...)
-  render_settings(preset, ...), render_still(...), render_animation(...)
-  log_event(), export_events(path), clear_events()
+  render_settings(preset, ...), setup_device(), render_still(...), render_animation(...), save_blend(...)
+  log_event(), export_events(path), clear_events(), set_interp(idb, "LINEAR"|"CONSTANT"|"BEZIER", f0, f1)
+Film (10 ujęć wg research-brief.md): film.py; look-dev: lookdev.py; benchmark: bench.py.
 """
 from __future__ import annotations
 
@@ -94,8 +99,24 @@ WALL_GAP = 0.003        # szczelina plecy – ściana
 
 S = SimpleNamespace(
     data=None, layout=None, fps=25, root=None, parts={}, part_info={}, drawers={}, doors={}, asm={},
-    rest={}, mats={}, colls={}, events=[], props=[], lights={}, cams={}, W=1.9, H=2.018, D=0.4,
+    rest={}, mats={}, colls={}, events=[], props=[], lights={}, cams={}, W=1.9, H=2.018, D=0.4, curves={},
 )
+
+
+def rest_F(ob):
+    """Macierz spoczynkowa obiektu w układzie mebla (REGAL) – iloczyn macierzy spoczynkowych w łańcuchu rodziców."""
+    M4 = Matrix.Identity(4)
+    chain = []
+    o = ob
+    while o is not None and o is not S.root:
+        chain.append(o)
+        o = o.parent
+    for o in reversed(chain):
+        M4 = M4 @ S.rest.get(o.name, o.matrix_basis)
+    return M4
+
+
+S.rest_F = rest_F
 
 
 # =========================================================================== narzędzia ogólne
@@ -120,6 +141,7 @@ def clean_scene(fps=25):
     S.fps = fps
     S.parts, S.part_info, S.drawers, S.doors, S.asm, S.rest = {}, {}, {}, {}, {}, {}
     S.mats, S.colls, S.events, S.props, S.lights, S.cams = {}, {}, [], [], {}, {}
+    S.curves = {}
     return sc
 
 
@@ -297,24 +319,32 @@ def make_materials():
     return m
 
 
+def _axis_abs(v):
+    """Wektor osi z dodatnią największą składową (spójne UV dla elementów o przeciwnym zwrocie eu)."""
+    v = Vector(v)
+    i = max(range(3), key=lambda k: abs(v[k]))
+    return v if v[i] >= 0 else -v
+
+
 def _grain_for(p, front_grain):
-    """Zwraca (grain_local, world_uv_axes) dla elementu."""
-    kind = p["meta"].get("kind")
+    """Zwraca (grain_local, world_uv_axes) dla elementu.
+    Fronty: UV w układzie świata (ciągła figura przez wszystkie fronty, jak z jednego arkusza);
+    kierunek wg model.json (grain="u" → oś eu, czyli poziomo) albo wymuszony "vertical"."""
     if p["group"] == "front":
         if front_grain == "vertical":
             return None, (Vector((0, 0, 1)), Vector((1, 0, 0)))
-        return None, (Vector((1, 0, 0)), Vector((0, 0, 1)))
+        gw = _axis_abs(p["eu"] if p.get("grain", "u") != "v" else p["ev"])
+        cw = _axis_abs(p["ev"] if p.get("grain", "u") != "v" else p["eu"])
+        return None, (gw, cw)
     gr = p.get("grain")
     if gr == "v":
         return (0, 1, 0), None
-    if gr is None and kind == "back":
-        return (1, 0, 0), None
     return (1, 0, 0), None
 
 
-def build_furniture(data=None, bevel_mm=0.7, screws=True, hardware=True, front_grain="vertical", cups=True):
-    """Buduje mebel z model.json. `front_grain`: "vertical" (słoje pionowo – wymóg klienta)
-    lub "model" (jak w model.json: poziomo, oś u). Zwraca S."""
+def build_furniture(data=None, bevel_mm=0.7, screws=True, hardware=True, front_grain="model", cups=True):
+    """Buduje mebel z model.json. `front_grain`: "model" (domyślnie: jak w model.json i rozkroju – grain="u",
+    czyli słoje poziomo) albo "vertical" (wymuszone pionowo). Zwraca S."""
     data = data or S.data or load_model()
     mats = make_materials()
     root_c = coll("REGAL")
@@ -576,8 +606,8 @@ def _build_hinges(door, data, collection, attach):
         collection.objects.link(cup)
         attach(cup, door.rig, Matrix.Identity(4), door.F)
         body = bpy.data.objects.new(f"zawias_{door.code}_{i}_korpus",
-                                    box_mesh("zawias_korpus", 24 * q, 9 * q, 26 * q,
-                                             (ax + s * 16 * q, 23.5 * q, zc)))
+                                    box_mesh("zawias_korpus", 20 * q, 6 * q, 20 * q,
+                                             (ax + s * 18 * q, 22.0 * q, zc)))
         body.data.materials.append(S.mats["nickel"])
         collection.objects.link(body)
         attach(body, door.rig, Matrix.Identity(4), door.F)
@@ -588,10 +618,27 @@ def _build_hinges(door, data, collection, attach):
         collection.objects.link(plate)
         attach(plate, door.asm, Matrix.Identity(4), door.cF)
         arm = bpy.data.objects.new(f"zawias_{door.code}_{i}_ramie",
-                                   box_mesh("ramie", 11 * q, 66 * q, 18 * q, (ax + s * 14.5 * q, 61 * q, zc)))
+                                   box_mesh("ramie", 10 * q, 62 * q, 16 * q, (ax + s * 14.0 * q, 63 * q, zc)))
         arm.data.materials.append(S.mats["nickel"])
         collection.objects.link(arm)
         attach(arm, door.asm, Matrix.Identity(4), door.cF)
+        # łącznik przegubu: od końca ramienia (stały) do korpusu w drzwiach (ruchomy) – STRETCH_TO
+        p_arm = Vector((ax + s * 14.0 * q, 32.0 * q, zc))
+        p_door = Vector((ax + s * 9.0 * q, 22.0 * q, zc))
+        d0 = (p_door - p_arm).length
+        tgt = empty(f"zawias_{door.code}_{i}_cel", collection, size=0.005)
+        attach(tgt, door.rig, Matrix.Translation(p_door), door.F)
+        lme = box_mesh("lacznik", 8 * q, d0, 12 * q, (0, d0 / 2, 0))
+        lme.materials.append(S.mats["nickel"])
+        link = bpy.data.objects.new(f"zawias_{door.code}_{i}_lacznik", lme)
+        collection.objects.link(link)
+        rot = (p_door - p_arm).to_track_quat("Y", "Z").to_matrix().to_4x4()
+        attach(link, door.asm, Matrix.Translation(p_arm) @ rot, door.cF)
+        con = link.constraints.new("STRETCH_TO")
+        con.target = tgt
+        con.rest_length = d0
+        con.volume = "NO_VOLUME"
+        con.keep_axis = "PLANE_Z"
 
 
 # --------------------------------------------------------------------------- wkręty (łby widoczne)
@@ -696,7 +743,8 @@ def export_events(path=None, extra=None):
     path = Path(path) if path else RENDERS_DIR / "events.json"
     path.parent.mkdir(parents=True, exist_ok=True)
     out = dict(fps=S.fps, frame_start=sc.frame_start, frame_end=sc.frame_end,
-               events=sorted(S.events, key=lambda e: (e["frame_exact"], e["type"])))
+               events=sorted(S.events, key=lambda e: (e["frame_exact"], e["type"])),
+               curves=getattr(S, "curves", {}))
     if extra:
         out.update(extra)
     path.write_text(json.dumps(out, ensure_ascii=False, indent=1), encoding="utf-8")
@@ -727,6 +775,39 @@ EASINGS = dict(linear=lambda u: u, sine=ease_in_out_sine, out_cubic=ease_out_cub
                smooth=lambda u: hermite(u))
 
 
+def fcurves_of(idb):
+    """Wszystkie F-krzywe datablocku (obiekt, światło, kamera, scena, drzewo węzłów) – akcje warstwowe 4.4+/5.x
+    i starsze `action.fcurves`."""
+    ad = getattr(idb, "animation_data", None)
+    if not ad or not ad.action:
+        return []
+    act = ad.action
+    out = []
+    for layer in getattr(act, "layers", []):
+        for st in layer.strips:
+            for cb in getattr(st, "channelbags", []):
+                out.extend(cb.fcurves)
+    if not out and hasattr(act, "fcurves"):
+        try:
+            out = list(act.fcurves)
+        except Exception:
+            pass
+    return out
+
+
+def set_interp(idb, interp="LINEAR", f0=None, f1=None, path=None):
+    """Ustawia interpolację kluczy w zakresie klatek [f0, f1] (opcjonalnie tylko kanał kończący się na `path`).
+    Potrzebne, bo keyframe_insert w bpy nie zawsze respektuje preferencję interpolacji nowych kluczy."""
+    for fc in fcurves_of(idb):
+        if path and not fc.data_path.endswith(path):
+            continue
+        for k in fc.keyframe_points:
+            x = k.co.x
+            if (f0 is None or x >= f0 - 1e-4) and (f1 is None or x <= f1 + 1e-4):
+                k.interpolation = interp
+        fc.update()
+
+
 class _LinearKeys:
     """Kontekst: nowe klucze z interpolacją LINEAR (gęste klucze co klatkę = dokładna krzywa)."""
 
@@ -739,12 +820,16 @@ class _LinearKeys:
         bpy.context.preferences.edit.keyframe_new_interpolation_type = self.old
 
 
-def _key_samples(samples, setter, keyer):
-    """samples: [(frame, value)], setter(value) ustawia stan, keyer(frame) wstawia klucz."""
+def _key_samples(samples, setter, keyer, idbs=(), interp="LINEAR"):
+    """samples: [(frame, value)], setter(value) ustawia stan, keyer(frame) wstawia klucz;
+    `idbs` – datablocki, którym ustawiamy interpolację wstawionych kluczy (domyślnie LINEAR)."""
     with _LinearKeys():
         for f, v in samples:
             setter(v)
             keyer(f)
+    if samples:
+        for idb in idbs:
+            set_interp(idb, interp, samples[0][0], samples[-1][0])
 
 
 def _sample(f0, dur_frames, fn):
@@ -771,9 +856,9 @@ def animate_drawer_open(code, f0, dur_s=0.9, frac_to=1.0, frac_from=0.0, events=
     """Otwarcie (pociągnięcie za gałkę): łagodny start, wyhamowanie na ogranicznik pełnego wysuwu."""
     n = dur_s * S.fps
     fn = lambda u: frac_from + (frac_to - frac_from) * hermite(u, 0.0, 0.35)  # noqa: E731
-    _key_samples(_sample(f0, n, fn), lambda v: set_drawer(code, v), lambda f: key_drawer(code, f))
+    d = S.drawers[code]
+    _key_samples(_sample(f0, n, fn), lambda v: set_drawer(code, v), lambda f: key_drawer(code, f), (d.rig, d.mid))
     if events:
-        d = S.drawers[code]
         log_event("drawer_open_start", f0, code, travel_mm=round((frac_to - frac_from) * d.travel * 1000))
         log_event("drawer_open_end", f0 + n, code, full_extension=frac_to >= 0.999)
     return f0 + n
@@ -795,13 +880,43 @@ def animate_drawer_close(code, f0, push_s=0.55, softclose_mm=12.0, softclose_s=0
     # faza tłumika: zaczep "łapie" szufladę – prędkość spada skokowo do ~35 % (słychać/widać miękki docisk)
     m0 = min(1.6, 0.35 * vA_end * softclose_s / xe) if xe > 0 else 0.0
     sB = _sample(f0 + nA, nB, lambda u: (xe - xe * hermite(u, m0, 0.0)) / d.travel)
-    _key_samples(samples + sB[1:], lambda v: set_drawer(code, v), lambda f: key_drawer(code, f))
+    _key_samples(samples + sB[1:], lambda v: set_drawer(code, v), lambda f: key_drawer(code, f), (d.rig, d.mid))
     if events:
         log_event("drawer_close_start", f0, code)
         log_event("drawer_softclose_engage", f0 + nA, code, remaining_mm=softclose_mm,
                   speed_mm_s=round(vA_end * 1000))
         log_event("drawer_closed", f0 + nA + nB, code)
     return f0 + nA + nB
+
+
+def key_drawer_curve(code, samples, log_curve=True):
+    """Dowolna krzywa wysuwu: samples = [(klatka, wysuw_mm)] (wysuw ≥ 0 = na zewnątrz, w stronę −Y).
+    Klucze LINEAR co klatkę. Krzywą (pozycja + prędkość mm/kl.) zapisuje do S.curves dla dźwięku."""
+    d = S.drawers[code]
+    _key_samples([(f, v / 1000.0 / d.travel) for f, v in samples], lambda v: set_drawer(code, v),
+                 lambda f: key_drawer(code, f), (d.rig, d.mid))
+    if log_curve:
+        _log_curve(code, "drawer_mm", samples)
+
+
+def _log_curve(target, kind, samples):
+    cur = S.__dict__.setdefault("curves", {}).setdefault(target, dict(kind=kind, frames=[], value=[], speed=[]))
+    for i, (f, v) in enumerate(samples):
+        sp = 0.0 if i == 0 else v - samples[i - 1][1]
+        cur["frames"].append(round(float(f), 3))
+        cur["value"].append(round(float(v), 3))
+        cur["speed"].append(round(float(sp), 3))
+
+
+def hermite_samples(f0, f1, p0, p1, v0=0.0, v1=0.0):
+    """Próbki Hermite co klatkę: p0→p1, prędkości v0/v1 w jednostkach/klatkę (jak w research-brief 5.3)."""
+    n = f1 - f0
+    out = []
+    for i in range(int(round(n)) + 1):
+        u = i / n
+        h00, h10, h01, h11 = 2 * u ** 3 - 3 * u ** 2 + 1, u ** 3 - 2 * u ** 2 + u, -2 * u ** 3 + 3 * u ** 2, u ** 3 - u ** 2
+        out.append((f0 + i, h00 * p0 + h10 * v0 * n + h01 * p1 + h11 * v1 * n))
+    return out
 
 
 # =========================================================================== drzwiczki
@@ -819,7 +934,7 @@ def key_door(code, frame):
 def animate_door_open(code, f0, dur_s=1.0, angle_to=105.0, angle_from=0.0, events=True):
     n = dur_s * S.fps
     fn = lambda u: angle_from + (angle_to - angle_from) * hermite(u, 0.0, 0.25)  # noqa: E731
-    _key_samples(_sample(f0, n, fn), lambda v: set_door(code, v), lambda f: key_door(code, f))
+    _key_samples(_sample(f0, n, fn), lambda v: set_door(code, v), lambda f: key_door(code, f), (S.doors[code].rig,))
     if events:
         log_event("door_open_start", f0, code)
         log_event("door_open_end", f0 + n, code, angle_deg=angle_to)
@@ -839,12 +954,33 @@ def animate_door_close(code, f0, push_s=0.6, softclose_deg=8.0, softclose_s=0.45
     sA = _sample(f0, nA, lambda u: a0 - (a0 - ae) * hermite(u, 0.0, m1))
     m0 = min(1.6, 0.35 * vA * softclose_s / ae) if ae > 0 else 0.0
     sB = _sample(f0 + nA, nB, lambda u: ae - ae * hermite(u, m0, 0.0))
-    _key_samples(sA + sB[1:], lambda v: set_door(code, v), lambda f: key_door(code, f))
+    _key_samples(sA + sB[1:], lambda v: set_door(code, v), lambda f: key_door(code, f), (d.rig,))
     if events:
         log_event("door_close_start", f0, code)
         log_event("door_softclose_engage", f0 + nA, code, remaining_deg=softclose_deg)
         log_event("door_close_click", f0 + nA + nB, code)
     return f0 + nA + nB
+
+
+def key_door_curve(code, samples, log_curve=True):
+    """Dowolna krzywa kąta drzwiczek: samples = [(klatka, kąt_deg)] (0 = zamknięte, + = otwarcie)."""
+    _key_samples(samples, lambda v: set_door(code, v), lambda f: key_door(code, f), (S.doors[code].rig,))
+    if log_curve:
+        _log_curve(code, "door_deg", samples)
+
+
+def hold_state(kind, code, frame, value):
+    """Stan stały od klatki (klucz CONSTANT): kind = "drawer" (mm) | "door" (deg)."""
+    with _ConstKeys():
+        if kind == "drawer":
+            set_drawer(code, value / 1000.0 / S.drawers[code].travel)
+            key_drawer(code, frame)
+            for idb in (S.drawers[code].rig, S.drawers[code].mid):
+                set_interp(idb, "CONSTANT", frame, frame)
+        else:
+            set_door(code, value)
+            key_door(code, frame)
+            set_interp(S.doors[code].rig, "CONSTANT", frame, frame)
 
 
 # =========================================================================== montaż flat-pack
@@ -959,7 +1095,7 @@ def animate_assembly(order=None, f_start=1, stagger=4.0, dur_s=0.8, starts=None,
             with _LinearKeys():
                 key_assembly(name, bpy.context.scene.frame_start)
         _key_samples(_sample(f0, n, fn), lambda v, nm=name: set_assembly(nm, v, starts),
-                     lambda f, nm=name: key_assembly(nm, f))
+                     lambda f, nm=name: key_assembly(nm, f), (S.asm[name],))
         if events:
             log_event("part_launch", f0, name)
             log_event("part_landing", f0 + n, name, kind=_unit_kind(name))
@@ -997,27 +1133,33 @@ def clear_animation():
 
 
 # =========================================================================== otoczenie
-def build_room(style="scandi", floor="microcement", wall_color="D3CBBF", floor_color=None):
-    """style: "scandi" – ciepła ściana + podłoga (mikrocement/dąb); "studio" – ciemne tło (cyc) do detali.
-    Obie wersje są budowane w osobnych kolekcjach; przełączanie: set_look("window"|"studio")."""
+def build_room(style="scandi", floor="microcement", wall_color="E9E4DB", floor_color="BDB4A8", side_wall=True,
+               x_left=-6.0, x_right=3.8):
+    """style: "scandi" – otwarty set (research-brief 3.1): ściana tylna z tynku (X −6…3,8 m, Z do 3,6 m),
+    ściana boczna z oknem na X = 3,8 m (otwór Y −2,4…−0,4, Z 0,4…3,2 m model, rama grafitowa 60×120 mm,
+    1 słupek + 1 ślemię na Z 2,2 m), podłoga mikrocement/dąb (X −6…3,8, Y −10…0,41).
+    "studio" – ciemne tło typu cyc do detali. Przełączanie: set_look("window"|"studio")."""
     r = coll("OTOCZENIE")
     if style == "scandi":
         c = coll("otoczenie_scandi", r)
-        wall_m = M.plaster("Sciana_tynk", wall_color)
-        fl_m = M.microcement(color=floor_color or "BDB2A3") if floor == "microcement" else \
-            M.oak_floor(color=floor_color or "C9A77C")
+        wall_m = M.plaster("Sciana_tynk", wall_color, bump=0.10)
+        fl_m = M.microcement(color=floor_color) if floor == "microcement" else M.oak_floor(color=floor_color)
         S.mats["wall"], S.mats["floor"] = wall_m, fl_m
         yw = S.D + S.data["cfg"]["back_t"] * MM + WALL_GAP
-        wall = new_obj("sciana", box_mesh("sciana", 9.0, 0.1, 4.0, (S.W / 2, yw + 0.05, 2.0)), c)
+        S.wall_y = yw
+        H = 3.6
+        xr = x_right + 0.15
+        wall = new_obj("sciana", box_mesh("sciana", xr - x_left, 0.12, H, ((x_left + xr) / 2, yw + 0.06, H / 2)), c)
         wall.data.materials.append(wall_m)
-        flo = new_obj("podloga", box_mesh("podloga", 9.0, 8.0, 0.05, (S.W / 2, yw - 4.0 + 0.1, -0.025)), c)
+        flo = new_obj("podloga", box_mesh("podloga", xr - x_left, 10.5, 0.05, ((x_left + xr) / 2, yw + 0.1 - 5.25,
+                                                                               -0.025)), c)
         flo.data.materials.append(fl_m)
-        # cokół/przyścienna listwa cienia (minimalna) – brak; styk ściana/podłoga ostry
+        if side_wall:
+            _side_wall_window(c, wall_m, x_right, yw, H)
         return c
     c = coll("otoczenie_studio", r)
     m = M.studio_backdrop()
     S.mats["studio_bg"] = m
-    # tło typu cyc (podłoga + łuk + ściana), szare/ciepłe ciemne
     bm = bmesh.new()
     prof = []
     R, yb = 0.8, S.D + 0.6
@@ -1025,10 +1167,7 @@ def build_room(style="scandi", floor="microcement", wall_color="D3CBBF", floor_c
         a = math.pi / 2 * i / 16
         prof.append((yb - R + R * math.sin(a), R - R * math.cos(a)))
     pts = [(-3.0, 0.0)] + prof + [(yb, 4.0)]
-    xs = (-2.5, S.W + 2.5)
-    rows = []
-    for x in xs:
-        rows.append([bm.verts.new((x, y, z)) for y, z in pts])
+    rows = [[bm.verts.new((x, y, z)) for y, z in pts] for x in (-2.5, S.W + 2.5)]
     for i in range(len(pts) - 1):
         bm.faces.new((rows[0][i], rows[1][i], rows[1][i + 1], rows[0][i + 1]))
     bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
@@ -1036,6 +1175,34 @@ def build_room(style="scandi", floor="microcement", wall_color="D3CBBF", floor_c
     me.materials.append(m)
     new_obj("studio_cyc", me, c)
     return c
+
+
+def _side_wall_window(c, wall_m, xw, yw, H, y0=-9.0, t=0.15):
+    """Ściana boczna (lico na X = xw, w stronę −X) z otworem okiennym i ramą (bez szyby)."""
+    oy0, oy1 = -2.4, -0.4
+    oz0, oz1 = 0.400 + FOOT_H, 3.200 + FOOT_H
+    xc = xw + t / 2
+    pieces = [((y0 + oy0) / 2, oy0 - y0, H / 2, H),                      # część przed oknem (−Y)
+              ((oy1 + yw + 0.12) / 2, yw + 0.12 - oy1, H / 2, H),        # część przy narożniku
+              ((oy0 + oy1) / 2, oy1 - oy0, oz0 / 2, oz0),               # podokienna
+              ((oy0 + oy1) / 2, oy1 - oy0, (oz1 + H) / 2, H - oz1)]      # nadproże
+    for i, (yc, ly, zc, lz) in enumerate(pieces):
+        ob = new_obj(f"sciana_boczna_{i}", box_mesh("sciana_boczna", t, ly, lz, (xc, yc, zc)), c)
+        ob.data.materials.append(wall_m)
+    frame_m = M.plastic("Rama_okna_grafit", M.hex_lin("3A3733")[:3], rough=0.55)
+    S.mats["window_frame"] = frame_m
+    f, d = 0.060, 0.120
+    xf = xw + 0.015 + d / 2
+    bars = [((oy0 + oy1) / 2, oy1 - oy0, oz0 + f / 2, f),     # dół
+            ((oy0 + oy1) / 2, oy1 - oy0, oz1 - f / 2, f),     # góra
+            (oy0 + f / 2, f, (oz0 + oz1) / 2, oz1 - oz0),     # boki
+            (oy1 - f / 2, f, (oz0 + oz1) / 2, oz1 - oz0),
+            ((oy0 + oy1) / 2, f, (oz0 + oz1) / 2, oz1 - oz0),  # słupek
+            ((oy0 + oy1) / 2, oy1 - oy0, 2.200 + FOOT_H, f)]  # ślemię
+    for i, (yc, ly, zc, lz) in enumerate(bars):
+        ob = new_obj(f"okno_rama_{i}", box_mesh("okno_rama", d, ly, lz, (xf, yc, zc)), c)
+        ob.data.materials.append(frame_m)
+    S.window = dict(x=xw, y=(oy0, oy1), z=(oz0, oz1))
 
 
 def set_look(look="window"):
@@ -1088,7 +1255,9 @@ def area(name, collection, loc, target, size, size_y=None, energy=100.0, kelvin=
     return ob
 
 
-def world_simple(name, color, strength):
+def world_simple(name, color, strength, camera_sky=None):
+    """Świat: słaby ambient pokoju; `camera_sky` (siła) – jaśniejsze "niebo" widoczne tylko dla kamery
+    (przez okno w ścianie bocznej), bez zalewania sceny światłem z otwartego setu."""
     w = bpy.data.worlds.get(name) or bpy.data.worlds.new(name)
     try:
         w.use_nodes = True
@@ -1100,44 +1269,116 @@ def world_simple(name, color, strength):
     bg.inputs[0].default_value = (*color[:3], 1)
     bg.inputs[1].default_value = strength
     o = nt.nodes.new("ShaderNodeOutputWorld")
-    nt.links.new(bg.outputs[0], o.inputs[0])
+    if camera_sky:
+        sky = nt.nodes.new("ShaderNodeBackground")
+        sky.inputs[0].default_value = (*M.kelvin_rgb(9000), 1)
+        sky.inputs[1].default_value = camera_sky
+        lp = nt.nodes.new("ShaderNodeLightPath")
+        mx = nt.nodes.new("ShaderNodeMixShader")
+        nt.links.new(lp.outputs["Is Camera Ray"], mx.inputs[0])
+        nt.links.new(bg.outputs[0], mx.inputs[1])
+        nt.links.new(sky.outputs[0], mx.inputs[2])
+        nt.links.new(mx.outputs[0], o.inputs[0])
+    else:
+        nt.links.new(bg.outputs[0], o.inputs[0])
     return w
 
 
-def light_rig_window(key=1.0, kelvin=5300, sun=True, sun_strength=1.8, sun_kelvin=4900, fill=1.0,
-                     world_strength=0.07, side="left", gobo_shift=(-0.95, 0.0, 0.30)):
-    """Światło dzienne z dużego okna poza kadrem (domyślnie z lewej, lekko z przodu):
-      OKNO_key   – miękki prostokąt 1,4 × 2,2 m (okno), daleko z boku → światło kierunkowe, głębokie cienie we wnękach,
-      OKNO_sun   – słońce przez maskownicę okna (podziały szyb rzucają cień na ścianę i regał), brzeg miękki (1,2°),
-      OKNO_fill  – odbicie od pokoju z przeciwnej strony (słabe, szerokie),
-      OKNO_sufit – ciepłe odbicie od sufitu; świat = słaby ambient pokoju.
-    `gobo_shift` – przesunięcie plamy słońca względem środka regału (m)."""
+# Rigi światła wg research-brief.md 4 (kierunek promieni słońca d, temperatury, mnożniki).
+# Energie skalibrowane w look-devie (cel: brzoza w słońcu ~0,80–0,85 wyświetlanej, w cieniu 0,45–0,55).
+LIGHT_PRESETS = dict(
+    poranek=dict(sun_dir=(-0.851, 0.300, -0.431), sun=2.4, sun_k=4600, key=1.0, key_k=5000, fill=1.0, fill_k=5600,
+                 ceil=1.0, ceil_k=4300, world=1.0),
+    zlota=dict(sun_dir=(-0.901, 0.240, -0.360), sun=2.75, sun_k=3800, key=0.8, key_k=4200, fill=0.7, fill_k=6500,
+               ceil=0.8, ceil_k=4000, world=0.7),
+)
+BASE_ENERGY = dict(key=105.0, fill=16.0, ceil=12.0, world=0.05, sky=1.6)
+
+
+def light_rig_window(side="right", preset="poranek", gobo=None, world_strength=None):
+    """Rig A "Poranek" (domyślnie): okno w prawej ścianie (X = 3,8 m).
+      OKNO_sun   – słońce, kąt 1,2°, przez fizyczne okno (rama rzuca cień podziałów); bez ściany bocznej
+                   można włączyć maskownicę (gobo=True, cień tylko od słońca przez shadow linking),
+      OKNO_key   – AREA 1,8 × 2,4 m w oknie (3,6; −1,25; 1,55) → (1,15; 0,15; 1,05),
+      OKNO_fill  – AREA 3 × 2 m z lewej (odbicie od pokoju),  OKNO_sufit – AREA 3,5 × 2,5 m z góry.
+    `side="left"` – lustrzane odbicie w X (bez ściany z oknem). Parametry: apply_light_preset()."""
     c = coll("SWIATLA_okno")
     W, H, D = S.W, S.H, S.D
-    sx = -1.0 if side == "left" else 1.0
-    ctr = Vector((W / 2, D / 2, H * 0.48))
-    win_x = W / 2 + sx * (W / 2 + 2.2)
-    area("OKNO_key", c, (win_x, -0.9, 1.6), (W / 2 + sx * 0.3, 0.2, 1.0), 1.4, 2.2,
-         energy=210.0 * key, kelvin=kelvin, spread=140)
-    area("OKNO_fill", c, (W / 2 - sx * (W / 2 + 2.4), -3.4, 1.5), ctr, 3.0, 2.0, energy=30.0 * fill,
-         kelvin=7000)
-    area("OKNO_sufit", c, (W / 2, -1.6, 3.0), (W / 2, -0.8, 0.0), 3.5, 2.5, energy=22.0 * fill, kelvin=5600)
-    if sun:
-        Ls = bpy.data.lights.new("OKNO_sun", "SUN")
-        Ls.energy = sun_strength
-        Ls.angle = math.radians(1.2)
-        Ls.color = M.kelvin_rgb(sun_kelvin)
-        so = new_obj("OKNO_sun", Ls, c)
-        sun_dir = Vector((-sx * 0.80, 0.50, -0.40)).normalized()     # kierunek padania promieni
-        so.rotation_mode = "QUATERNION"
-        so.rotation_quaternion = sun_dir.to_track_quat("-Z", "Y")
-        S.lights["OKNO_sun"] = so
-        gs = Vector((gobo_shift[0] * -sx, gobo_shift[1], gobo_shift[2]))
-        g = _window_gobo(c, ctr + gs - sun_dir * 2.4, sun_dir)
-        _shadow_link_only(so, g, c)
-    world_simple("Swiat_okno", M.kelvin_rgb(8000), world_strength)
+    mir = (lambda x: x) if side == "right" else (lambda x: W - x)  # noqa: E731
+    z = FOOT_H
+    area("OKNO_key", c, (mir(3.6), -1.25, 1.55 + z), (mir(1.15), 0.15, 1.05 + z), 1.8, 2.4, energy=BASE_ENERGY["key"],
+         spread=150)
+    area("OKNO_fill", c, (mir(-2.6), -3.2, 1.6 + z), (W / 2, D / 2, H / 2), 3.0, 2.0, energy=BASE_ENERGY["fill"])
+    area("OKNO_sufit", c, (0.95, -1.5, 3.0 + z), (0.95, -1.2, 0.0), 3.5, 2.5, energy=BASE_ENERGY["ceil"])
+    for n in ("OKNO_key", "OKNO_fill", "OKNO_sufit"):
+        S.lights[n].visible_glossy = False if n != "OKNO_key" else True
+    Ls = bpy.data.lights.new("OKNO_sun", "SUN")
+    Ls.angle = math.radians(1.2)
+    so = new_obj("OKNO_sun", Ls, c)
+    so.rotation_mode = "QUATERNION"
+    S.lights["OKNO_sun"] = so
+    S.rig_side = side
+    world_simple("Swiat_okno", M.kelvin_rgb(6500), BASE_ENERGY["world"], camera_sky=BASE_ENERGY["sky"])
     bpy.context.scene.world = bpy.data.worlds["Swiat_okno"]
+    apply_light_preset(preset)
+    if gobo is None:
+        gobo = side != "right" or not bpy.data.objects.get("sciana_boczna_0")
+    if gobo:
+        d = Vector(LIGHT_PRESETS[preset]["sun_dir"])
+        if side != "right":
+            d.x = -d.x
+        g = _window_gobo(c, Vector((W / 2, D / 2, H * 0.48)) - d.normalized() * 2.2, d.normalized())
+        _shadow_link_only(so, g, c)
     return c
+
+
+def _sun_quat(d, side=None):
+    d = Vector(d)
+    if (side or getattr(S, "rig_side", "right")) != "right":
+        d.x = -d.x
+    return d.normalized().to_track_quat("-Z", "Y")
+
+
+def apply_light_preset(name="poranek", frame=None, sun_mult=1.0, azimuth_deg=0.0):
+    """Ustawia parametry rigu okna wg LIGHT_PRESETS (poranek / zlota); `frame` → wstawia klucze (CONSTANT
+    przełączenie przy cięciu). `azimuth_deg` obraca kierunek słońca wokół Z (powolne pełzanie cieni)."""
+    P = LIGHT_PRESETS[name]
+    L = S.lights
+    sun = L["OKNO_sun"]
+    sun.data.energy = P["sun"] * sun_mult
+    sun.data.color = M.kelvin_rgb(P["sun_k"])
+    sun.rotation_quaternion = Quaternion((0, 0, 1), math.radians(azimuth_deg)) @ _sun_quat(P["sun_dir"])
+    for key, n in (("key", "OKNO_key"), ("fill", "OKNO_fill"), ("ceil", "OKNO_sufit")):
+        L[n].data.energy = BASE_ENERGY[key] * P[key]
+        L[n].data.color = M.kelvin_rgb(P[key + "_k"])
+    w = bpy.data.worlds.get("Swiat_okno")
+    bg = w.node_tree.nodes.get("Background") if w else None
+    if bg:
+        bg.inputs[1].default_value = BASE_ENERGY["world"] * P["world"]
+    if frame is not None:
+        with _ConstKeys():
+            sun.data.keyframe_insert("energy", frame=frame)
+            sun.data.keyframe_insert("color", frame=frame)
+            sun.keyframe_insert("rotation_quaternion", frame=frame)
+            for n in ("OKNO_key", "OKNO_fill", "OKNO_sufit"):
+                L[n].data.keyframe_insert("energy", frame=frame)
+                L[n].data.keyframe_insert("color", frame=frame)
+            if bg:
+                bg.inputs[1].keyframe_insert("default_value", frame=frame)
+        for idb in [sun, sun.data] + [L[n].data for n in ("OKNO_key", "OKNO_fill", "OKNO_sufit")] + \
+                ([w.node_tree] if w else []):
+            set_interp(idb, "CONSTANT", frame, frame)
+    S.light_preset = name
+
+
+class _ConstKeys(object):
+    def __enter__(self):
+        e = bpy.context.preferences.edit
+        self.old = e.keyframe_new_interpolation_type
+        e.keyframe_new_interpolation_type = "CONSTANT"
+
+    def __exit__(self, *a):
+        bpy.context.preferences.edit.keyframe_new_interpolation_type = self.old
 
 
 def _window_gobo(collection, center, sun_dir, w=2.6, h=2.4, mullion=0.07, panes=(2, 3)):
@@ -1283,6 +1524,8 @@ def animate_camera(cam, keys, interpolation="BEZIER"):
             if "fstop" in k:
                 cam.data.dof.aperture_fstop = k["fstop"]
                 cam.data.dof.keyframe_insert("aperture_fstop", frame=f)
+            for idb in (cam, tgt, foc, cam.data):
+                set_interp(idb, interpolation, f, f)
     finally:
         e.keyframe_new_interpolation_type = old
 
@@ -1312,7 +1555,7 @@ def camera_path(cam, points, f0, f1, ease="sine"):
         pass
     fn = EASINGS[ease]
     _key_samples(_sample(f0, f1 - f0, fn), lambda v: setattr(fp, "offset_factor", v),
-                 lambda f: fp.keyframe_insert("offset_factor", frame=f))
+                 lambda f: fp.keyframe_insert("offset_factor", frame=f), (cam,))
     return path
 
 
@@ -1463,13 +1706,14 @@ def save_blend(path):
 
 
 # =========================================================================== wszystko naraz
-def build_all(look="window", props=True, screws=True, floor="microcement", front_grain="vertical", fps=25,
-              studio=True, model_path=None, bevel_mm=0.7, sun=True):
+def build_all(look="window", props=True, screws=True, floor="microcement", front_grain="model", fps=25,
+              studio=True, model_path=None, bevel_mm=0.7, side="right", preset="poranek"):
+    """Wszystko naraz: mebel + otoczenie (scandi z oknem, opcjonalnie studio) + rekwizyty + światło."""
     clean_scene(fps)
     load_model(model_path)
     build_furniture(screws=screws, front_grain=front_grain, bevel_mm=bevel_mm)
-    build_room("scandi", floor=floor)
-    light_rig_window(sun=sun)
+    build_room("scandi", floor=floor, side_wall=(side == "right"))
+    light_rig_window(side=side, preset=preset)
     if studio:
         build_room("studio")
         light_rig_studio()

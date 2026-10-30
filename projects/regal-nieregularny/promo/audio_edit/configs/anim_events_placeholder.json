@@ -1,0 +1,16 @@
+{
+ "fps": 24, "frame_start": 0, "frame_end": 288,
+ "note": "ATRAPA zdarzen dla /home/user/cnc/output/animacja/regal_animacja.mp4 (24 fps) - tylko test pipeline'u",
+ "events": [
+  {"type": "drawer_open_start", "frame": 6, "frame_exact": 6.0, "target": "S03", "meta": {"screen_x": 0.47}},
+  {"type": "drawer_open_end", "frame": 30, "frame_exact": 30.0, "target": "S03", "meta": {"full_extension": true, "screen_x": 0.47}},
+  {"type": "drawer_open_start", "frame": 22, "frame_exact": 22.0, "target": "S06", "meta": {"screen_x": 0.6}},
+  {"type": "drawer_open_end", "frame": 44, "frame_exact": 44.0, "target": "S06", "meta": {"full_extension": true, "screen_x": 0.6}},
+  {"type": "drawer_close_start", "frame": 170, "frame_exact": 170.0, "target": "S03", "meta": {"screen_x": 0.47}},
+  {"type": "drawer_softclose_engage", "frame": 182, "frame_exact": 182.0, "target": "S03", "meta": {"screen_x": 0.47}},
+  {"type": "drawer_closed", "frame": 196, "frame_exact": 196.0, "target": "S03", "meta": {"screen_x": 0.47}},
+  {"type": "door_close_start", "frame": 188, "frame_exact": 188.0, "target": "DZ09", "meta": {"screen_x": 0.66}},
+  {"type": "door_softclose_engage", "frame": 200, "frame_exact": 200.0, "target": "DZ09", "meta": {"screen_x": 0.66}},
+  {"type": "door_close_click", "frame": 211, "frame_exact": 211.0, "target": "DZ09", "meta": {"screen_x": 0.66}}
+ ]
+}
