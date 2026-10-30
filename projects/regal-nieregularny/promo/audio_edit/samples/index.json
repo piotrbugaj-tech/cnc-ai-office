@@ -1,0 +1,508 @@
+{
+  "drawer_open_a": {
+    "file": "samples/drawer_open_a.wav",
+    "type": "drawer_open",
+    "seed": 1,
+    "params": {
+      "duration": 0.75
+    },
+    "duration": 1.7375,
+    "anchors": {
+      "start": 0.04,
+      "sync": 0.04,
+      "end": 0.79
+    },
+    "suggested_gain_db": -15,
+    "peak_dbfs": -1.0
+  },
+  "drawer_open_b": {
+    "file": "samples/drawer_open_b.wav",
+    "type": "drawer_open",
+    "seed": 2,
+    "params": {
+      "duration": 1.0
+    },
+    "duration": 1.9875,
+    "anchors": {
+      "start": 0.04,
+      "sync": 0.04,
+      "end": 1.04
+    },
+    "suggested_gain_db": -15,
+    "peak_dbfs": -1.0
+  },
+  "drawer_open_slow": {
+    "file": "samples/drawer_open_slow.wav",
+    "type": "drawer_open",
+    "seed": 3,
+    "params": {
+      "duration": 1.45,
+      "intensity": 0.8,
+      "end_hit": 0.2
+    },
+    "duration": 2.4375,
+    "anchors": {
+      "start": 0.04,
+      "sync": 0.04,
+      "end": 1.49
+    },
+    "suggested_gain_db": -15,
+    "peak_dbfs": -1.0
+  },
+  "drawer_close_a": {
+    "file": "samples/drawer_close_a.wav",
+    "type": "drawer_close",
+    "seed": 4,
+    "params": {
+      "push": 0.38,
+      "damp": 0.5
+    },
+    "duration": 1.9175,
+    "anchors": {
+      "start": 0.04,
+      "engage": 0.42,
+      "closed": 0.92,
+      "sync": 0.92
+    },
+    "suggested_gain_db": -14,
+    "peak_dbfs": -1.0
+  },
+  "drawer_close_b": {
+    "file": "samples/drawer_close_b.wav",
+    "type": "drawer_close",
+    "seed": 5,
+    "params": {
+      "push": 0.5,
+      "damp": 0.62
+    },
+    "duration": 2.1575,
+    "anchors": {
+      "start": 0.04,
+      "engage": 0.54,
+      "closed": 1.16,
+      "sync": 1.16
+    },
+    "suggested_gain_db": -14,
+    "peak_dbfs": -1.0
+  },
+  "drawer_close_gentle": {
+    "file": "samples/drawer_close_gentle.wav",
+    "type": "drawer_close",
+    "seed": 6,
+    "params": {
+      "push": 0.6,
+      "damp": 0.75,
+      "intensity": 0.8,
+      "catch_level": 0.25
+    },
+    "duration": 2.3875,
+    "anchors": {
+      "start": 0.04,
+      "engage": 0.64,
+      "closed": 1.39,
+      "sync": 1.39
+    },
+    "suggested_gain_db": -14,
+    "peak_dbfs": -1.0
+  },
+  "door_open_a": {
+    "file": "samples/door_open_a.wav",
+    "type": "door_open",
+    "seed": 7,
+    "params": {
+      "duration": 0.7
+    },
+    "duration": 1.5875,
+    "anchors": {
+      "start": 0.04,
+      "sync": 0.04,
+      "end": 0.74
+    },
+    "suggested_gain_db": -20,
+    "peak_dbfs": -1.0
+  },
+  "door_open_creak": {
+    "file": "samples/door_open_creak.wav",
+    "type": "door_open",
+    "seed": 8,
+    "params": {
+      "duration": 0.9,
+      "creak": 0.6
+    },
+    "duration": 1.7875,
+    "anchors": {
+      "start": 0.04,
+      "sync": 0.04,
+      "end": 0.94
+    },
+    "suggested_gain_db": -20,
+    "peak_dbfs": -1.0
+  },
+  "door_close_a": {
+    "file": "samples/door_close_a.wav",
+    "type": "door_close",
+    "seed": 9,
+    "params": {
+      "push": 0.4,
+      "damp": 0.55
+    },
+    "duration": 1.9375,
+    "anchors": {
+      "start": 0.04,
+      "engage": 0.44,
+      "closed": 0.99,
+      "click": 0.99,
+      "sync": 0.99
+    },
+    "suggested_gain_db": -15,
+    "peak_dbfs": -1.0
+  },
+  "door_close_b": {
+    "file": "samples/door_close_b.wav",
+    "type": "door_close",
+    "seed": 10,
+    "params": {
+      "push": 0.55,
+      "damp": 0.7
+    },
+    "duration": 2.2375,
+    "anchors": {
+      "start": 0.04,
+      "engage": 0.59,
+      "closed": 1.29,
+      "click": 1.29,
+      "sync": 1.29
+    },
+    "suggested_gain_db": -15,
+    "peak_dbfs": -1.0
+  },
+  "whoosh_short_lr": {
+    "file": "samples/whoosh_short_lr.wav",
+    "type": "whoosh",
+    "seed": 11,
+    "params": {
+      "duration": 0.45,
+      "size": 0.4,
+      "height": 0.7,
+      "direction": 1
+    },
+    "duration": 1.499,
+    "anchors": {
+      "start": 0.0,
+      "peak": 0.279,
+      "sync": 0.279,
+      "end": 0.45
+    },
+    "suggested_gain_db": -17,
+    "peak_dbfs": -1.0
+  },
+  "whoosh_short_rl": {
+    "file": "samples/whoosh_short_rl.wav",
+    "type": "whoosh",
+    "seed": 12,
+    "params": {
+      "duration": 0.5,
+      "size": 0.5,
+      "height": 0.5,
+      "direction": -1
+    },
+    "duration": 1.549,
+    "anchors": {
+      "start": 0.0,
+      "peak": 0.31,
+      "sync": 0.31,
+      "end": 0.5
+    },
+    "suggested_gain_db": -17,
+    "peak_dbfs": -1.0
+  },
+  "whoosh_long_panel": {
+    "file": "samples/whoosh_long_panel.wav",
+    "type": "whoosh",
+    "seed": 13,
+    "params": {
+      "duration": 0.9,
+      "size": 1.5,
+      "height": 0.4,
+      "direction": 1
+    },
+    "duration": 1.949,
+    "anchors": {
+      "start": 0.0,
+      "peak": 0.558,
+      "sync": 0.558,
+      "end": 0.9
+    },
+    "suggested_gain_db": -17,
+    "peak_dbfs": -1.0
+  },
+  "whoosh_big_drop": {
+    "file": "samples/whoosh_big_drop.wav",
+    "type": "whoosh",
+    "seed": 14,
+    "params": {
+      "duration": 1.1,
+      "size": 1.9,
+      "height": 0.2,
+      "direction": 0.3
+    },
+    "duration": 2.149,
+    "anchors": {
+      "start": 0.0,
+      "peak": 0.682,
+      "sync": 0.682,
+      "end": 1.1
+    },
+    "suggested_gain_db": -17,
+    "peak_dbfs": -1.0
+  },
+  "land_light_small": {
+    "file": "samples/land_light_small.wav",
+    "type": "land",
+    "seed": 15,
+    "params": {
+      "mass": 1.2,
+      "size": [
+        0.4,
+        0.3
+      ],
+      "surface": "stack",
+      "hardness": 0.6
+    },
+    "duration": 1.739,
+    "anchors": {
+      "impact": 0.04,
+      "sync": 0.04
+    },
+    "suggested_gain_db": -11,
+    "peak_dbfs": -1.0
+  },
+  "land_medium_shelf": {
+    "file": "samples/land_medium_shelf.wav",
+    "type": "land",
+    "seed": 16,
+    "params": {
+      "mass": 4.9,
+      "size": [
+        1.0,
+        0.38
+      ],
+      "surface": "stack"
+    },
+    "duration": 1.739,
+    "anchors": {
+      "impact": 0.04,
+      "sync": 0.04
+    },
+    "suggested_gain_db": -11,
+    "peak_dbfs": -1.0
+  },
+  "land_heavy_long": {
+    "file": "samples/land_heavy_long.wav",
+    "type": "land",
+    "seed": 17,
+    "params": {
+      "mass": 9.5,
+      "size": [
+        1.9,
+        0.38
+      ],
+      "surface": "floor",
+      "hardness": 0.4
+    },
+    "duration": 1.739,
+    "anchors": {
+      "impact": 0.04,
+      "sync": 0.04
+    },
+    "suggested_gain_db": -11,
+    "peak_dbfs": -1.0
+  },
+  "land_floor_medium": {
+    "file": "samples/land_floor_medium.wav",
+    "type": "land",
+    "seed": 18,
+    "params": {
+      "mass": 6.0,
+      "size": [
+        1.2,
+        0.4
+      ],
+      "surface": "floor"
+    },
+    "duration": 1.739,
+    "anchors": {
+      "impact": 0.04,
+      "sync": 0.04
+    },
+    "suggested_gain_db": -11,
+    "peak_dbfs": -1.0
+  },
+  "screw_short": {
+    "file": "samples/screw_short.wav",
+    "type": "screw",
+    "seed": 19,
+    "params": {
+      "duration": 0.6
+    },
+    "duration": 1.4875,
+    "anchors": {
+      "start": 0.04,
+      "sync": 0.04,
+      "end": 0.64,
+      "seat": 0.64
+    },
+    "suggested_gain_db": -18,
+    "peak_dbfs": -1.0
+  },
+  "screw_long": {
+    "file": "samples/screw_long.wav",
+    "type": "screw",
+    "seed": 20,
+    "params": {
+      "duration": 1.2,
+      "load": 0.85
+    },
+    "duration": 2.0875,
+    "anchors": {
+      "start": 0.04,
+      "sync": 0.04,
+      "end": 1.24,
+      "seat": 1.24
+    },
+    "suggested_gain_db": -18,
+    "peak_dbfs": -1.0
+  },
+  "wood_tap_soft": {
+    "file": "samples/wood_tap_soft.wav",
+    "type": "wood_tap",
+    "seed": 21,
+    "params": {
+      "soft": 0.7
+    },
+    "duration": 0.9375,
+    "anchors": {
+      "impact": 0.04,
+      "sync": 0.04
+    },
+    "suggested_gain_db": -18,
+    "peak_dbfs": -1.0
+  },
+  "sub_boom_reveal": {
+    "file": "samples/sub_boom_reveal.wav",
+    "type": "sub_boom",
+    "seed": 22,
+    "params": {
+      "duration": 3.2
+    },
+    "duration": 3.24,
+    "anchors": {
+      "hit": 0.04,
+      "sync": 0.04
+    },
+    "suggested_gain_db": -9,
+    "peak_dbfs": -1.0
+  },
+  "sub_hit_short": {
+    "file": "samples/sub_hit_short.wav",
+    "type": "sub_boom",
+    "seed": 23,
+    "params": {
+      "duration": 1.4,
+      "f_start": 110,
+      "f_end": 45,
+      "click": 0.8
+    },
+    "duration": 1.44,
+    "anchors": {
+      "hit": 0.04,
+      "sync": 0.04
+    },
+    "suggested_gain_db": -9,
+    "peak_dbfs": -1.0
+  },
+  "riser_2s": {
+    "file": "samples/riser_2s.wav",
+    "type": "riser",
+    "seed": 24,
+    "params": {
+      "duration": 2.0
+    },
+    "duration": 2.0,
+    "anchors": {
+      "start": 0.0,
+      "end": 2.0,
+      "sync": 2.0
+    },
+    "suggested_gain_db": -16,
+    "peak_dbfs": -1.0
+  },
+  "riser_4s": {
+    "file": "samples/riser_4s.wav",
+    "type": "riser",
+    "seed": 25,
+    "params": {
+      "duration": 4.0,
+      "tonal": 0.6
+    },
+    "duration": 4.0,
+    "anchors": {
+      "start": 0.0,
+      "end": 4.0,
+      "sync": 4.0
+    },
+    "suggested_gain_db": -16,
+    "peak_dbfs": -1.0
+  },
+  "air_transition_a": {
+    "file": "samples/air_transition_a.wav",
+    "type": "air",
+    "seed": 26,
+    "params": {
+      "duration": 1.1
+    },
+    "duration": 1.1,
+    "anchors": {
+      "start": 0.0,
+      "peak": 0.495,
+      "sync": 0.495,
+      "end": 1.1
+    },
+    "suggested_gain_db": -20,
+    "peak_dbfs": -1.0
+  },
+  "air_transition_b": {
+    "file": "samples/air_transition_b.wav",
+    "type": "air",
+    "seed": 27,
+    "params": {
+      "duration": 1.6,
+      "brightness": 0.8
+    },
+    "duration": 1.6,
+    "anchors": {
+      "start": 0.0,
+      "peak": 0.72,
+      "sync": 0.72,
+      "end": 1.6
+    },
+    "suggested_gain_db": -20,
+    "peak_dbfs": -1.0
+  },
+  "room_tone_30s": {
+    "file": "samples/room_tone_30s.wav",
+    "type": "room_tone",
+    "seed": 28,
+    "params": {
+      "duration": 32.0,
+      "level_db": -50.0
+    },
+    "duration": 31.0,
+    "anchors": {
+      "start": 0.0,
+      "sync": 0.0
+    },
+    "suggested_gain_db": 0,
+    "peak_dbfs": -35.07
+  }
+}

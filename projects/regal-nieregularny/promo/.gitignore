@@ -5,3 +5,6 @@ renders/**/tmp/
 audio_edit/test/
 *.blend1
 __pycache__/
+# próbki audio generowane skryptami (odtwarzalne, duże)
+audio_edit/samples/*.wav
+audio_edit/sfx_demo.wav
