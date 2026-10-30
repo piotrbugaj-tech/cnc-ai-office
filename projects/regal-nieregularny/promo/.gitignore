@@ -8,3 +8,6 @@ __pycache__/
 # próbki audio generowane skryptami (odtwarzalne, duże)
 audio_edit/samples/*.wav
 audio_edit/sfx_demo.wav
+# muzyka i stemy generowane skryptami (odtwarzalne, duże)
+audio_edit/music/*.wav
+audio_edit/music/**/*.wav
