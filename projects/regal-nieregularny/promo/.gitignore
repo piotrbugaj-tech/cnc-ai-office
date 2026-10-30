@@ -1,0 +1,7 @@
+# sekwencje klatek i duże pliki pośrednie (nie trzymamy w repo)
+frames/
+*.exr
+renders/**/tmp/
+audio_edit/test/
+*.blend1
+__pycache__/
