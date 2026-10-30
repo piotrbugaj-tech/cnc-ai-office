@@ -191,7 +191,9 @@ def resonator_bank(exc, freqs, decays, amps=None):
             continue
         r = np.exp(-1.0 / (max(tau, 1e-4) * SR))
         w = 2 * np.pi * f / SR
-        y += a * signal.lfilter([np.sin(w)], [1.0, -2 * r * np.cos(w), r * r], exc)
+        # forma 2-biegunowa z zerami w DC i Nyquiscie: brak skladowej stalej
+        # (promieniowanie dzwieku ~ przyspieszenie powierzchni, wiec DC nie istnieje)
+        y += a * signal.lfilter([0.5, 0.0, -0.5], [1.0, -2 * r * np.cos(w), r * r], exc)
     return y
 
 
@@ -315,7 +317,7 @@ def room_ir(rt60=0.35, predelay=0.004, er_count=14, er_span=0.028, brightness=0.
         t = np.arange(n) / SR
         onset = smoothstep((t - predelay - 0.004) / (0.012 * size + 0.006))
         tail = np.zeros(n)
-        bands = [(None, 400, 1.15), (400, 3500, 1.0), (3500, None, 0.45 + 0.35 * brightness)]
+        bands = [(None, 400, 1.15), (400, 3500, 1.0), (3500, None, 0.35 + 0.3 * brightness)]
         for lo, hi, k in bands:
             nz = r.standard_normal(n)
             if lo is None:
@@ -326,6 +328,7 @@ def room_ir(rt60=0.35, predelay=0.004, er_count=14, er_span=0.028, brightness=0.
                 nz = bp(nz, lo, hi, 2)
             tail += nz * np.exp(-6.9078 * t / (rt60 * k))
         tail *= onset
+        tail = lp(tail, 7000 + 6000 * brightness, 1)
         tail *= 0.32 / (np.sqrt(np.sum(tail ** 2) / SR) + 1e-9) * np.sqrt(rt60)
         ir = ir + tail * 0.25
         ir[0] = 0.0

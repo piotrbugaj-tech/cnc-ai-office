@@ -143,38 +143,45 @@ def _plastic_click(r, level=1.0, bright=1.0, dur=0.06):
     return y / (np.max(np.abs(y)) + 1e-12) * level
 
 
-def _ballbearing_layer(r, v, vmax, intensity=1.0):
-    """Toczenie prowadnicy kulkowej dla profilu predkosci v [m/s]."""
+def _ballbearing_layer(r, v, vmax, intensity=1.0, pos=None):
+    """Toczenie prowadnicy kulkowej dla profilu predkosci v [m/s].
+    pos 0..1 = wysuw; mody szyny przesuwaja sie wraz z dlugoscia wysiegu (2 banki, crossfade)."""
     n = len(v)
     vn = np.clip(v / max(vmax, 1e-6), 0, 1.5)
+    if pos is None:
+        pos = np.cumsum(np.maximum(v, 0)) / SR
+        pos = pos / (pos[-1] + 1e-12)
     # 1) mikro-uderzenia kulek (Poisson), amplituda lognormalna
-    rate = 2600 * vn + 40 * (vn > 0.02)
+    rate = 3200 * vn + 30 * (vn > 0.02)
     idx = dsp.poisson_events(rate, r)
     imp = np.zeros(n)
-    amp = r.lognormal(0, 0.55, len(idx)) * (vn[idx] ** 0.7 if len(idx) else 1)
+    amp = r.lognormal(0, 0.6, len(idx)) * (vn[idx] ** 0.7 if len(idx) else 1)
     np.add.at(imp, idx, amp * r.choice([-1, 1], len(idx)))
-    rail_f = np.array([1340, 2210, 3170, 4480, 6120, 8350]) * r.uniform(0.95, 1.05)
-    rail_d = np.array([0.012, 0.009, 0.007, 0.005, 0.0035, 0.0025])
-    rail_a = np.array([0.6, 1.0, 0.8, 0.6, 0.4, 0.22])
-    ticks = dsp.resonator_bank(imp, rail_f, rail_d, rail_a)
+    base = np.array([1340, 2210, 3170, 4480, 6120, 8350, 10400]) * r.uniform(0.95, 1.05)
+    rail_d = np.array([0.0045, 0.0035, 0.003, 0.0024, 0.0018, 0.0013, 0.001])  # Q ~ 15-30 (blacha w stali ocynk.)
+    rail_a = np.array([0.55, 1.0, 0.85, 0.65, 0.45, 0.25, 0.12])
+    t_in = dsp.resonator_bank(imp, base, rail_d, rail_a)
+    t_out = dsp.resonator_bank(imp, base * r.uniform(0.86, 0.92, len(base)), rail_d * 1.2, rail_a)
+    ticks = t_in * (1 - pos) + t_out * pos
     ticks /= (np.std(ticks) + 1e-12)
     # 2) syk tarcia (szum szerokopasmowy) ~ v^1.3
-    hiss = dsp.bp(r.standard_normal(n), 1800, 9500, 2)
+    hiss = dsp.bp(r.standard_normal(n), 1600, 9000, 2)
     hiss = hiss / (np.std(hiss) + 1e-12) * vn ** 1.3
-    # 3) dudnienie toczenia + okresowosc klatki kulek (rozstaw ~6.5 mm)
+    # 3) toczenie "rrrr" w srednicy + okresowosc klatki kulek (rozstaw ~6.5 mm)
     ph = dsp.phase_from_freq(np.maximum(v, 0) / 0.0065)
     roll_am = 1 + 0.35 * np.sin(ph) + 0.15 * np.sin(2 * ph + 1.1)
-    rumble = dsp.bp(dsp.brown(n, r), 90, 750, 2)
+    rumble = dsp.bp(dsp.pink(n, r), 220, 1400, 2)
     rumble = rumble / (np.std(rumble) + 1e-12) * vn ** 1.2 * roll_am
-    layer = 0.55 * ticks * vn ** 0.6 + 0.22 * hiss + 0.65 * rumble
+    layer = 0.6 * ticks * vn ** 0.6 + 0.2 * hiss + 0.5 * rumble
     return layer * intensity
 
 
 def _box_resonance(r, x, mix=0.45, size=1.0):
-    """Skrzynka szuflady ze sklejki jako rezonator (mody pudla ~150-1100 Hz)."""
-    f = np.array([152, 236, 331, 468, 612, 818, 1105]) / size * r.uniform(0.95, 1.05)
-    d = np.array([0.05, 0.045, 0.035, 0.03, 0.022, 0.016, 0.012])
-    a = np.array([0.9, 1.0, 0.8, 0.7, 0.5, 0.35, 0.25])
+    """Skrzynka szuflady ze sklejki jako rezonator (mody scianek ~200-1300 Hz)."""
+    # gesty zbior modow (scianki, dno 6.5 mm, polaczenia na wkrety) -> formanty, nie "tony"
+    f = np.sort(np.exp(r.uniform(np.log(180), np.log(1700), 14))) / size
+    d = 1.0 / (np.pi * f * r.uniform(0.045, 0.075, len(f)))
+    a = np.interp(np.log(f), np.log([180, 400, 800, 1700]), [0.5, 1.0, 0.8, 0.35]) * r.uniform(0.6, 1.0, len(f))
     y = dsp.resonator_bank(x, f, d, a)
     y = y / (np.std(y) + 1e-12) * (np.std(x) + 1e-12)
     return (1 - mix) * x + mix * y
@@ -261,10 +268,10 @@ def drawer_close(push=0.42, damp=0.55, intensity=1.0, seed=0, pan=0.0, room='sma
     # tlumik: "fssst" - szum z opadajacym srodkiem pasma (powietrze uciekajace z tlumika)
     k = int(damp * SR) + int(0.05 * SR)
     td = np.arange(k) / SR
-    fc = 3200 * (1 - 0.65 * np.clip(td / damp, 0, 1) ** 0.8) + 500
-    nz = dsp.tv_biquad(r.standard_normal(k), fc, q=1.1, kind='bandpass', stages=2)
-    env = dsp.smoothstep(td / 0.035) * (1 - np.clip(td / damp, 0, 1)) ** 1.4
-    hiss = nz / (np.std(nz) + 1e-12) * env * 0.16
+    fc = 2300 * (1 - 0.65 * np.clip(td / damp, 0, 1) ** 0.8) + 450
+    nz = dsp.tv_biquad(dsp.pink(k, r), fc, q=1.3, kind='bandpass', stages=2)
+    env = dsp.smoothstep(td / 0.045) * (1 - np.clip(td / damp, 0, 1)) ** 1.4
+    hiss = nz / (np.std(nz) + 1e-12) * env * 0.1
     y[ie:ie + k] += hiss[: n - ie]
     # finalny miekki stuk frontu (zderzak) + puff powietrza zamykanej komory
     ic = int(t_cls * SR)
@@ -310,8 +317,8 @@ def door_open(duration=0.8, intensity=1.0, creak=0.0, seed=0, pan=0.0, room='sma
     y[i0:i0 + len(k)] += k[: n - i0]
     s = np.clip((t - PRE) / duration, 0, 1)
     w = np.sin(np.pi * s) ** 1.5 * ((t > PRE) & (t < PRE + duration))
-    air = dsp.lp(dsp.pink(n, r), 900, 2)
-    y += air / (np.std(air) + 1e-12) * w * 0.035
+    air = dsp.bp(dsp.pink(n, r), 160, 1100, 2)
+    y += air / (np.std(air) + 1e-12) * w * 0.03
     y += _creak(r, n, i0 + int(0.08 * SR), int(duration * 0.6 * SR), 0.12 * creak)
     out = _finish(y * intensity, r, room=room, pan=pan)
     return Sfx(out, {'start': PRE, 'sync': PRE, 'end': PRE + duration},
@@ -332,8 +339,8 @@ def door_close(push=0.45, damp=0.6, intensity=1.0, creak=0.0, seed=0, pan=0.0, r
     w = np.clip((t - PRE) / push, 0, 1)
     swing = np.where(t < t_eng, np.sin(np.pi * 0.5 * w) ** 2, np.exp(-(t - t_eng) / (damp * 0.35)))
     swing[t < PRE] = 0
-    air = dsp.lp(dsp.pink(n, r), 700, 2)
-    y += air / (np.std(air) + 1e-12) * swing * 0.04
+    air = dsp.bp(dsp.pink(n, r), 140, 900, 2)
+    y += air / (np.std(air) + 1e-12) * swing * 0.035
     # zaczep tlumika (bardzo delikatny)
     ie = int(t_eng * SR)
     c = _plastic_click(r, 0.14, 0.7)
@@ -404,17 +411,17 @@ def land(mass=6.0, size=(1.0, 0.4), surface='floor', hardness=0.5, intensity=1.0
     dur = 0.9
     n = dsp.n_of(PRE + dur)
     i0 = int(PRE * SR)
-    loss = {'floor': 0.028, 'stack': 0.018, 'table': 0.022}[surface]
+    loss = {'floor': 0.04, 'stack': 0.03, 'table': 0.034}[surface]
     contact = 0.0007 + (1 - hardness) * 0.0028 + 0.0006 * np.sqrt(mass / 6)
     panel = _wood_knock(r, L, W, contact=contact, loss=loss, level=1.0, dur=dur)
     y = np.zeros(n)
-    y[i0:] += panel[: n - i0] * 0.7
+    y[i0:] += panel[: n - i0] * 1.0
     # "thud" masy (podloga/stos) - nizej i dluzej dla ciezszych
-    fb = 62 * (6.0 / max(mass, 0.3)) ** 0.22 * {'floor': 1.0, 'stack': 1.15, 'table': 1.35}[surface]
+    fb = 78 * (6.0 / max(mass, 0.3)) ** 0.22 * {'floor': 1.0, 'stack': 1.15, 'table': 1.35}[surface]
     tt = np.arange(n - i0) / SR
     thud = np.sin(dsp.phase_from_freq(fb * (1 + 0.25 * np.exp(-tt / 0.01)))) * \
         dsp.env_ad(n - i0, 0.002, 0.045 + 0.012 * np.sqrt(mass))
-    y[i0:] += thud * 0.85 * min(1.6, (mass / 6) ** 0.45)
+    y[i0:] += thud * 0.42 * min(1.6, (mass / 6) ** 0.45)
     # poduszka powietrzna miedzy plaskimi powierzchniami ("pff" tuz przed i w chwili uderzenia)
     k = int(0.04 * SR)
     cush = dsp.bp(r.standard_normal(k), 250, 2200, 2)
@@ -504,7 +511,7 @@ def wood_tap(intensity=1.0, seed=0, pan=0.0, room='small', soft=0.5):
 # ==========================================================================
 # AKCENTY
 # ==========================================================================
-def sub_boom(duration=2.8, f_start=92.0, f_end=37.0, intensity=1.0, click=0.5, seed=0, tail_room=True):
+def sub_boom(duration=2.8, f_start=92.0, f_end=41.0, intensity=1.0, click=0.5, seed=0, tail_room=True):
     """Sub-hit na reveal: opadajacy sinus + harmoniczne (slyszalne na malych glosnikach)
     + miekki transjent + ciemny ogon hali."""
     r = dsp.rng(seed)

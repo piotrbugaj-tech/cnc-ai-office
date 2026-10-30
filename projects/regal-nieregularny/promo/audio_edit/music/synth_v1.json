@@ -1,0 +1,149 @@
+{
+ "bpm": 104.0,
+ "beat_s": 0.5769230769230769,
+ "bar_s": 2.3076923076923075,
+ "bars": 13,
+ "duration": 30.0,
+ "reveal_bar": 5,
+ "reveal_s": 9.2308,
+ "end_bar": 12,
+ "endcard_s": 25.3846,
+ "bar_times": [
+  0.0,
+  2.3077,
+  4.6154,
+  6.9231,
+  9.2308,
+  11.5385,
+  13.8462,
+  16.1538,
+  18.4615,
+  20.7692,
+  23.0769,
+  25.3846,
+  27.6923
+ ],
+ "kicks": [
+  9.2308,
+  9.2308,
+  10.3846,
+  11.5385,
+  12.6923,
+  13.125,
+  13.8462,
+  15.0,
+  16.1538,
+  17.3077,
+  17.7404,
+  18.4615,
+  19.6154,
+  20.7692,
+  21.9231,
+  22.3558,
+  23.0769,
+  24.2308,
+  24.6635,
+  25.3846
+ ],
+ "form": [
+  {
+   "bar": 1,
+   "beat": 0,
+   "beats": 4,
+   "chord": "Dm9"
+  },
+  {
+   "bar": 2,
+   "beat": 0,
+   "beats": 4,
+   "chord": "Bbmaj9"
+  },
+  {
+   "bar": 3,
+   "beat": 0,
+   "beats": 4,
+   "chord": "Fmaj9/A"
+  },
+  {
+   "bar": 4,
+   "beat": 0,
+   "beats": 2,
+   "chord": "Csus4"
+  },
+  {
+   "bar": 4,
+   "beat": 2,
+   "beats": 2,
+   "chord": "Cadd9"
+  },
+  {
+   "bar": 5,
+   "beat": 0,
+   "beats": 4,
+   "chord": "Fmaj9+"
+  },
+  {
+   "bar": 6,
+   "beat": 0,
+   "beats": 4,
+   "chord": "Dm9"
+  },
+  {
+   "bar": 7,
+   "beat": 0,
+   "beats": 4,
+   "chord": "Bbmaj9"
+  },
+  {
+   "bar": 8,
+   "beat": 0,
+   "beats": 2,
+   "chord": "Csus4"
+  },
+  {
+   "bar": 8,
+   "beat": 2,
+   "beats": 2,
+   "chord": "Cadd9"
+  },
+  {
+   "bar": 9,
+   "beat": 0,
+   "beats": 4,
+   "chord": "Fmaj9"
+  },
+  {
+   "bar": 10,
+   "beat": 0,
+   "beats": 4,
+   "chord": "Dm9"
+  },
+  {
+   "bar": 11,
+   "beat": 0,
+   "beats": 2,
+   "chord": "Bbmaj9"
+  },
+  {
+   "bar": 11,
+   "beat": 2,
+   "beats": 2,
+   "chord": "Csus4"
+  },
+  {
+   "bar": 12,
+   "beat": 0,
+   "beats": 4,
+   "chord": "F69"
+  },
+  {
+   "bar": 13,
+   "beat": 0,
+   "beats": 4,
+   "chord": "F69"
+  }
+ ],
+ "lufs": -14.01,
+ "true_peak_dbtp": -1.15,
+ "seed": 1
+}

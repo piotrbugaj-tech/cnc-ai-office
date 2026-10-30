@@ -997,14 +997,14 @@ def clear_animation():
 
 
 # =========================================================================== otoczenie
-def build_room(style="scandi", floor="microcement", wall_color="E9E4DB", floor_color=None):
+def build_room(style="scandi", floor="microcement", wall_color="D3CBBF", floor_color=None):
     """style: "scandi" – ciepła ściana + podłoga (mikrocement/dąb); "studio" – ciemne tło (cyc) do detali.
     Obie wersje są budowane w osobnych kolekcjach; przełączanie: set_look("window"|"studio")."""
     r = coll("OTOCZENIE")
     if style == "scandi":
         c = coll("otoczenie_scandi", r)
         wall_m = M.plaster("Sciana_tynk", wall_color)
-        fl_m = M.microcement(color=floor_color or "CFC6B8") if floor == "microcement" else \
+        fl_m = M.microcement(color=floor_color or "BDB2A3") if floor == "microcement" else \
             M.oak_floor(color=floor_color or "C9A77C")
         S.mats["wall"], S.mats["floor"] = wall_m, fl_m
         yw = S.D + S.data["cfg"]["back_t"] * MM + WALL_GAP
@@ -1104,37 +1104,38 @@ def world_simple(name, color, strength):
     return w
 
 
-def light_rig_window(key=1.0, kelvin=5000, sun=True, sun_strength=2.2, sun_kelvin=4600, fill=1.0,
-                     world_strength=0.35, side="left"):
-    """Światło dzienne z dużego okna poza kadrem (lewa strona, lekko z przodu):
-      OKNO_key  – miękki prostokąt 1,8 × 2,4 m (okno),
-      OKNO_sun  – słońce przez maskownicę okna (podziały szyb, cień na ścianie), miękki brzeg (kąt 1,2°),
-      OKNO_fill – odbicie od pokoju z prawej (słabe, szerokie),
-      OKNO_bounce – ciepłe odbicie od podłogi/sufitu, świat = ambient pokoju."""
+def light_rig_window(key=1.0, kelvin=5300, sun=True, sun_strength=1.8, sun_kelvin=4900, fill=1.0,
+                     world_strength=0.07, side="left", gobo_shift=(-0.95, 0.0, 0.30)):
+    """Światło dzienne z dużego okna poza kadrem (domyślnie z lewej, lekko z przodu):
+      OKNO_key   – miękki prostokąt 1,4 × 2,2 m (okno), daleko z boku → światło kierunkowe, głębokie cienie we wnękach,
+      OKNO_sun   – słońce przez maskownicę okna (podziały szyb rzucają cień na ścianę i regał), brzeg miękki (1,2°),
+      OKNO_fill  – odbicie od pokoju z przeciwnej strony (słabe, szerokie),
+      OKNO_sufit – ciepłe odbicie od sufitu; świat = słaby ambient pokoju.
+    `gobo_shift` – przesunięcie plamy słońca względem środka regału (m)."""
     c = coll("SWIATLA_okno")
     W, H, D = S.W, S.H, S.D
     sx = -1.0 if side == "left" else 1.0
     ctr = Vector((W / 2, D / 2, H * 0.48))
-    win_x = W / 2 + sx * (W / 2 + 1.9)
-    area("OKNO_key", c, (win_x, -1.25, 1.55), (W / 2 + sx * 0.2, 0.15, 1.05), 1.8, 2.4,
-         energy=520.0 * key, kelvin=kelvin, spread=150)
-    area("OKNO_fill", c, (W / 2 - sx * (W / 2 + 2.6), -3.2, 1.6), ctr, 3.0, 2.0, energy=90.0 * fill,
-         kelvin=kelvin + 600)
-    area("OKNO_sufit", c, (W / 2, -1.5, 3.0), (W / 2, -0.6, 0.0), 3.5, 2.5, energy=70.0 * fill, kelvin=4300)
+    win_x = W / 2 + sx * (W / 2 + 2.2)
+    area("OKNO_key", c, (win_x, -0.9, 1.6), (W / 2 + sx * 0.3, 0.2, 1.0), 1.4, 2.2,
+         energy=210.0 * key, kelvin=kelvin, spread=140)
+    area("OKNO_fill", c, (W / 2 - sx * (W / 2 + 2.4), -3.4, 1.5), ctr, 3.0, 2.0, energy=30.0 * fill,
+         kelvin=7000)
+    area("OKNO_sufit", c, (W / 2, -1.6, 3.0), (W / 2, -0.8, 0.0), 3.5, 2.5, energy=22.0 * fill, kelvin=5600)
     if sun:
         Ls = bpy.data.lights.new("OKNO_sun", "SUN")
         Ls.energy = sun_strength
         Ls.angle = math.radians(1.2)
         Ls.color = M.kelvin_rgb(sun_kelvin)
         so = new_obj("OKNO_sun", Ls, c)
-        sun_dir = Vector((-sx * 0.78, 0.55, -0.42)).normalized()     # kierunek padania promieni
+        sun_dir = Vector((-sx * 0.80, 0.50, -0.40)).normalized()     # kierunek padania promieni
         so.rotation_mode = "QUATERNION"
         so.rotation_quaternion = sun_dir.to_track_quat("-Z", "Y")
         S.lights["OKNO_sun"] = so
-        # maskownica okna (podziały szyb + ościeże) – rzuca cień tylko od słońca
-        g = _window_gobo(c, ctr - sun_dir * 2.2, sun_dir)
+        gs = Vector((gobo_shift[0] * -sx, gobo_shift[1], gobo_shift[2]))
+        g = _window_gobo(c, ctr + gs - sun_dir * 2.4, sun_dir)
         _shadow_link_only(so, g, c)
-    world_simple("Swiat_okno", M.kelvin_rgb(6500), world_strength)
+    world_simple("Swiat_okno", M.kelvin_rgb(8000), world_strength)
     bpy.context.scene.world = bpy.data.worlds["Swiat_okno"]
     return c
 
@@ -1353,7 +1354,7 @@ PRESETS = dict(
 
 
 def render_settings(preset="final", res=(1920, 1080), engine="CYCLES", samples=None, threshold=None,
-                    denoise=True, persistent=True, motion_blur=False, shutter=0.5, look="AgX - Base Contrast",
+                    denoise=True, persistent=True, motion_blur=False, shutter=0.5, look="AgX - Medium High Contrast",
                     exposure=0.0, device=None, percentage=100, time_limit=0.0):
     sc = bpy.context.scene
     sc.render.engine = engine
@@ -1365,9 +1366,12 @@ def render_settings(preset="final", res=(1920, 1080), engine="CYCLES", samples=N
     sc.render.motion_blur_shutter = shutter
     vs = sc.view_settings
     vs.view_transform = "AgX"
-    looks = [i.identifier for i in vs.bl_rna.properties["look"].enum_items]
-    want = look if look in looks else next((l for l in looks if l.endswith(look.split(" - ")[-1])), "None")
-    vs.look = want
+    try:
+        vs.look = look
+        want = look
+    except TypeError:
+        want = "None"
+        vs.look = want
     vs.exposure = exposure
     vs.gamma = 1.0
     sc.display_settings.display_device = "sRGB"

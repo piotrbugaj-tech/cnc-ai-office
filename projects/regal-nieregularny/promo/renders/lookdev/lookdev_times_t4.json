@@ -1,0 +1,53 @@
+{
+ "build_s": 1.8,
+ "shots": [
+  {
+   "shot": "hero",
+   "file": "/home/user/cnc-ai-office/projects/regal-nieregularny/promo/renders/lookdev/a_hero_34_t4.png",
+   "seconds": 30.3,
+   "engine": "CYCLES",
+   "look": "AgX - Medium High Contrast",
+   "device": "CPU",
+   "samples": 24,
+   "threshold": 0.05000000074505806,
+   "res": [
+    1920,
+    1080
+   ],
+   "pct": 50,
+   "plan": "window"
+  },
+  {
+   "shot": "macro",
+   "file": "/home/user/cnc-ai-office/projects/regal-nieregularny/promo/renders/lookdev/b_makro_krawedz_szczelina_t4.png",
+   "seconds": 44.5,
+   "engine": "CYCLES",
+   "look": "AgX - Medium High Contrast",
+   "device": "CPU",
+   "samples": 24,
+   "threshold": 0.05000000074505806,
+   "res": [
+    1920,
+    1080
+   ],
+   "pct": 50,
+   "plan": "window"
+  },
+  {
+   "shot": "drawer",
+   "file": "/home/user/cnc-ai-office/projects/regal-nieregularny/promo/renders/lookdev/c_szuflada_wysuw_t4.png",
+   "seconds": 47.7,
+   "engine": "CYCLES",
+   "look": "AgX - Medium High Contrast",
+   "device": "CPU",
+   "samples": 24,
+   "threshold": 0.05000000074505806,
+   "res": [
+    1920,
+    1080
+   ],
+   "pct": 50,
+   "plan": "window"
+  }
+ ]
+}

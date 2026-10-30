@@ -39,7 +39,7 @@ def shot_hero():
     """3/4 całego regału, poziom kamery ~1,05 m, pionowe linie zachowane (shift zamiast pochylenia)."""
     W, H = B.S.W, B.S.H
     cz = 1.02
-    cam = B.make_camera("CAM_hero", (-1.05, -3.95, cz), (W * 0.56, 0.2, cz), lens=35, fstop=5.6,
+    cam = B.make_camera("CAM_hero", (-1.45, -4.6, cz), (W * 0.47, 0.2, cz), lens=40, fstop=5.6,
                         focus=(W * 0.35, 0.0, 1.1), shift=(0.0, 0.035))
     return cam, {}
 
@@ -52,7 +52,10 @@ def shot_macro():
     tgt = (fx + 0.004, 0.0, fz + 0.002)
     cam = B.make_camera("CAM_macro", (fx - 0.085, -0.33, fz + 0.095), tgt, lens=100, fstop=4.0,
                         focus=(fx + 0.003, -0.001, fz + 0.003))
-    return cam, {}
+    # "kicker" – wąski softbox z góry-lewej, muska krawędzie pod kątem (wydobywa fazę i warstwy)
+    k = B.area("MACRO_kicker", B.coll("SWIATLA_okno"), (fx - 0.30, -0.22, fz + 0.32), (fx + 0.02, 0.0, fz),
+               0.12, 0.5, energy=5.0, kelvin=5200, spread=60)
+    return cam, {"kicker": k.name}
 
 
 def shot_drawer():
@@ -91,7 +94,7 @@ def main():
     B.build_furniture(screws="--no-screws" not in args)
     B.build_room("scandi", floor=floor)
     B.light_rig_window(sun="--no-sun" not in args, side=side,
-                       key=arg(args, "--key", 1.0, float), sun_strength=arg(args, "--sunk", 2.2, float))
+                       key=arg(args, "--key", 1.0, float), sun_strength=arg(args, "--sunk", 1.8, float))
     B.build_room("studio")
     B.light_rig_studio()
     if "--no-props" not in args:
@@ -115,7 +118,7 @@ def main():
         dt = time.time() - t1
         print(f"[lookdev] {nm}: {dt:.1f} s → {path}")
         report.append(dict(shot=nm, file=str(path), seconds=round(dt, 1), **info, res=res, pct=pct,
-                           look=look_force or look))
+                           plan=look_force or look))
     (out / f"lookdev_times{suffix}.json").write_text(json.dumps(dict(build_s=round(t_build, 1), shots=report),
                                                                  indent=1, ensure_ascii=False))
     if "--blend" in args:
