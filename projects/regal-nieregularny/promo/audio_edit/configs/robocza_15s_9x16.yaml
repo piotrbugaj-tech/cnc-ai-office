@@ -1,0 +1,44 @@
+# ETAP 2a: wersja ROBOCZA 15 s 9:16 (brief 8.1) na animatiku 640x360 - kolumna 9:16 tylko do oceny timingu.
+#   python3 edit.py configs/robocza_15s_9x16.yaml --keep-work [--resume]
+work_dir: ../test/work_robocza
+versions:
+  RYTM_robocza_15s_9x16:
+    size: [540, 960]
+    fps: 25
+    strip: {crop: [0, 0, 330, 21], scale: 3.0, pos: [0, 0]}
+    shots:
+      - {id: V1, src: ../../renders/animatic/RYTM_animatic_640x360.mp4, f: [0, 60], cx: 0.45}
+      - {id: V2, src: ../../renders/animatic/RYTM_animatic_640x360.mp4, f: [180, 225], cx: [[0, 0.50], [1.2, 0.46], [1.8, 0.47]]}
+      - {id: V3, src: ../../renders/animatic/RYTM_animatic_640x360.mp4, f: [255, 300], cx: 0.50}
+      - {id: V4, src: ../../renders/animatic/RYTM_animatic_640x360.mp4, f: [450, 480], cx: 0.50}
+      - {id: V5, src: ../../renders/animatic/RYTM_animatic_640x360.mp4, f: [480, 600], cx: [0.50, 0.505]}
+      - id: V6
+        type: endcard
+        dur_f: 75
+        f: [660, 735]
+        bg: "#EFEAE2"
+        strip_from: {src: ../../renders/animatic/RYTM_animatic_640x360.mp4, f: [660, 735]}
+        elements:
+          - {type: glyph, model: ../../data/model.json, height: 400, cx: 540, cy: 560, stroke: 3, f: [2, 32]}
+          - {type: text, text: RYTM, style: end_name, x: 540, y: 900, f: [10, 24]}
+          - {type: text, text: "Precyzja w każdej warstwie.", style: end_tag, x: 540, y: 990, f: [18, 32]}
+          - {type: text, text: "Regał ze sklejki brzozowej\n190 × 202 × 40 cm", style: end_desc, x: 540, y: 1060, f: [24, 36]}
+          - {type: text, text: "CNC Furniture Studio", style: end_brand, x: 540, y: 1180, f: [30, 42]}
+    titles:
+      - {text: "Bez boków.", style: title, x: 540, y: 420, align: center, f: [10, 58]}
+      - {text: "Pełny wysuw.", style: title, x: 540, y: 420, align: center, f: [66, 104]}
+      - {text: "Cichy domyk.", style: title, x: 540, y: 420, align: center, f: [118, 148]}
+      - {text: "140 elementów.", style: title, x: 540, y: 420, align: center, f: [152, 174], glow: true}
+    grade: {lut: auto, vignette: 0.09, grain: 0}
+    audio:
+      music: {stems_dir: ../music/synth_v1_15s_stems, use: [pads, groove_marimba, drums, bass, fx, reverb], lufs: -18}
+      event_notes: true
+      event_music_fx: false
+      events: ../../renders/events.json
+      sfx:
+        - {synth: air, params: {duration: 0.7, peak_at: 0.85}, at: "V3.start", anchor: peak, gain_offset_db: -2}
+      duck: {depth_db: 4, attack: 0.01, release: 0.3, threshold_db: -42}
+      pan_max: 0.15
+      room_tone: {sample: room_tone_30s, level_db: -48}
+      master: {lufs: -14, true_peak: -1.5, comp_ratio: 1.5}
+    export: {output: ../../odsluch/RYTM_robocza_15s_9x16.mp4, crf: 23, preset: medium, audio_bitrate: 192k}

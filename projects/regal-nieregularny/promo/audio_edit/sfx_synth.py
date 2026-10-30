@@ -781,13 +781,20 @@ def catch(mech='drawer', intensity=1.0, seed=0, pan=0.0, room='small'):
     return Sfx(out, {'impact': PRE, 'sync': PRE}, {'type': 'catch', 'mech': mech})
 
 
-def damper(duration=0.92, mech='drawer', intensity=1.0, seed=0, pan=0.0, room='small'):
-    """Tlumik: szum LP 900 Hz ~ v (zanika) + olejowy syk BP 1.2-3 kHz (drawer) / ciszej i nizej (door)."""
+def damper(duration=0.92, mech='drawer', intensity=1.0, seed=0, pan=0.0, room='small', v_curve=None, fps=25):
+    """Tlumik: szum LP 900 Hz ~ v (zanika) + olejowy syk BP 1.2-3 kHz (drawer) / ciszej i nizej (door).
+    v_curve: predkosc na klatke z Blendera (od zatrzasku do kontaktu)."""
     r = dsp.rng(seed)
+    if v_curve is not None and len(v_curve) > 1:
+        duration = (len(v_curve) - 1) / fps
     n = dsp.n_of(duration + 0.1)
     t = np.arange(n) / SR
     u = np.clip(t / duration, 0, 1)
-    v = 3 * (1 - u) ** 2 * dsp.smoothstep(t / 0.03)          # pochodna p = (1-u)^3
+    if v_curve is not None and len(v_curve) > 1:
+        vc = np.abs(np.asarray(v_curve, float))
+        v = np.interp(t, np.arange(len(vc)) / fps, vc / (vc.max() + 1e-9), right=0) * dsp.smoothstep(t / 0.03)
+    else:
+        v = 3 * (1 - u) ** 2 * dsp.smoothstep(t / 0.03)      # pochodna p = (1-u)^3
     a = dsp.lp(dsp.pink(n, r), 900, 2)
     lo, hi = (1200, 3000) if mech == 'drawer' else (700, 2000)
     b = dsp.bp(r.standard_normal(n), lo, hi, 2)
@@ -798,13 +805,19 @@ def damper(duration=0.92, mech='drawer', intensity=1.0, seed=0, pan=0.0, room='s
     return Sfx(out, {'start': PRE, 'sync': PRE, 'end': PRE + duration}, {'type': 'damper', 'mech': mech})
 
 
-def door_air(duration=0.72, intensity=1.0, seed=0, pan_from=0.3, pan_to=-0.1, room='small'):
-    """Powietrze zamykanych drzwi: szum BP 200-700 Hz ~ predkosc katowa, ruch w stereo."""
+def door_air(duration=0.72, intensity=1.0, seed=0, pan_from=0.3, pan_to=-0.1, room='small', v_curve=None, fps=25):
+    """Powietrze zamykanych drzwi: szum BP 200-700 Hz ~ predkosc katowa (v_curve z Blendera: deg/kl.), ruch w stereo."""
     r = dsp.rng(seed)
+    if v_curve is not None and len(v_curve) > 1:
+        duration = len(v_curve) / fps
     n = dsp.n_of(duration)
     t = np.arange(n) / SR
     u = t / duration
-    w = np.sin(np.pi * np.clip(u * 0.9 + 0.1, 0, 1)) ** 1.2
+    if v_curve is not None and len(v_curve) > 1:
+        vc = np.abs(np.asarray(v_curve, float))
+        w = np.interp(t, np.arange(len(vc)) / fps, vc / (vc.max() + 1e-9)) ** 1.2
+    else:
+        w = np.sin(np.pi * np.clip(u * 0.9 + 0.1, 0, 1)) ** 1.2
     y = dsp.bp(dsp.pink(n, r), 200, 700, 2)
     y = y / np.std(y) * w
     y = dsp.peak_normalize(y, -3) * intensity

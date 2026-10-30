@@ -309,3 +309,59 @@ def render_endcard(spec, version, W, H, fps, out_dir, scale=1.0, base_dir='.'):
                 d = ImageDraw.Draw(fr)
         fr.convert('RGB').save(os.path.join(out_dir, f'{i:04d}.png'), compress_level=1)
     return dict(pattern=os.path.join(out_dir, '%04d.png'), n=n)
+
+
+def render_dim_tracked(spec, version, W, H, fps, out_dir, scale=1.0):
+    """Wymiar CAD sledzacy punkty z Blendera (events.json -> callouts_S06, wspolrzedne kadru 0-1).
+    spec: text, f:[in,out], track_pts: lista (na kazda klatke nakladki) list punktow [[x,y], ...],
+    label: above | right | leader. Linia rysuje sie w 8 kl., kreski 45 st. 10 px, tekst po 4 kl., wyjscie 8 kl.
+    Klatki pelnoekranowe RGBA (punkty sie przesuwaja)."""
+    st = dict(STYLES[version]['cad'])
+    f0, f1 = spec['f']
+    n = int(round(f1 - f0))
+    lw = max(1, int(round(2 * scale)))
+    col = hex_rgba(st['color'])
+    img, base, cap, tw = text_image(spec['text'], st, scale)
+    mode = spec.get('label', 'above')
+    fout = int(spec.get('out', 8))
+    os.makedirs(out_dir, exist_ok=True)
+    pts_all = spec['track_pts']
+    for i in range(n):
+        fr = Image.new('RGBA', (W, H), (0, 0, 0, 0))
+        d = ImageDraw.Draw(fr)
+        pts = np.array(pts_all[min(i, len(pts_all) - 1)], float) * [W, H]
+        u = ease_out_cubic((i + 1) / 8)
+        k = 5 * scale
+        if len(pts) >= 2:
+            p1, p2 = pts[0], pts[1]
+            if mode == 'right':                       # szczelina 2 mm: linie pomocnicze + wymiar obok
+                off = np.array([28 * scale, 0])
+                p1, p2 = p1 + off, p2 + off
+            a = p1 + (p2 - p1) * u
+            d.line([tuple(p1), tuple(a)], fill=col, width=lw)
+            if u >= 0.999:
+                for p in (p1, p2):
+                    d.line([(p[0] - k, p[1] + k), (p[0] + k, p[1] - k)], fill=col, width=lw)
+            if mode == 'right':
+                tpos = np.array([max(p1[0], p2[0]) + 14 * scale, (p1[1] + p2[1]) / 2 - img.height / 2])
+            else:
+                tpos = np.array([(p1[0] + p2[0]) / 2 - tw / 2, min(p1[1], p2[1]) - img.height - 6 * scale])
+        else:                                         # odnosnik (leader) od punktu w gore w prawo
+            p = pts[0]
+            q = p + np.array([60, -50]) * scale
+            a = p + (q - p) * u
+            d.ellipse([p[0] - 3 * scale, p[1] - 3 * scale, p[0] + 3 * scale, p[1] + 3 * scale], fill=col)
+            d.line([tuple(p), tuple(a)], fill=col, width=lw)
+            if u >= 0.999:
+                d.line([tuple(q), (q[0] + 24 * scale, q[1])], fill=col, width=lw)
+            tpos = np.array([q[0] + 30 * scale, q[1] - img.height / 2 - 2 * scale])
+        ta = ease_out_cubic((i - 12 + 1) / 4) if i >= 12 else 0.0
+        if ta > 0:
+            x0, y0 = int(round(tpos[0])), int(round(tpos[1]))
+            if -img.width < x0 < W and -img.height < y0 < H:
+                fr.alpha_composite(_alpha(img, ta), (max(0, x0), max(0, y0)),
+                                   (max(0, -x0), max(0, -y0)))
+        if i >= n - fout:
+            fr = _alpha(fr, 1 - ease_out_cubic((i - (n - fout) + 1) / fout))
+        fr.save(os.path.join(out_dir, f'{i:04d}.png'), compress_level=1)
+    return dict(pattern=os.path.join(out_dir, '%04d.png'), x=0, y=0, start_s=f0 / fps, n=n)

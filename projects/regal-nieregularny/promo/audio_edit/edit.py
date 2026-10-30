@@ -42,6 +42,8 @@ import subprocess
 import sys
 import time
 
+import numpy as np
+
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import dsp  # noqa: E402
 import lut  # noqa: E402
@@ -214,14 +216,17 @@ def normalize_shot(sh, V, base, work, idx, draft=False):
         ow, oh = int(round(sw * k / 2) * 2), int(round(shh * k / 2) * 2)
         px, py = strip.get('pos', [0, 0])
         sfx_ = f'crop={sw}:{shh}:{sx}:{sy},scale={ow}:{oh}:flags=lanczos'
+        # czarny pas w miejscu oryginalnego paska (po kadrowaniu/skalowaniu bylby uciety lub powiekszony)
+        mask = max(oh, int(np.ceil((sy + shh) * H / chi)) + 1) if stype != 'endcard' else oh
+        box = f'drawbox=x=0:y=0:w=iw:h={mask}:color=black:t=fill'
         ss = sh.get('strip_from')                    # np. plansza z Pillow: pasek z animatiku w zadanym oknie
         if ss:
             sp = absp(ss['src'], base)
             inp += ['-ss', f"{ss['f'][0] / fps:.4f}", '-t', f'{n_frames / fps + 0.5:.4f}', '-i', sp]
-            fc = (f"[0:v]{','.join(pre + vf) or 'null'}[mm];[1:v]fps={fps},{sfx_}[ss];"
+            fc = (f"[0:v]{','.join(pre + vf + [box])}[mm];[1:v]fps={fps},{sfx_}[ss];"
                   f"[mm][ss]overlay={px}:{py}:eof_action=repeat,{post}[out]")
         else:
-            fc = (f"[0:v]{','.join(pre) or 'null'},split=2[m][s];[m]{','.join(vf)}[mm];[s]{sfx_}[ss];"
+            fc = (f"[0:v]{','.join(pre) or 'null'},split=2[m][s];[m]{','.join(vf + [box])}[mm];[s]{sfx_}[ss];"
                   f"[mm][ss]overlay={px}:{py},{post}[out]")
         cmd = [FF, '-v', 'error', '-y'] + inp + ['-filter_complex', fc, '-map', '[out]']
     else:
@@ -319,7 +324,8 @@ def finalize(assembled, total_f, V, gcfg, overlays, audio_wav, out_path, ecfg, w
         '-frames:v', str(total_f), '-r', str(fps), '-t', f'{total_f / fps:.4f}',
         '-colorspace', 'bt709', '-color_primaries', 'bt709', '-color_trc', 'bt709', '-color_range', 'tv']
     cmd = common + ['-c:v', 'libx264', '-preset', preset, '-crf', crf, '-profile:v', 'high', '-pix_fmt', 'yuv420p',
-                    '-c:a', 'aac', '-b:a', '320k', '-ar', '48000', '-movflags', '+faststart', out_path]
+                    '-c:a', 'aac', '-b:a', str(ecfg.get('audio_bitrate', '320k')), '-cutoff', '18000', '-ar', '48000',
+                    '-movflags', '+faststart', out_path]
     os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
     _, dt = run(cmd)
     if ecfg.get('prores') and not draft:
@@ -356,7 +362,8 @@ def build_version(name, V0, cfg, base, args):
     fps = float(V.get('fps', 25))
     style_set = '9x16' if H > W else '16x9'
     scale = (min(W, H) / (1080 if style_set == '16x9' else 1080))
-    Vx = dict(W=W, H=H, fps=fps, name_style=style_set, scale=scale, sharpen=V.get('sharpen', False))
+    Vx = dict(W=W, H=H, fps=fps, name_style=style_set, scale=scale, sharpen=V.get('sharpen', False),
+              strip=V.get('strip'))
     work = absp(V.get('work_dir', os.path.join(cfg.get('work_dir', 'work'), name)), base)
     os.makedirs(work, exist_ok=True)
     shots = [dict(s) for s in V['shots']]
@@ -365,7 +372,15 @@ def build_version(name, V0, cfg, base, args):
     clips = []
     if not args.audio_only:
         for i, sh in enumerate(shots):
+            cached = os.path.join(work, f'shot_{i:02d}_{sh.get("id", i)}.mkv')
+            if args.resume and os.path.isfile(cached) and os.path.isfile(cached + '.ok'):
+                n = int(open(cached + '.ok').read())
+                clips.append((cached, n))
+                print(f'  ujecie {sh.get("id", i)}: {n} kl. (z pamieci podrecznej)')
+                continue
             p, n = normalize_shot(sh, Vx, base, work, i, args.draft)
+            with open(p + '.ok', 'w') as fh:
+                fh.write(str(n))
             clips.append((p, n))
             print(f'  ujecie {sh.get("id", i)}: {n} kl.')
         assembled, starts, total_f = assemble(clips, shots, Vx, work)
@@ -394,7 +409,7 @@ def build_version(name, V0, cfg, base, args):
         if os.path.isfile(evp):
             efps, evs = timeline.load_events(evp)
             allc = timeline.build_cues(evs, efps, cfg.get('event_map'), float(acfg.get('pan_width', 0.8)))
-            for sh in shots:
+            for si, sh in enumerate(shots):
                 if sh.get('events') is False or not ('f' in sh or 'dur' in sh):
                     continue                  # plansza (endcard) dostaje zdarzenia tylko gdy ma okno 'f'
                 if 'f' in sh:     # numeracja klatek zrodla == numeracja klatek w events.json
@@ -404,6 +419,8 @@ def build_version(name, V0, cfg, base, args):
                     s1 = s0 + float(sh['dur'])
                 speed = float(sh.get('speed', 1.0))
                 tail = float(sh.get('event_tail_s', 0.0))
+                if si + 1 < len(shots):   # okno efektywne konczy sie na starcie nastepnego ujecia (przenikanie)
+                    s1 = min(s1, s0 + (shots[si + 1]['_start_f'] - sh['_start_f']) / fps * speed)
                 for c in allc:
                     te = c['t_src']
                     te_end = c.get('t_end', te) if c.get('kind') != 'silence' else te
@@ -438,9 +455,11 @@ def build_version(name, V0, cfg, base, args):
         out_path = os.path.splitext(out_path)[0] + args.out_suffix + '.mp4'
     if args.draft:
         out_path = os.path.splitext(out_path)[0] + '_draft.mp4'
-    wav = os.path.splitext(out_path)[0] + '_mix.wav'
+    # pliki pomocnicze (WAV miksu, raporty) w work_dir - obok MP4 zostaje tylko MP4
+    aux = os.path.join(work, os.path.splitext(os.path.basename(out_path))[0])
+    wav = aux + '_mix.wav'
     dsp.write_wav(wav, audio)
-    with open(os.path.splitext(out_path)[0] + '_cues.json', 'w', encoding='utf-8') as f:
+    with open(aux + '_cues.json', 'w', encoding='utf-8') as f:
         json.dump(dict(version=name, duration_s=total, shot_starts_f=starts, mix=rep), f, indent=1, ensure_ascii=False)
     if args.audio_only:
         print(f'  audio: {wav}')
@@ -451,29 +470,53 @@ def build_version(name, V0, cfg, base, args):
         d = os.path.join(work, f'title_{j:02d}')
         shutil.rmtree(d, ignore_errors=True)
         overlays.append(typo.render_title(t, style_set, W, H, fps, d, scale))
+    cal = {}
+    if ev_path and os.path.isfile(absp(ev_path, base)):
+        _ej = json.load(open(absp(ev_path, base), encoding='utf-8'))
+        cal = {k2: v2 for k, v in _ej.items() if k.startswith('callouts') and isinstance(v, dict) for k2, v2 in v.items()}
     for j, t in enumerate(V.get('dims', []) or []):
         d = os.path.join(work, f'dim_{j:02d}')
         shutil.rmtree(d, ignore_errors=True)
-        overlays.append(typo.render_dim(t, style_set, W, H, fps, d, scale))
+        if t.get('track') and t['track'] in cal:
+            # punkty 2D z Blendera per klatka; klatka zrodla = src_f + i (domyslnie = klatka montazu)
+            trk = {int(x['frame']): x['pts'] for x in cal[t['track']]}
+            keys = sorted(trk)
+            src_f = int(t.get('src_f', t['f'][0]))
+            t = dict(t)
+            t['track_pts'] = [trk[min(keys, key=lambda kk: abs(kk - (src_f + i)))]
+                              for i in range(int(t['f'][1] - t['f'][0]))]
+            overlays.append(typo.render_dim_tracked(t, style_set, W, H, fps, d, scale))
+        else:
+            if t.get('track'):
+                print(f"  [uwaga] brak sledzenia {t['track']} w events.json - wymiar statyczny")
+            overlays.append(typo.render_dim(t, style_set, W, H, fps, d, scale))
     dt = finalize(assembled, total_f, Vx, V.get('grade', {}), overlays, wav, out_path, ecfg, work, args.draft)
     # --- kontrola glosnosci po enkodzie AAC; jesli TP > -1.0 -> obniz limiter i zmiksuj ponownie
     lm = measure_loudness(out_path)
-    if lm['ebur128_true_peak'] is not None and lm['ebur128_true_peak'] > -1.0:
-        print(f"  TP po AAC {lm['ebur128_true_peak']} dBTP > -1.0 -> poprawka limitera")
-        acfg.setdefault('master', {})['true_peak'] = float(acfg.get('master', {}).get('true_peak', -1.5)) - 0.5
+    it = 0
+    while lm['ebur128_true_peak'] is not None and lm['ebur128_true_peak'] > -1.0 and it < 4:
+        # AAC (szczegolnie 192 kb/s) dodaje przestrzalow - obnizamy sufit limitera o nadmiar + 0,3 dB
+        it += 1
+        cur = float(acfg.get('master', {}).get('true_peak', -1.5))
+        new_tp = cur - (lm['ebur128_true_peak'] + 1.0) - 0.3
+        print(f"  TP po AAC {lm['ebur128_true_peak']} dBTP > -1.0 -> sufit limitera {cur:.2f} -> {new_tp:.2f} dBTP")
+        acfg['master'] = dict(acfg.get('master', {}), true_peak=new_tp)
         audio, rep = mixer.mix(acfg, total, cues, base, {}, verbose=False)
         dsp.write_wav(wav, audio)
         finalize(assembled, total_f, Vx, V.get('grade', {}), overlays, wav, out_path, ecfg, work, args.draft)
         lm = measure_loudness(out_path)
+    lm['limiter_ceiling_dbtp'] = float(acfg.get('master', {}).get('true_peak', -1.5))
     info = dict(version=name, output=out_path, frames=total_f, duration_s=total, encode_s=round(dt, 1),
                 loudness=lm, wall_s=round(time.time() - t_start, 1))
     print(f"  -> {out_path}\n     I={lm['ebur128_I']} LUFS (loudnorm {lm['loudnorm_input_i']}), "
           f"TP={lm['ebur128_true_peak']} dBTP, LRA={lm['loudnorm_input_lra']} LU, czas {info['wall_s']} s")
-    with open(os.path.splitext(out_path)[0] + '_report.json', 'w', encoding='utf-8') as f:
+    with open(aux + '_report.json', 'w', encoding='utf-8') as f:
         json.dump(info, f, indent=1)
     if not args.keep_work:
         for p, _ in clips:
-            os.remove(p)
+            for q in (p, p + '.ok'):
+                if os.path.isfile(q):
+                    os.remove(q)
     return info
 
 
@@ -485,6 +528,7 @@ def main():
     ap.add_argument('--audio-only', action='store_true')
     ap.add_argument('--keep-work', action='store_true', help='zostaw posrednie pliki FFV1')
     ap.add_argument('--events', help='nadpisz audio.events (np. atrapa test/brief_events_mock.json)')
+    ap.add_argument('--resume', action='store_true', help='uzyj gotowych ujec z work_dir (po przerwaniu); wymaga --keep-work')
     ap.add_argument('--out-suffix', default='', help='dopisek do nazw plikow wyjsciowych')
     args = ap.parse_args()
     cfg = load_cfg(args.config)

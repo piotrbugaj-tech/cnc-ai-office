@@ -132,10 +132,12 @@ def mix(acfg, total, cues, base, report=None, verbose=True):
     for c in list(cues) + manual:
         if c.get('kind') == 'silence':                # 'proznia' ze zdarzenia -> obszar ciszy
             sil_ev.append([float(c['at']), float(c['at']) + float(c['t_end']) - float(c['t_src'])])
+            placed.append(dict(t=round(float(c['at']), 3), type='silence', label='silence', ev=c.get('ev'),
+                               shot=c.get('shot'), bus='master'))
             continue
-        if c.get('music_note') and not use_notes:
-            continue
-        if c.get('music_fx') and not use_mfx:
+        if (c.get('music_note') and not use_notes) or (c.get('music_fx') and not use_mfx):
+            placed.append(dict(t=round(float(c['at']), 3), type=c.get('synth'), label=c.get('label'), ev=c.get('ev'),
+                               evs=c.get('evs'), shot=c.get('shot'), bus='muzyka (stem)', skipped=True))
             continue
         if c.get('mute'):
             continue
@@ -165,7 +167,9 @@ def mix(acfg, total, cues, base, report=None, verbose=True):
                 x[k0:k0 + kf] *= np.linspace(0, 1, kf)[:, None]
         bus = notes if c.get('music_note') else foley
         dsp.place(bus, x, float(c['at']) - a)
-        placed.append(dict(t=round(float(c['at']), 3), type=typ, label=c.get('label', c.get('sample', c.get('file', ''))),
+        placed.append(dict(t=round(float(c['at']), 3), t0=round(float(c['at']) - a, 3), dur=round(len(x) / SR, 3),
+                           shot=c.get('shot'), ev=c.get('ev'), evs=c.get('evs'), clip_from=c.get('clip_from'),
+                           type=typ, label=c.get('label', c.get('sample', c.get('file', ''))),
                            gain_db=round(g, 1), pan=None if pan is None else round(float(np.clip(pan, -pan_max, pan_max)), 2),
                            bus='notes' if c.get('music_note') else 'foley'))
     # room tone
@@ -201,6 +205,10 @@ def mix(acfg, total, cues, base, report=None, verbose=True):
         thr = float(np.percentile(act, 80)) if len(act) else -20.0
         gr = np.where(lvl > thr, (lvl - thr) * (1 - 1 / ratio), 0.0)
         bus = bus * dsp.db2lin(-dsp.uniform_filter1d(gr, int(0.08 * SR)))[:, None]
+    # LP przed limiterem = to samo pasmo co AAC (inaczej obciecie wysokich w koderze daje przestrzaly true-peak)
+    lp_hz = float(m.get('lowpass_hz', 17500))
+    if lp_hz and lp_hz < SR / 2:
+        bus = dsp.lp(bus, lp_hz, 4)
     target, tp = float(m.get('lufs', -14.0)), float(m.get('true_peak', -1.5))
     out, L, TP = dsp.normalize_lufs(bus, target, tp)
     # 'proznia': przyciszenie calosci (np. f474-480 -> -60 dB w 80 ms)
@@ -212,10 +220,10 @@ def mix(acfg, total, cues, base, report=None, verbose=True):
         g[i0:i1] = dsp.db2lin(-60)
         out *= g[:, None]
     rep.update(lufs=round(dsp.lufs(out), 2), true_peak_dbtp=round(dsp.true_peak_db(out), 2),
-               music_lufs_pre=None, n_cues=len(placed))
+               n_cues=len([p for p in placed if not p.get('skipped') and p.get('type') != 'silence']))
     rep['cues'] = placed
     if verbose:
-        print(f"  [mix] {len(placed)} efektow, {rep['lufs']} LUFS, TP {rep['true_peak_dbtp']} dBTP"
+        print(f"  [mix] {rep['n_cues']} efektow, {rep['lufs']} LUFS, TP {rep['true_peak_dbtp']} dBTP"
               + (f", ducking do -{rep.get('duck_max_db')} dB" if 'duck_max_db' in rep else ''))
     return out, rep
 

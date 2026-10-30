@@ -190,6 +190,16 @@ def note_midi(name):
     return n + 12 * (int(m.group(3)) + 1)
 
 
+def _curve_seg(cv, f0, f1):
+    """Predkosci (|speed| na klatke) z curves[target] w zakresie [f0, f1] albo None."""
+    if not cv or not cv.get('speed') or f1 is None:
+        return None
+    fr = np.asarray(cv['frames'], float)
+    sp = np.abs(np.asarray(cv['speed'], float))
+    sel = (fr >= f0 - 1e-6) & (fr <= f1 + 1e-6)
+    return sp[sel].tolist() if sel.sum() > 2 else None
+
+
 def build_cues_brief(evs, fps, event_map=None, pan_width=0.8):
     """Format events.json z Blendera wg research-brief.md (typy: shelf_pass, land, drawer_roll + curves, ...).
     Flagi cue: music_note (nuty -> szyna notes, sterowane audio.event_notes), music_fx (akcenty muzyczne:
@@ -204,7 +214,7 @@ def build_cues_brief(evs, fps, event_map=None, pan_width=0.8):
         c = dict(t_src=sec(e['frame']) if t is None else t, synth=synth, params=params or {},
                  seed=_seed(e['name'], e['obj'], e['frame'], synth), anchor=anchor,
                  pan=_pan_of(e, pan_width) if pan == 'auto' else pan, gain_offset_db=gain,
-                 label=label or f"{e['name']}:{e['obj']}")
+                 label=label or f"{e['name']}:{e['obj']}", ev=[e['name'], e['obj'], e['frame']])
         c.update(flags)
         cues.append(c)
         return c
@@ -235,7 +245,8 @@ def build_cues_brief(evs, fps, event_map=None, pan_width=0.8):
             add(e, 'riser', 'end', t=sec(end or e['frame'] + 54), params=dict(duration=d, tonal=0.55, root_hz=220.0),
                 pan=None, music_fx=True)
         elif n == 'silence':
-            cues.append(dict(kind='silence', t_src=sec(e['frame']), t_end=sec(end or e['frame'] + 6), label='silence'))
+            cues.append(dict(kind='silence', t_src=sec(e['frame']), t_end=sec(end or e['frame'] + 6), label='silence',
+                             ev=[n, obj, e['frame']]))
         elif n == 'drawer_roll':
             f1 = end or e['frame'] + 12
             cv = e.get('_curve')
@@ -257,7 +268,11 @@ def build_cues_brief(evs, fps, event_map=None, pan_width=0.8):
             add(e, 'catch', params=dict(mech=mech))
             ct = nxt(i, {'softclose_contact' if mech == 'drawer' else 'door_contact'}, obj)
             d = sec(ct['frame'] - e['frame']) if ct else 0.6
-            c = add(e, 'damper', 'start', params=dict(duration=max(0.2, d), mech=mech), label=f'damper:{obj}')
+            prm = dict(duration=max(0.2, d), mech=mech)
+            vc = _curve_seg(e.get('_curve'), e['frame'], ct['frame'] if ct else None)
+            if vc:
+                prm.update(v_curve=vc, fps=fps)
+            c = add(e, 'damper', 'start', params=prm, label=f'damper:{obj}')
             c['t_end'] = sec(e['frame']) + d
         elif n == 'softclose_contact':
             add(e, 'thup', label=f'thup:{obj}')
@@ -266,8 +281,11 @@ def build_cues_brief(evs, fps, event_map=None, pan_width=0.8):
         elif n == 'door_swing':
             d = sec((end or e['frame'] + 18) - e['frame'])
             p = _pan_of(e, pan_width)
-            c = add(e, 'door_air', 'start', params=dict(duration=max(0.2, d), pan_from=p + 0.15, pan_to=p - 0.1),
-                    pan=None)
+            prm = dict(duration=max(0.2, d), pan_from=p + 0.15, pan_to=p - 0.1)
+            vc = _curve_seg(e.get('_curve'), e['frame'], end)
+            if vc:
+                prm.update(v_curve=vc, fps=fps)
+            c = add(e, 'door_air', 'start', params=prm, pan=None)
             c['t_end'] = sec(e['frame']) + d
         elif n == 'callout':
             m = (note_midi(e['note']) if e.get('note') else None) or \
@@ -310,6 +328,7 @@ def build_cues_brief(evs, fps, event_map=None, pan_width=0.8):
     for (n, key), es in sorted(groups.items(), key=lambda kv: kv[1][0]['frame']):
         e0 = es[0]
         pan = float(np.mean([_pan_of(x, pan_width) for x in es]))
+        n_before = len(cues)
         if n == 'pop':
             t0 = min(x['frame'] for x in es)
             add(e0, 'pops', 'start', t=sec(t0), params=dict(times=[sec(x['frame'] - t0) for x in es],
@@ -325,6 +344,8 @@ def build_cues_brief(evs, fps, event_map=None, pan_width=0.8):
             for nn in sorted({x['note'] for x in es if x.get('note') and note_midi(x['note'])}):
                 add(e0, 'marimba', params=dict(midi=note_midi(nn), dry=False), gain=-3, pan=pan, music_note=True,
                     label=f'front_note:{nn}')
+        for c in cues[n_before:]:
+            c['evs'] = [[x['name'], x['obj'], x['frame']] for x in es]
     cues.sort(key=lambda c: c['t_src'])
     return cues
 
