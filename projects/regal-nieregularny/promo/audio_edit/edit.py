@@ -192,22 +192,41 @@ def normalize_shot(sh, V, base, work, idx, draft=False):
     cwi, chi = int(round(cw / 2) * 2), int(round(ch / 2) * 2)
     fx = (f"crop=w={cwi}:h={chi}:x='max(0,min(iw-ow,({cx_e})*iw-ow/2))':"
           f"y='max(0,min(ih-oh,({cy_e})*ih-oh/2))'")
-    vf = []
+    pre, vf = [], []
     if sh.get('_src_fps') and abs(sh['_src_fps'] - fps) > 0.01:
         if sh.get('conform', False):
-            vf.append(f'setpts=N/({fps}*TB)')
+            pre.append(f'setpts=N/({fps}*TB)')
         else:
-            vf.append(f'fps={fps}')
+            pre.append(f'fps={fps}')
     if float(sh.get('speed', 1.0)) != 1.0:
-        vf.append(f'setpts=PTS/{float(sh["speed"])}')
+        pre.append(f'setpts=PTS/{float(sh["speed"])}')
     if (cwi, chi) != (src_w, src_h):
         vf.append(fx)
     vf.append(f'scale={W}:{H}:flags=lanczos+accurate_rnd+full_chroma_int')
     if sh.get('sharpen', V.get('sharpen', False)) and cwi < W:
         vf.append('unsharp=5:5:0.4')
-    vf += ['setsar=1', f'fps={fps}', 'format=gbrp10le']
-    cmd = [FF, '-v', 'error', '-y'] + inp + ['-vf', ','.join(vf), '-frames:v', str(n_frames), '-an',
-                                             '-c:v', 'ffv1', '-level', '3', '-pix_fmt', 'gbrp10le', out]
+    post = f'setsar=1,fps={fps},format=gbrp10le'
+    # pasek z nakladka animatiku (ID ujecia / klatka) przenoszony 1:1 nad kadrowaniem - nie zaslaniamy go
+    strip = sh.get('strip', V.get('strip'))
+    if strip and sh.get('strip') is not False:
+        sx, sy, sw, shh = strip.get('crop', [0, 0, 640, 21])
+        k = float(strip.get('scale', 3.0)) * V['scale']
+        ow, oh = int(round(sw * k / 2) * 2), int(round(shh * k / 2) * 2)
+        px, py = strip.get('pos', [0, 0])
+        sfx_ = f'crop={sw}:{shh}:{sx}:{sy},scale={ow}:{oh}:flags=lanczos'
+        ss = sh.get('strip_from')                    # np. plansza z Pillow: pasek z animatiku w zadanym oknie
+        if ss:
+            sp = absp(ss['src'], base)
+            inp += ['-ss', f"{ss['f'][0] / fps:.4f}", '-t', f'{n_frames / fps + 0.5:.4f}', '-i', sp]
+            fc = (f"[0:v]{','.join(pre + vf) or 'null'}[mm];[1:v]fps={fps},{sfx_}[ss];"
+                  f"[mm][ss]overlay={px}:{py}:eof_action=repeat,{post}[out]")
+        else:
+            fc = (f"[0:v]{','.join(pre) or 'null'},split=2[m][s];[m]{','.join(vf)}[mm];[s]{sfx_}[ss];"
+                  f"[mm][ss]overlay={px}:{py},{post}[out]")
+        cmd = [FF, '-v', 'error', '-y'] + inp + ['-filter_complex', fc, '-map', '[out]']
+    else:
+        cmd = [FF, '-v', 'error', '-y'] + inp + ['-vf', ','.join(pre + vf + [post])]
+    cmd += ['-frames:v', str(n_frames), '-an', '-c:v', 'ffv1', '-level', '3', '-pix_fmt', 'gbrp10le', out]
     run(cmd)
     return out, n_frames
 
