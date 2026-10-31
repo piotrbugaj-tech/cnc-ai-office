@@ -262,7 +262,7 @@
    "target": "S10",
    "shot": "S04",
    "x_frame": 0.5,
-   "y_frame": 0.1402
+   "y_frame": 0.0438
   },
   {
    "type": "softclose_contact",
@@ -272,7 +272,7 @@
    "target": "S10",
    "shot": "S04",
    "x_frame": 0.5,
-   "y_frame": 0.0496
+   "y_frame": 0.523
   },
   {
    "type": "door_swing",

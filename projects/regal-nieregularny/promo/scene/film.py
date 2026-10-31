@@ -116,7 +116,11 @@ def aux_light(name, C, T, size, energy, kelvin, f0, f1, size_y=None):
     lo = B.area(name, B.coll("SWIATLA_okno"), C, T, size, size_y, energy=energy, kelvin=kelvin, spread=120)
     lo.visible_glossy = False
     energy_window(lo, f0, f1, energy)
+    AUX[name] = lo
     return lo
+
+
+AUX = {}   # światła pomocnicze "Sxx_…"; w renderze ujęcia świecą tylko własne (zakładki ±3 kl. nie łapią cudzych)
 
 
 def ev(etype, frame, target="", **meta):
@@ -212,6 +216,24 @@ def shot_S04():
     s = SHOTS["S04"]
     c = cam("S04", P(1650, -190, 1900), P(1650, -190, 0), s["lens"], s["fstop"], focus=P(1650, -190, 860),
             topdown=True)
+    # f250→286: z top-down przechył ~45° na domknięty front (po domyku kadr z góry był pustą podłogą).
+    # Kamera stoi w f≤250 i f≥286, więc klatki trzymane (holds) zostają statyczne.
+    foc = bpy.data.objects["FOC_CAM_S04"]
+    C0, T0, F0 = Vector((1650, -190, 1900)), Vector((1650, -189.9, 0)), Vector((1650, -190, 860))
+    C1, T1, F1 = Vector((1650, -780, 1430)), Vector((1650, 0, 830)), Vector((1650, -20, 830))
+    c.rotation_mode = "QUATERNION"
+    for f in range(225 - OVERLAP, 300 + OVERLAP + 1):
+        u = min(1.0, max(0.0, (f - 250) / 36.0))
+        u = u * u * (3 - 2 * u)
+        Cw, Tw = P(*C0.lerp(C1, u)), P(*T0.lerp(T1, u))
+        c.location = Cw
+        c.rotation_quaternion = (Tw - Cw).to_track_quat("-Z", "Y")
+        foc.location = P(*F0.lerp(F1, u))
+        c.keyframe_insert("location", frame=f)
+        c.keyframe_insert("rotation_quaternion", frame=f)
+        foc.keyframe_insert("location", frame=f)
+    B.set_interp(c, "LINEAR")
+    B.set_interp(foc, "LINEAR")
     B.hold_state("drawer", "S10", -10, 0.0)
     B.hold_state("drawer", "S10", 225, 350.0)
     sm = B.hermite_samples(250, 262, 350.0, 40.0, 0.0, -5.2)
@@ -278,6 +300,10 @@ def shot_S07(layout):
         c.keyframe_insert("location", frame=f)
         c.keyframe_insert("rotation_euler", frame=f)
     B.set_interp(c, "LINEAR")
+    # wypełnienie lewego dołu kadru (cień krawędzi okna dawał ciemną plamę pod napisem); niewidoczne dla kamery
+    fill = aux_light("S07_fill", P(-1800, -5300, 2600), P(-1800, -5300, 0), 5.0, 40.0, 5200,
+                     420 - OVERLAP, 480 + OVERLAP, size_y=2.5)
+    fill.visible_camera = False
     ev("riser", 420, "", end=474)
     ev("caption", 428, "140 elementów. 8 arkuszy.", end=474)
     ev("silence", 474, "", end=480)
@@ -579,6 +605,8 @@ def set_shot_render(sid, preset="final", res=(2560, 1440), spp=None, device=None
     info = B.render_settings(preset, res=res, samples=spp or s["spp"], threshold=thr or s["thr"], device=device,
                              motion_blur=bool(s.get("mb")) and not animatic, shutter=s.get("mb", 0.5))
     sc.camera = B.S.film_cams[sid]
+    for name, lo in AUX.items():
+        lo.hide_render = not name.startswith(sid + "_")
     # stała ekspozycja ujęcia (klucze ekspozycji służą tylko animatikowi – w renderze ujęcia je zdejmujemy)
     if sc.animation_data:
         sc.animation_data_clear()
@@ -633,6 +661,8 @@ def render_shot(sid, preset="final", res=(2560, 1440), spp=None, device=None, ou
 
 
 def _render_range(sid, sc, out, f0, f1, holds):
+    todo = [f for f in range(f0, f1 + 1) if not (out / f"f_{f:04d}.png").exists()]
+    t0, n = time.time(), 0
     for f in range(f0, f1 + 1):
         dst = out / f"f_{f:04d}.png"
         if dst.exists():
@@ -646,7 +676,12 @@ def _render_range(sid, sc, out, f0, f1, holds):
         sc.frame_set(f)
         sc.camera = B.S.film_cams[sid]
         sc.render.filepath = str(dst)
+        t = time.time()
         bpy.ops.render.render(write_still=True)
+        n += 1
+        left = sum(1 for g in todo if g > f)
+        eta = (time.time() - t0) / n * left
+        print(f"[film] {sid} f{f}: {time.time() - t:.1f} s ({n}/{len(todo)}, zostało ~{eta / 60:.0f} min)", flush=True)
 
 
 def animatic(out_dir=None, res=(640, 360), spp=6):
