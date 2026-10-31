@@ -24,7 +24,7 @@ STYLES = {
     '16x9': {
         'title': dict(font='InterDisplay-Light', size=60, tracking=-0.01, color='#24211E'),
         'title_light': dict(font='InterDisplay-Light', size=60, tracking=-0.01, color='#F6F2EA'),
-        'cad': dict(font='JetBrainsMono-Regular', size=26, tracking=0.0, color='#24211E'),
+        'cad': dict(font='JetBrainsMono-Regular', size=40, tracking=0.0, color='#24211E', geom=1.5),
         'end_name': dict(font='InterDisplay-Medium', size=120, tracking=0.24, color='#24211E'),
         'end_tag': dict(font='InterDisplay-Light', size=44, tracking=0.0, color='#24211E'),
         'end_desc': dict(font='JetBrainsMono-Regular', size=22, tracking=0.0, color='#6E655B'),
@@ -33,7 +33,7 @@ STYLES = {
     '9x16': {
         'title': dict(font='InterDisplay-Light', size=72, tracking=-0.01, color='#24211E'),
         'title_light': dict(font='InterDisplay-Light', size=72, tracking=-0.01, color='#F6F2EA'),
-        'cad': dict(font='JetBrainsMono-Regular', size=30, tracking=0.0, color='#24211E'),
+        'cad': dict(font='JetBrainsMono-Regular', size=46, tracking=0.0, color='#24211E', geom=1.5),
         'end_name': dict(font='InterDisplay-Medium', size=140, tracking=0.24, color='#24211E'),
         'end_tag': dict(font='InterDisplay-Light', size=52, tracking=0.0, color='#24211E'),
         'end_desc': dict(font='JetBrainsMono-Regular', size=26, tracking=0.0, color='#6E655B'),
@@ -181,16 +181,17 @@ def render_title(spec, version, W, H, fps, out_dir, scale=1.0):
 # --------------------------------------------------------------------------
 def render_dim(spec, version, W, H, fps, out_dir, scale=1.0):
     st = dict(STYLES[version]['cad'])
-    p1 = np.array(spec['p1'], float) * scale
-    p2 = np.array(spec['p2'], float) * scale
+    g = scale * st.get('geom', 1.0)   # grubosc linii, kreski i odnosniki rosna z tekstem
+    p1 = np.array(spec['p1'], float) * g
+    p2 = np.array(spec['p2'], float) * g
     f0, f1 = spec['f']
     n = int(round(f1 - f0))
-    lw = max(1, int(round(2 * scale)))
+    lw = max(1, int(round(2 * g)))
     col = hex_rgba(st['color'])
     img, base, cap, tw = text_image(spec['text'], st, scale)
-    lo = np.minimum(p1, p2) - 60 * scale
-    hi = np.maximum(p1, p2) + 60 * scale
-    tpos = np.array(spec.get('text_pos', ((p1 + p2) / 2 + np.array([12, -40]) * scale)), float)
+    lo = np.minimum(p1, p2) - 60 * g
+    hi = np.maximum(p1, p2) + 60 * g
+    tpos = np.array(spec.get('text_pos', ((p1 + p2) / 2 + np.array([12, -40]) * g)), float)
     lo = np.minimum(lo, tpos - 10)
     hi = np.maximum(hi, tpos + np.array([tw + 20, img.height + 10]))
     ox, oy = int(lo[0]), int(lo[1])
@@ -205,7 +206,7 @@ def render_dim(spec, version, W, H, fps, out_dir, scale=1.0):
         d.line([tuple(p1 - [ox, oy]), tuple(a - [ox, oy])], fill=col, width=lw)
         if u >= 0.999:
             for p in (p1, p2):
-                k = 5 * scale
+                k = 5 * g
                 d.line([(p[0] - ox - k, p[1] - oy + k), (p[0] - ox + k, p[1] - oy - k)], fill=col, width=lw)
         ta = ease_out_cubic((i - 8 - 4 + 1) / 4) if i >= 12 else 0.0
         if ta > 0:
@@ -317,9 +318,10 @@ def render_dim_tracked(spec, version, W, H, fps, out_dir, scale=1.0):
     label: above | right | leader. Linia rysuje sie w 8 kl., kreski 45 st. 10 px, tekst po 4 kl., wyjscie 8 kl.
     Klatki pelnoekranowe RGBA (punkty sie przesuwaja)."""
     st = dict(STYLES[version]['cad'])
+    g = scale * st.get('geom', 1.0)   # grubosc linii, kreski i odnosniki rosna z tekstem
     f0, f1 = spec['f']
     n = int(round(f1 - f0))
-    lw = max(1, int(round(2 * scale)))
+    lw = max(1, int(round(2 * g)))
     col = hex_rgba(st['color'])
     img, base, cap, tw = text_image(spec['text'], st, scale)
     mode = spec.get('label', 'above')
@@ -331,11 +333,11 @@ def render_dim_tracked(spec, version, W, H, fps, out_dir, scale=1.0):
         d = ImageDraw.Draw(fr)
         pts = np.array(pts_all[min(i, len(pts_all) - 1)], float) * [W, H]
         u = ease_out_cubic((i + 1) / 8)
-        k = 5 * scale
+        k = 5 * g
         if len(pts) >= 2:
             p1, p2 = pts[0], pts[1]
             if mode == 'right':                       # szczelina 2 mm: linie pomocnicze + wymiar obok
-                off = np.array([28 * scale, 0])
+                off = np.array([28 * g, 0])
                 p1, p2 = p1 + off, p2 + off
             a = p1 + (p2 - p1) * u
             d.line([tuple(p1), tuple(a)], fill=col, width=lw)
@@ -343,18 +345,18 @@ def render_dim_tracked(spec, version, W, H, fps, out_dir, scale=1.0):
                 for p in (p1, p2):
                     d.line([(p[0] - k, p[1] + k), (p[0] + k, p[1] - k)], fill=col, width=lw)
             if mode == 'right':
-                tpos = np.array([max(p1[0], p2[0]) + 14 * scale, (p1[1] + p2[1]) / 2 - img.height / 2])
+                tpos = np.array([max(p1[0], p2[0]) + 14 * g, (p1[1] + p2[1]) / 2 - img.height / 2])
             else:
-                tpos = np.array([(p1[0] + p2[0]) / 2 - tw / 2, min(p1[1], p2[1]) - img.height - 6 * scale])
+                tpos = np.array([(p1[0] + p2[0]) / 2 - tw / 2, min(p1[1], p2[1]) - img.height - 6 * g])
         else:                                         # odnosnik (leader) od punktu w gore w prawo
             p = pts[0]
-            q = p + np.array([60, -50]) * scale
+            q = p + np.array([60, -50]) * g
             a = p + (q - p) * u
-            d.ellipse([p[0] - 3 * scale, p[1] - 3 * scale, p[0] + 3 * scale, p[1] + 3 * scale], fill=col)
+            d.ellipse([p[0] - 3 * g, p[1] - 3 * g, p[0] + 3 * g, p[1] + 3 * g], fill=col)
             d.line([tuple(p), tuple(a)], fill=col, width=lw)
             if u >= 0.999:
-                d.line([tuple(q), (q[0] + 24 * scale, q[1])], fill=col, width=lw)
-            tpos = np.array([q[0] + 30 * scale, q[1] - img.height / 2 - 2 * scale])
+                d.line([tuple(q), (q[0] + 24 * g, q[1])], fill=col, width=lw)
+            tpos = np.array([q[0] + 30 * g, q[1] - img.height / 2 - 2 * g])
         ta = ease_out_cubic((i - 12 + 1) / 4) if i >= 12 else 0.0
         if ta > 0:
             x0, y0 = int(round(tpos[0])), int(round(tpos[1]))

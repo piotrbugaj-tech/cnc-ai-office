@@ -1,0 +1,173 @@
+{
+ "model_key": "eleven25",
+ "endpoint": "elevenlabs/music/v2.5",
+ "variant": "ambient_pulse",
+ "variant_label": "C - ambient, kalimba i pulsujacy arpeggiator",
+ "seed": 37,
+ "arguments": {
+  "composition_plan": {
+   "chunks": [
+    {
+     "text": "[Hook]",
+     "duration_ms": 7200,
+     "positive_styles": [
+      "premium minimal product film score, Nordic, warm and woody, calm confidence, refined, high-end furniture commercial (Tylko, Vitsoe, USM, HAY), clean modern mix, wide stereo, 100 BPM, F major, 4/4, half-time pulse, instrumental only",
+      "kalimba and plucked wooden textures",
+      "slowly evolving ambient pad",
+      "soft analog arpeggio pulse",
+      "organic wooden percussion",
+      "deep warm sub bass",
+      "0-2.4 s: almost silent, sparse dry marimba notes only, airy",
+      "at 2.4 s a soft sub hit and the warm pad opens (Fmaj9 then Dm9)",
+      "minimal, leave space for sound effects"
+     ],
+     "negative_styles": [
+      "vocals",
+      "singing",
+      "humming",
+      "choir",
+      "spoken words",
+      "rap",
+      "EDM build-up",
+      "dubstep",
+      "distorted guitars",
+      "aggressive drums",
+      "trap hi-hats",
+      "cheesy corporate ukulele",
+      "whistling",
+      "lo-fi vinyl hiss",
+      "busy lead melody"
+     ]
+    },
+    {
+     "text": "[Groove]",
+     "duration_ms": 9000,
+     "positive_styles": [
+      "half-time groove: sub kick on beat 1, wooden clap on beat 3, quiet shaker",
+      "chords Bbmaj7, Csus4 to C, Fmaj9, Dm9, one chord per bar",
+      "short repeating marimba rhythm figure, never busy",
+      "kalimba and plucked wooden textures",
+      "slowly evolving ambient pad"
+     ],
+     "negative_styles": [
+      "vocals",
+      "singing",
+      "humming",
+      "choir",
+      "spoken words",
+      "rap",
+      "EDM build-up",
+      "dubstep",
+      "distorted guitars",
+      "aggressive drums",
+      "trap hi-hats",
+      "cheesy corporate ukulele",
+      "whistling",
+      "lo-fi vinyl hiss",
+      "busy lead melody"
+     ],
+     "context_adherence": "high"
+    },
+    {
+     "text": "[Breakdown]",
+     "duration_ms": 3000,
+     "positive_styles": [
+      "groove ends at 16.8 s, then drums stop, pad Bbmaj7#11 and a rising riser",
+      "riser cuts hard to complete silence for the last quarter second",
+      "kalimba and plucked wooden textures",
+      "slowly evolving ambient pad"
+     ],
+     "negative_styles": [
+      "vocals",
+      "singing",
+      "humming",
+      "choir",
+      "spoken words",
+      "rap",
+      "EDM build-up",
+      "dubstep",
+      "distorted guitars",
+      "aggressive drums",
+      "trap hi-hats",
+      "cheesy corporate ukulele",
+      "whistling",
+      "lo-fi vinyl hiss",
+      "busy lead melody"
+     ],
+     "context_adherence": "high"
+    },
+    {
+     "text": "[Drop]",
+     "duration_ms": 7200,
+     "positive_styles": [
+      "the drop lands exactly on the downbeat: sub kick, warm bass, full pad Fmaj9 then Dm9",
+      "rising marimba melody, at 23.4 s a bright chord",
+      "at 24 s drums stop, calm resolution on Bbmaj7",
+      "kalimba and plucked wooden textures",
+      "slowly evolving ambient pad"
+     ],
+     "negative_styles": [
+      "vocals",
+      "singing",
+      "humming",
+      "choir",
+      "spoken words",
+      "rap",
+      "EDM build-up",
+      "dubstep",
+      "distorted guitars",
+      "aggressive drums",
+      "trap hi-hats",
+      "cheesy corporate ukulele",
+      "whistling",
+      "lo-fi vinyl hiss",
+      "busy lead melody"
+     ],
+     "context_adherence": "high"
+    },
+    {
+     "text": "[Outro]",
+     "duration_ms": 3600,
+     "positive_styles": [
+      "final section starts on the downbeat",
+      "a gentle 5-note kalimba sonic logo",
+      "deep F sub note and full Fmaj9 pad",
+      "rings out and fades naturally to silence by 29.8 s",
+      "kalimba and plucked wooden textures",
+      "slowly evolving ambient pad"
+     ],
+     "negative_styles": [
+      "vocals",
+      "singing",
+      "humming",
+      "choir",
+      "spoken words",
+      "rap",
+      "EDM build-up",
+      "dubstep",
+      "distorted guitars",
+      "aggressive drums",
+      "trap hi-hats",
+      "cheesy corporate ukulele",
+      "whistling",
+      "lo-fi vinyl hiss",
+      "busy lead melody"
+     ],
+     "context_adherence": "high"
+    }
+   ]
+  },
+  "seed": 37,
+  "output_format": "mp3_48000_320"
+ },
+ "request_id": "01a18f8e-6164-7bb2-9b7e-492671c0fe9c",
+ "elapsed_s": 10.0,
+ "file": "fal_eleven25_ambient_pulse_s37_30s_20261031-022355.mp3",
+ "wav_48k": "fal_eleven25_ambient_pulse_s37_30s_20261031-022355_48k.wav",
+ "sha256": "93060116348249c7c779a47ef5fd638e8ae91545c0a3fb4b2746db11abde400c",
+ "est_cost_usd": 0.6,
+ "cost_note": "szacunek; faktyczny koszt w panelu fal.ai (Usage)",
+ "response_extra": {},
+ "measure": {},
+ "created": "20261031-022355"
+}

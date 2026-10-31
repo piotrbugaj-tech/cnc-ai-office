@@ -1,6 +1,6 @@
 # RYTM - wersja glowna 16:9, 30,00 s = 750 kl. (research-brief.md 5 / 7 / 6.3)
 # Ujecia: sekwencje PNG z Blendera, numery plikow = GLOBALNE klatki f (zakladki +-3 kl. sa pomijane przez 'f').
-# Sciezki renderow sa ZALOZENIEM (../../renders/<ID>/####.png) - popraw 'src', gdy agent 3D poda swoje.
+# Sciezki renderow sa ZALOZENIEM (../../renders/<ID>/f_####.png) - popraw 'src', gdy agent 3D poda swoje.
 #   python3 edit.py configs/rytm_30s_16x9.yaml                 # final
 #   python3 edit.py configs/rytm_30s_16x9.yaml --draft         # podglad 960x540
 #   python3 edit.py configs/rytm_30s_16x9.yaml --audio-only --events test/brief_events_mock.json
@@ -10,15 +10,15 @@ versions:
     size: [1920, 1080]
     fps: 25
     shots:
-      - {id: S01, src: ../../renders/S01/####.png, f: [0, 60]}
-      - {id: S02, src: ../../renders/S02/####.png, f: [60, 180]}
-      - {id: S03, src: ../../renders/S03/####.png, f: [180, 225]}
-      - {id: S04, src: ../../renders/S04/####.png, f: [225, 300]}
-      - {id: S05, src: ../../renders/S05/####.png, f: [300, 345]}
-      - {id: S06, src: ../../renders/S06/####.png, f: [345, 420]}
-      - {id: S07, src: ../../renders/S07/####.png, f: [420, 480]}
-      - {id: S08, src: ../../renders/S08/####.png, f: [480, 600]}
-      - {id: S09, src: ../../renders/S09/####.png, f: [600, 670], event_tail_s: 0.0}   # +10 kl. na przenikanie
+      - {id: S01, src: ../../frames/S01/f_####.png, f: [0, 60]}
+      - {id: S02, src: ../../frames/S02/f_####.png, f: [60, 180]}
+      - {id: S03, src: ../../frames/S03/f_####.png, f: [180, 225]}
+      - {id: S04, src: ../../frames/S04/f_####.png, f: [225, 300]}
+      - {id: S05, src: ../../frames/S05/f_####.png, f: [300, 345]}
+      - {id: S06, src: ../../frames/S06/f_####.png, f: [345, 420]}
+      - {id: S07, src: ../../frames/S07/f_####.png, f: [420, 480]}
+      - {id: S08, src: ../../frames/S08/f_####.png, f: [480, 600]}
+      - {id: S09, src: ../../frames/S09/f_####.png, f: [600, 670], event_tail_s: 0.0}   # +10 kl. na przenikanie
       - id: S10
         type: endcard
         dur_f: 90
@@ -36,18 +36,26 @@ versions:
       - {text: "Pełny wysuw.", style: title, x: 144, y: 900, f: [196, 224]}
       - {text: "Cichy domyk.", style: title, x: 144, y: 540, f: [262, 296]}
       - {text: "140 elementów. 8 arkuszy.", style: title, x: 144, y: 960, f: [428, 474], glow: true}
-    dims:                                             # S06 - docelowo pozycje z events.json (world_to_camera_view)
-      - {text: "18 mm", p1: [1114, 907], p2: [1344, 907], f: [360, 416]}
-      - {text: "2 mm", p1: [480, 540], p2: [480, 562], f: [375, 406], text_pos: [500, 500]}
-      - {text: "13 warstw", p1: [1306, 432], p2: [1420, 380], f: [390, 416], text_pos: [1430, 350]}
+    dims:                                             # S06: punkty 2D per klatka z events.json -> callouts_S06
+      - {text: "18 mm", track: A_18mm, label: above, f: [360, 416]}
+      - {text: "2 mm", track: B_2mm, label: right, f: [375, 406]}
+      - {text: "13 warstw", track: C_13warstw, label: leader, f: [390, 416]}
     grade: {lut: auto, vignette: 0.09, grain: 5}
     audio:
-      # A) muzyka z fal.ai (po wygenerowaniu na Macu):  music: {file: ../music/fal_eleven25_nordic_marimba_s11_30s_XXXX_48k.wav, lufs: -18}
-      #    + event_notes: true + event_music_fx: true (sub na reveal, riser z events.json na wierzchu muzyki AI).
-      # B) fallback: synteza (lozko bez 'motif', nuty z events.json):
-      music: {stems_dir: ../music/synth_v1_stems, use: [pads, groove_marimba, drums, bass, fx, reverb], lufs: -18}
+      # muzyka fal.ai (ElevenLabs Music 2.5, nordic marimba, F-dur, takt 2,4 s). Model przesunal sekcje
+      # (groove do 19,2 s, wyciszenie 19,2-21,6, drop 21,6-26,4) -> montaz taktow pod plan briefu:
+      # hook+groove 0-16,8 | wyciszenie 16,8-19,2 (proznia f474-480) | drop od 19,2 (S08) x3 takty | outro 26,4-30.
+      music:
+        file: ../music/fal_eleven25_nordic_marimba_s11_30s_20261031-022335_48k.wav
+        lufs: -18
+        edit:
+          - {src_in: 0.0, src_out: 16.8, at: 0.0}
+          - {src_in: 19.18, src_out: 21.6, at: 16.78, xfade: 0.02}
+          - {src_in: 21.58, src_out: 24.0, at: 19.18, xfade: 0.02}
+          - {src_in: 21.58, src_out: 24.0, at: 21.58, xfade: 0.02}
+          - {src_in: 23.98, src_out: 30.0, at: 23.98, xfade: 0.02}
       event_notes: true          # nuty z events.json: shelf_pass, ladowania polek, fronty, akord f585, sting RYTM
-      event_music_fx: false      # reveal/riser z events.json: false, bo sa juz w stemie 'fx' syntezy (true dla muzyki AI)
+      event_music_fx: true       # reveal/riser z events.json na wierzchu muzyki AI
       events: ../../renders/events.json
       duck: {depth_db: 4, attack: 0.01, release: 0.3, threshold_db: -42}
       # 'proznia' f474-480 przychodzi z events.json (typ 'silence'); recznie: silence: [["f:474", "f:480"]]

@@ -8,11 +8,11 @@ versions:
     fps: 25
     sharpen: true
     shots:
-      - {id: V1, src: ../../renders/S01/####.png, f: [0, 60], cx: 0.45}
-      - {id: V2, src: ../../renders/S03/####.png, f: [180, 225], cx: [[0, 0.50], [1.2, 0.46], [1.8, 0.47]]}
-      - {id: V3, src: ../../renders/S04/####.png, f: [255, 300], cx: 0.50}
-      - {id: V4, src: ../../renders/S07/####.png, f: [450, 480], cx: 0.50}
-      - {id: V5, src: ../../renders/S08/####.png, f: [480, 600], cx: [0.50, 0.505]}
+      - {id: V1, src: ../../frames/S01/f_####.png, f: [0, 60], cx: 0.45}
+      - {id: V2, src: ../../frames/S03/f_####.png, f: [180, 225], cx: [[0, 0.50], [1.2, 0.46], [1.8, 0.47]]}
+      - {id: V3, src: ../../frames/S04/f_####.png, f: [255, 300], cx: 0.50}
+      - {id: V4, src: ../../frames/S07/f_####.png, f: [450, 480], cx: 0.50}
+      - {id: V5, src: ../../frames/S08/f_####.png, f: [480, 600], cx: [0.50, 0.505]}
       - id: V6
         type: endcard
         dur_f: 75
@@ -31,9 +31,18 @@ versions:
       - {text: "140 elementów.", style: title, x: 540, y: 420, align: center, f: [152, 174], glow: true}
     grade: {lut: auto, vignette: 0.09, grain: 5}
     audio:
-      music: {stems_dir: ../music/synth_v1_15s_stems, use: [pads, groove_marimba, drums, bass, fx, reverb], lufs: -18}
+      # ta sama muzyka co 30 s, montaz taktow: hook (od otwarcia pada) 0-4,8 | wyciszenie 4,8-7,2 (proznia 6,96-7,2)
+      # | drop od 7,2 (V5 = S08) 2 takty | outro od 12,0 (plansza)
+      music:
+        file: ../music/fal_eleven25_nordic_marimba_s11_30s_20261031-022335_48k.wav
+        lufs: -18
+        edit:
+          - {src_in: 2.4, src_out: 7.2, at: 0.0}
+          - {src_in: 19.18, src_out: 21.6, at: 4.78, xfade: 0.02}
+          - {src_in: 21.58, src_out: 26.4, at: 7.18, xfade: 0.02}
+          - {src_in: 26.38, src_out: 30.0, at: 11.98, xfade: 0.02}
       event_notes: true
-      event_music_fx: false
+      event_music_fx: true
       events: ../../renders/events.json               # zdarzenia przeliczane per ujecie (np. f480 -> 7,2 s)
       duck: {depth_db: 4, attack: 0.01, release: 0.3, threshold_db: -42}
       # proznia 6,96-7,2 s przychodzi z events.json (silence f474-480 w oknie V4)

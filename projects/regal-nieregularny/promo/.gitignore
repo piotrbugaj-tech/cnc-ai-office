@@ -14,3 +14,7 @@ audio_edit/music/**/*.wav
 
 # pełne PNG look-devu (lokalnie); w repo podglądy JPG w renders/lookdev/podglad/
 renders/lookdev/*.png
+
+# fonty pobierane lokalnie (SIL OFL, Inter 4.1 / JetBrains Mono 2.304)
+audio_edit/fonts/
+audio_edit/out/
