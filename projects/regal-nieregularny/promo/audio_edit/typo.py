@@ -345,7 +345,7 @@ def render_dim_tracked(spec, version, W, H, fps, out_dir, scale=1.0):
                 for p in (p1, p2):
                     d.line([(p[0] - k, p[1] + k), (p[0] + k, p[1] - k)], fill=col, width=lw)
             if mode == 'right':
-                tpos = np.array([max(p1[0], p2[0]) + 14 * g, (p1[1] + p2[1]) / 2 - img.height / 2])
+                tpos = np.array([max(p1[0], p2[0]) + 14 * g, max(p1[1], p2[1]) + 6 * g])   # pod szczelina, na jasnym froncie
             else:
                 tpos = np.array([(p1[0] + p2[0]) / 2 - tw / 2, min(p1[1], p2[1]) - img.height - 6 * g])
         else:                                         # odnosnik (leader) od punktu w gore w prawo

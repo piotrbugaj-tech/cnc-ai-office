@@ -38,8 +38,8 @@ versions:
       - {text: "140 elementów. 8 arkuszy.", style: title, x: 144, y: 960, f: [428, 474], glow: true}
     dims:                                             # S06: punkty 2D per klatka z events.json -> callouts_S06
       - {text: "18 mm", track: A_18mm, label: above, f: [360, 416]}
-      - {text: "2 mm", track: B_2mm, label: right, f: [375, 406]}
-      - {text: "13 warstw", track: C_13warstw, label: leader, f: [390, 416]}
+      - {text: "2 mm", track: B_2mm, label: right, f: [363, 396]}
+      - {text: "13 warstw", track: C_13warstw, label: leader, f: [376, 416]}
     grade: {lut: auto, vignette: 0.09, grain: 5}
     audio:
       # muzyka fal.ai (ElevenLabs Music 2.5, nordic marimba, F-dur, takt 2,4 s). Model przesunal sekcje

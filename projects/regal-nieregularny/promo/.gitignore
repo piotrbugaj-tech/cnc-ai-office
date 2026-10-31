@@ -18,3 +18,4 @@ renders/lookdev/*.png
 # fonty pobierane lokalnie (SIL OFL, Inter 4.1 / JetBrains Mono 2.304)
 audio_edit/fonts/
 audio_edit/out/
+audio_edit/music/*.mp3
